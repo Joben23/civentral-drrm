@@ -36,16 +36,32 @@
               type="search"
               placeholder="Search barangay..."
               autocomplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="barangaySearchSuggestions"
+              aria-expanded="false"
               class="civ-map-input w-full py-2.5 pl-9 pr-11 text-xs"
             >
             <button type="submit" class="civ-map-search-button" aria-label="Search barangay">
               <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
             </button>
+            <div
+              id="barangaySearchSuggestions"
+              class="civ-barangay-suggestions"
+              role="listbox"
+              aria-label="Matching barangays"
+              hidden
+            ></div>
           </div>
         </form>
-        <p id="barangaySearchStatus" class="civ-map-helper mt-2" role="status" aria-live="polite">
-          Barangay records are not yet connected.
-        </p>
+        <div class="mt-2 flex items-start justify-between gap-2">
+          <p id="barangaySearchStatus" class="civ-map-helper" role="status" aria-live="polite">
+            Barangay records are not yet connected.
+          </p>
+          <button id="clearBarangaySelectionButton" type="button" class="civ-clear-barangay-selection" hidden>
+            Clear selection
+          </button>
+        </div>
       </section>
 
       <section class="civ-map-card" aria-labelledby="hazardLayersTitle">
@@ -99,13 +115,14 @@
           <h2 id="riskLegendTitle">Risk Level Legend</h2>
         </div>
 
-        <div class="mt-3 grid grid-cols-2 gap-2" aria-label="Risk classifications">
+        <p id="riskLegendContext" class="civ-risk-legend-context mt-3">Project risk classifications</p>
+        <div id="riskLegendItems" class="mt-2 grid grid-cols-2 gap-2" aria-label="Project risk classifications">
           <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-low"></span><span>Low</span></div>
           <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-moderate"></span><span>Moderate</span></div>
           <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-high"></span><span>High</span></div>
-          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-critical"></span><span>Critical</span></div>
+          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-critical"></span><span id="highestRiskLegendLabel">Critical</span></div>
         </div>
-        <p class="civ-map-helper mt-2">Legend only. No risk level has been assigned to any location.</p>
+        <p id="riskLegendHelper" class="civ-map-helper mt-2">Legend only. No risk level has been assigned to any location.</p>
       </section>
 
     </aside>
@@ -132,7 +149,7 @@
 
       <div id="polygonMapNotice" class="civ-map-data-notice">
         <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-        <p><strong>Caloocan polygon view.</strong> The city boundary defines the operational canvas; verified hazard and evacuation datasets are not connected yet.</p>
+        <p><strong>Caloocan polygon view.</strong> The city boundary defines the operational canvas; connected development layers remain explicitly labeled as previews.</p>
       </div>
       <div id="draftBarangayPreviewNotice" class="civ-map-data-notice hidden" role="status" aria-live="polite">
         <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>

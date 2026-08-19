@@ -1,0 +1,455 @@
+{
+    "type": "CIVENTRAL_DRRM_EVACUATION_CENTERS_READY_SUBSET",
+    "generated_at": "2026-08-19T14:42:56+00:00",
+    "status": "READY_FOR_MANUAL_REVIEW_BEFORE_DATABASE_STAGING",
+    "selection_rule": "VERIFIED/HIGH_CONFIDENCE coordinate, inside Caloocan, exact current barangay match or resolved shared listing, no identity conflict, and not Barangay 176-A through 176-F.",
+    "record_count": 15,
+    "records": [
+        {
+            "record_id": "EC-001",
+            "source_name": "Camarin D. Elem. School",
+            "listed_barangays": [
+                "178"
+            ],
+            "normalized_name": "Camarin D Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7566528,
+            "longitude": 121.0566968,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/relation/11906421",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Camarin D Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.deped.gov.ph/wp-content/uploads/2020/10/PBD_Annex_E_Recipients_Advanced_Copies1.pdf"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match in Caloocan; DepEd material identifies Camarin D ES in Barangay 178."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 178",
+            "spatial_barangay_psgc": "1380100178",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-002",
+            "source_name": "Caloocan North Elem. School",
+            "listed_barangays": [
+                "178"
+            ],
+            "normalized_name": "Caloocan North Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7598833,
+            "longitude": 121.0611572,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/529684257",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Caloocan North Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match; the public map address identifies Barangay 178."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 178",
+            "spatial_barangay_psgc": "1380100178",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-003",
+            "source_name": "Barangay Hall (3rd Floor)",
+            "listed_barangays": [
+                "179"
+            ],
+            "normalized_name": "Barangay Hall (Third Floor)",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7466561,
+            "longitude": 121.0787742,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/316043793",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bulwagang Pambarangay ng Barangay 179",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "Mapped building is explicitly named as the Barangay 179 hall. Floor-level designation comes only from the official source list."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 179",
+            "spatial_barangay_psgc": "1380100179",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-006",
+            "source_name": "Midway Covered Court",
+            "listed_barangays": [
+                "183"
+            ],
+            "normalized_name": "Midway Covered Court",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7486915,
+            "longitude": 121.0820275,
+            "coordinate_source": {
+                "provider": "Waze public place listing",
+                "reference": "https://www.waze.com/live-map/directions/ph/ncr/caloocan/midway-covered-court?to=place.ChIJ9ZPrriW7lzMRYW34DhLGd_c",
+                "mapped_name": "Midway Covered Court",
+                "mapped_address": "Pechayan Street, Purok 7, Sitio 4, Area D, Barangay 183, Caloocan",
+                "retrieved_on": "2026-08-19",
+                "method_note": "Coordinate read from the public place page embedded latitude/longitude data; no coordinate was inferred from an address or centroid."
+            },
+            "validation_notes": [
+                "Exact facility-name public place match with a Barangay 183 address."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 183",
+            "spatial_barangay_psgc": "1380100183",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-007",
+            "source_name": "Mt. Heights High School",
+            "listed_barangays": [
+                "183"
+            ],
+            "normalized_name": "Mountain Heights High School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7627781,
+            "longitude": 121.0814926,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/237918968",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Mountain Heights High School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Official DepEd NCR directory identifies Mountain Heights High School on Sierra Madre Street in Barangay 183."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 183",
+            "spatial_barangay_psgc": "1380100183",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-008",
+            "source_name": "Malaria Court",
+            "listed_barangays": [
+                "185"
+            ],
+            "normalized_name": "Malaria Court",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7696792,
+            "longitude": 121.0793696,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/250879819",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Malaria Basketball Court",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "Mapped court name and Barangay 185 address are consistent with the abbreviated official-list name."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 185",
+            "spatial_barangay_psgc": "1380100185",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-010",
+            "source_name": "A. Mabini Elem. School",
+            "listed_barangays": [
+                "187"
+            ],
+            "normalized_name": "A. Mabini Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7663938,
+            "longitude": 121.0607398,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/568327423",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "A. Mabini Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match; the public map address identifies Barangay 187."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 187",
+            "spatial_barangay_psgc": "1380100187",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-014",
+            "source_name": "Barangay Hall",
+            "listed_barangays": [
+                "28"
+            ],
+            "normalized_name": "Barangay 28 Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.6434069,
+            "longitude": 120.9709047,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/409488613",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bulwagang Pambarangay ng Barangay 28",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "Mapped building is explicitly named as the Barangay 28 hall."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 28",
+            "spatial_barangay_psgc": "1380100028",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-016",
+            "source_name": "Barangay Bulwagan (2nd Floor)",
+            "listed_barangays": [
+                "35"
+            ],
+            "normalized_name": "Barangay 35 Bulwagan (Second Floor)",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.638038,
+            "longitude": 120.9725443,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/581422936",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bulwagang Pambarangay ng Barangay 35",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "Exact barangay-hall identity; spatial barangay agreement is evaluated separately. Floor-level designation comes only from the source list."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 35",
+            "spatial_barangay_psgc": "1380100035",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-017",
+            "source_name": "Bagong Silang Elem. School Evacuation Center",
+            "listed_barangays": [
+                "118",
+                "119"
+            ],
+            "normalized_name": "Bagong Silang Elementary School Evacuation Center",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.6425546,
+            "longitude": 120.985103,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/369030349",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bagong Silang Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "The southern Caloocan school candidate was selected; a different same-name school in the former Barangay 176 area was explicitly rejected for this record."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 119",
+            "spatial_barangay_psgc": "1380100119",
+            "barangay_match_status": "SHARED_LIST_RESOLVED",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-022",
+            "source_name": "Sta. Quiteria Elem. School",
+            "listed_barangays": [
+                "163"
+            ],
+            "normalized_name": "Santa Quiteria Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.6804244,
+            "longitude": 121.0099243,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/677535585",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Santa Quiteria Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match; the public map address and polygon result are compared with source-listed Barangay 163."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 163",
+            "spatial_barangay_psgc": "1380100163",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-025",
+            "source_name": "Talipapa High School",
+            "listed_barangays": [
+                "164"
+            ],
+            "normalized_name": "Talipapa High School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.6900734,
+            "longitude": 121.0166702,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/151816021",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Talipapa High School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact school-name match in Caloocan."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 164",
+            "spatial_barangay_psgc": "1380100164",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-028",
+            "source_name": "Llano Elem. School",
+            "listed_barangays": [
+                "167"
+            ],
+            "normalized_name": "Llano Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7318171,
+            "longitude": 121.0141422,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/985679852",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Llano Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match; spatial agreement is evaluated against the project polygons."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 167",
+            "spatial_barangay_psgc": "1380100167",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-033",
+            "source_name": "Congress Elem. School",
+            "listed_barangays": [
+                "173"
+            ],
+            "normalized_name": "Congress Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.753778,
+            "longitude": 121.0326738,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/873379679",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Congress Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.deped.gov.ph/wp-content/uploads/2020/10/PBD_Annex_E_Recipients_Advanced_Copies1.pdf"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match; DepEd material identifies Congress ES in Barangay 173."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 173",
+            "spatial_barangay_psgc": "1380100173",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        },
+        {
+            "record_id": "EC-042",
+            "source_name": "Cielito Junior High School",
+            "listed_barangays": [
+                "177"
+            ],
+            "normalized_name": "Cielito Zamora Junior High School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.745135320422165,
+            "longitude": 121.05171748993084,
+            "coordinate_source": {
+                "provider": "Waze public place listing",
+                "reference": "https://www.waze.com/live-map/directions/cielito-zamora-junior-high-school-mahogany-caloocan?to=place.w.79364243.793314755.997284",
+                "mapped_name": "Cielito Zamora Junior High School",
+                "mapped_address": "Mahogany Street, Caloocan, Metro Manila",
+                "retrieved_on": "2026-08-19",
+                "method_note": "Coordinate read from the public place page embedded latitude/longitude data; no coordinate was inferred from an address or centroid.",
+                "corroboration_reference": "https://www.comelec.gov.ph/php-tpls-attachments/2022NLE/POP/NCR_THIRD.pdf"
+            },
+            "validation_notes": [
+                "COMELEC material identifies Cielito Zamora Junior High School in Barangay 177; the Waze place supplies the mapped coordinate."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 177",
+            "spatial_barangay_psgc": "1380100177",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": true
+        }
+    ]
+}

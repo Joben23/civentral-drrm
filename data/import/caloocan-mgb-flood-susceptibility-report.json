@@ -1,0 +1,140 @@
+{
+  "source_agency": "Department of Environment and Natural Resources - Mines and Geosciences Bureau (DENR-MGB)",
+  "official_service_url": "https://controlmap.mgb.gov.ph/arcgis/rest/services/GeospatialDataInventory/GDI_Detailed_Flood_Susceptibility/FeatureServer/0",
+  "retrieval_timestamp": "2026-08-19T13:24:53.491Z",
+  "service_layer_name": "Detailed Flood Susceptibility",
+  "service_geometry_type": "esriGeometryPolygon",
+  "service_spatial_reference": {
+    "wkid": 102100,
+    "latestWkid": 3857,
+    "xyTolerance": 0.001,
+    "zTolerance": 0.001,
+    "mTolerance": 0.001,
+    "falseX": -20037700,
+    "falseY": -30241100,
+    "xyUnits": 10000,
+    "falseZ": -100000,
+    "zUnits": 10000,
+    "falseM": -100000,
+    "mUnits": 10000
+  },
+  "supported_query_formats": "JSON, geoJSON, PBF",
+  "source_classification_field": "FloodSusc",
+  "classification_definitions": {
+    "LF": "Low Susceptibility to Flooding",
+    "MF": "Moderate Susceptibility to Flooding",
+    "HF": "High Susceptibility to Flooding",
+    "VHF": "Very High Susceptibility to Flooding"
+  },
+  "service_distinct_classification_values": [
+    null,
+    "HF",
+    "LF",
+    "MF",
+    "No rating",
+    "VHF"
+  ],
+  "area_of_interest": {
+    "source_file": "data/import/caloocan-city-boundary.geojson",
+    "name": "Caloocan City",
+    "geometry_type": "MultiPolygon",
+    "component_count": 2,
+    "source_version": "v03",
+    "source_valid_on": "2025-02-13",
+    "bounding_box": [
+      120.9606435510002,
+      14.635162092000087,
+      121.0998791180001,
+      14.785291728000175
+    ]
+  },
+  "retrieval": {
+    "spatial_filter": "Exact Caloocan MultiPolygon intersection via ArcGIS returnIdsOnly query",
+    "returned_source_feature_count": 15,
+    "source_object_ids": [
+      15,
+      19,
+      22,
+      23,
+      115,
+      116,
+      117,
+      118,
+      27621,
+      27622,
+      27623,
+      27624,
+      27630,
+      27634,
+      27640
+    ],
+    "source_counts_by_class": {
+      "LF": 5,
+      "MF": 3,
+      "HF": 4,
+      "VHF": 3
+    },
+    "geojson_query_verified": true,
+    "geometry_retrieval_format": "ArcGIS PBF decoded locally to GeoJSON",
+    "max_record_count": 2000
+  },
+  "processing": {
+    "local_clip_boundary": "Validated Caloocan City MultiPolygon",
+    "clipping_engine": "polygon-clipping 0.15.7 (temporary local tooling)",
+    "clipping_required": true,
+    "source_features_clipped": 15,
+    "non_intersecting_source_polygon_components_pruned_before_overlay": 6098,
+    "maximum_numeric_residual_outside_area_square_degrees": 1.0753212661300993e-18,
+    "coordinate_reference_system": "EPSG:4326",
+    "simplification_applied": false,
+    "reprojection_after_source_retrieval": false
+  },
+  "final_clipped_feature_count": 15,
+  "counts_per_susceptibility_class": {
+    "LF": 5,
+    "MF": 3,
+    "HF": 4,
+    "VHF": 3
+  },
+  "final_geometry_type_counts": {
+    "Polygon": 4,
+    "MultiPolygon": 11
+  },
+  "final_bounding_box": [
+    120.9606435510002,
+    14.635162092000087,
+    121.0998791180001,
+    14.785291728000175
+  ],
+  "geometry_validation": {
+    "passed": true,
+    "checks": [
+      "Polygon/MultiPolygon structure",
+      "finite longitude/latitude coordinates",
+      "non-empty closed rings",
+      "JSTS OGC geometry validity",
+      "no material residual geometry outside the Caloocan MultiPolygon (1e-14 square-degree tolerance)",
+      "final extent contained by the Caloocan extent"
+    ],
+    "invalid_geometry_count": 0,
+    "empty_geometry_count": 0
+  },
+  "output": {
+    "path": "data/import/caloocan-mgb-flood-susceptibility.geojson",
+    "size_bytes": 1808893
+  },
+  "proposed_civentral_compatibility_mapping_not_applied": {
+    "LF": "LOW",
+    "MF": "MODERATE",
+    "HF": "HIGH",
+    "VHF": "CRITICAL"
+  },
+  "terminology_note": "VHF remains Very High Susceptibility to Flooding in source data. VHF to CRITICAL is only a proposed internal CIVENTRAL compatibility/display mapping and is not DENR-MGB terminology.",
+  "service_limitations": [
+    "This ArcGIS service honors GeoJSON when f=geojson is supplied in the query string; supplying it only in the POST form returned native ArcGIS JSON.",
+    "A small polygon response verified GeoJSON output, but several large geometry responses returned HTTP 500 in GeoJSON and native JSON.",
+    "The exact Caloocan spatial filter was used to retrieve OBJECTIDs first; each selected feature was then requested individually using the service-advertised PBF format and decoded locally to GeoJSON without quantization, precision reduction, or simplification parameters.",
+    "Non-intersecting source MultiPolygon components were removed by bounding-box rejection before exact overlay to avoid processing distant national-scale geometry; no coordinates in potentially intersecting components were changed.",
+    "Source polygons extend beyond Caloocan and therefore required exact local clipping."
+  ]
+}

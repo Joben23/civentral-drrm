@@ -1,0 +1,763 @@
+{
+    "type": "CIVENTRAL_DRRM_EVACUATION_CENTER_VALIDATION_REPORT",
+    "generated_at": "2026-08-19T14:42:56+00:00",
+    "source_agency": "City Government of Caloocan / Caloocan PIO",
+    "counts": {
+        "total_official_listed_facilities": 42,
+        "coordinates_discovered": 24,
+        "coordinate_confidence": {
+            "VERIFIED": 0,
+            "HIGH_CONFIDENCE": 21,
+            "AMBIGUOUS": 3,
+            "NOT_FOUND": 18
+        },
+        "inside_caloocan": 24,
+        "outside_caloocan": 0,
+        "inside_caloocan_not_evaluated": 18,
+        "barangay_match_status": {
+            "MATCH": 16,
+            "SHARED_LIST_RESOLVED": 1,
+            "MISMATCH": 2,
+            "UNVALIDATED_176_SPLIT": 6,
+            "NO_MATCH": 17
+        },
+        "ready_for_initial_database_staging": 15
+    },
+    "mismatches": [
+        {
+            "record_id": "EC-015",
+            "source_name": "Barangay Hall",
+            "listed_barangays": [
+                "29"
+            ],
+            "normalized_name": "Barangay 29 Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "AMBIGUOUS",
+            "latitude": 14.6390523,
+            "longitude": 120.9765865,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/685079010",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bulwagang Pambarangay ng Barangay 32 Zone 3",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "The public map address text mentions Barangay 29, but the mapped facility name identifies Barangay 32; it is retained only as an ambiguous candidate.",
+                "Spatial validation resolved to Barangay 32, not the source-listed barangay 29."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 32",
+            "spatial_barangay_psgc": "1380100032",
+            "barangay_match_status": "MISMATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-018",
+            "source_name": "Gregoria De Jesus Elem. School",
+            "listed_barangays": [
+                "120"
+            ],
+            "normalized_name": "Gregoria De Jesus Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.6506256,
+            "longitude": 120.9805885,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/relation/11038748",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Gregoria de Jesus Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact school identity; public sources place the school outside source-listed Barangay 120, so spatial agreement must be reported rather than forced.",
+                "Spatial validation resolved to Barangay 62, not the source-listed barangay 120."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 62",
+            "spatial_barangay_psgc": "1380100062",
+            "barangay_match_status": "MISMATCH",
+            "ready_for_staging": false
+        }
+    ],
+    "ambiguous_coordinate_records": [
+        {
+            "record_id": "EC-015",
+            "source_name": "Barangay Hall",
+            "listed_barangays": [
+                "29"
+            ],
+            "normalized_name": "Barangay 29 Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "AMBIGUOUS",
+            "latitude": 14.6390523,
+            "longitude": 120.9765865,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/685079010",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bulwagang Pambarangay ng Barangay 32 Zone 3",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "The public map address text mentions Barangay 29, but the mapped facility name identifies Barangay 32; it is retained only as an ambiguous candidate.",
+                "Spatial validation resolved to Barangay 32, not the source-listed barangay 29."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 32",
+            "spatial_barangay_psgc": "1380100032",
+            "barangay_match_status": "MISMATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-020",
+            "source_name": "Libis Baesa Elem. School",
+            "listed_barangays": [
+                "160"
+            ],
+            "normalized_name": "Libis Baesa Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "AMBIGUOUS",
+            "latitude": 14.6821386,
+            "longitude": 121.0000705,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/1126831362",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Libis Baesa Elementary School – Baesa Annex",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Only an explicitly named Baesa Annex candidate was found; the official list does not say Annex, so the identity is not treated as resolved."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 160",
+            "spatial_barangay_psgc": "1380100160",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-024",
+            "source_name": "Brgy. Evacuation Center",
+            "listed_barangays": [
+                "164"
+            ],
+            "normalized_name": "Barangay 164 Evacuation Center",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "AMBIGUOUS",
+            "latitude": 14.689987,
+            "longitude": 121.0171928,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/569063975",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bulwagang Pambarangay ng Barangay 164",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim."
+            },
+            "validation_notes": [
+                "The mapped Barangay 164 hall is only a candidate; the source calls the facility an evacuation center and does not establish that it is the hall."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": "Barangay 164",
+            "spatial_barangay_psgc": "1380100164",
+            "barangay_match_status": "MATCH",
+            "ready_for_staging": false
+        }
+    ],
+    "not_found_records": [
+        {
+            "record_id": "EC-004",
+            "source_name": "Barangay Hall Evacuation Center",
+            "listed_barangays": [
+                "180"
+            ],
+            "normalized_name": "Barangay Hall Evacuation Center",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-005",
+            "source_name": "Pangarap Central Court",
+            "listed_barangays": [
+                "181",
+                "182"
+            ],
+            "normalized_name": "Pangarap Central Court",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-009",
+            "source_name": "Te Court",
+            "listed_barangays": [
+                "186"
+            ],
+            "normalized_name": "Te Court",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [
+                "No sufficiently specific public map feature could be tied to the exact source wording. Tala Estate court references were not treated as an automatic identity match."
+            ],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-011",
+            "source_name": "Phase 12 Covered Court",
+            "listed_barangays": [
+                "188"
+            ],
+            "normalized_name": "Phase 12 Covered Court",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-012",
+            "source_name": "Barangay 4 Multi Purpose Hall",
+            "listed_barangays": [
+                "2",
+                "4"
+            ],
+            "normalized_name": "Barangay 4 Multi-Purpose Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-013",
+            "source_name": "Barangay Hall",
+            "listed_barangays": [
+                "20"
+            ],
+            "normalized_name": "Barangay 20 Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-019",
+            "source_name": "Barangay Covered Court",
+            "listed_barangays": [
+                "159"
+            ],
+            "normalized_name": "Barangay 159 Covered Court",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-021",
+            "source_name": "Multi-Purpose Hall",
+            "listed_barangays": [
+                "160"
+            ],
+            "normalized_name": "Barangay 160 Multi-Purpose Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [
+                "A generic hall result in another barangay was rejected."
+            ],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-023",
+            "source_name": "Saint Luke's Child Daycare, Lucas Cuadra St.",
+            "listed_barangays": [
+                "163"
+            ],
+            "normalized_name": "Saint Luke's Child Daycare, Lucas Cuadra Street",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [
+                "Lucas Cuadra Street was corroborated as a real Caloocan street reference, but no matching daycare coordinate was found."
+            ],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-026",
+            "source_name": "Sukaban Evacuation Center",
+            "listed_barangays": [
+                "165"
+            ],
+            "normalized_name": "Sukaban Evacuation Center",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-027",
+            "source_name": "Barangay Function Hall",
+            "listed_barangays": [
+                "166"
+            ],
+            "normalized_name": "Barangay 166 Function Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-029",
+            "source_name": "Maranao",
+            "listed_barangays": [
+                "168"
+            ],
+            "normalized_name": "Maranao",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-030",
+            "source_name": "Barangay Hall 2nd Floor (Daycare Center)",
+            "listed_barangays": [
+                "169"
+            ],
+            "normalized_name": "Barangay 169 Hall Second Floor (Daycare Center)",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-031",
+            "source_name": "Barangay Hall & Daycare Center",
+            "listed_barangays": [
+                "170"
+            ],
+            "normalized_name": "Barangay 170 Hall and Daycare Center",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-032",
+            "source_name": "Barangay Satellite, Shelterville (3rd Floor)",
+            "listed_barangays": [
+                "171"
+            ],
+            "normalized_name": "Barangay Satellite, Shelterville (Third Floor)",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-034",
+            "source_name": "MRF Area",
+            "listed_barangays": [
+                "175"
+            ],
+            "normalized_name": "MRF Area",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-035",
+            "source_name": "San Lorenzo Court/Phase 4",
+            "listed_barangays": [
+                "176-A"
+            ],
+            "normalized_name": "San Lorenzo Court / Phase 4",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [
+                "No exact facility coordinate was found. Validated Barangay 176-A polygon geometry is also unavailable.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-041",
+            "source_name": "Barangay Function Hall",
+            "listed_barangays": [
+                "177"
+            ],
+            "normalized_name": "Barangay 177 Function Hall",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "NO_MATCH",
+            "ready_for_staging": false
+        }
+    ],
+    "pending_176_split_records": [
+        {
+            "record_id": "EC-035",
+            "source_name": "San Lorenzo Court/Phase 4",
+            "listed_barangays": [
+                "176-A"
+            ],
+            "normalized_name": "San Lorenzo Court / Phase 4",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "NOT_FOUND",
+            "latitude": null,
+            "longitude": null,
+            "coordinate_source": null,
+            "validation_notes": [
+                "No exact facility coordinate was found. Validated Barangay 176-A polygon geometry is also unavailable.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": null,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-036",
+            "source_name": "Bagong Silang High School",
+            "listed_barangays": [
+                "176-B"
+            ],
+            "normalized_name": "Bagong Silang High School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7709108,
+            "longitude": 121.0487872,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/relation/12949412",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Bagong Silang High School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact school-name match, but the project has no validated Barangay 176-B polygon.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-037",
+            "source_name": "Pag-Asa Elem. School/Phase 7",
+            "listed_barangays": [
+                "176-C"
+            ],
+            "normalized_name": "Pag-Asa Elementary School / Phase 7",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7740854,
+            "longitude": 121.0585607,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/771056968",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Pag-asa Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match in the split area, but the project has no validated Barangay 176-C polygon.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-038",
+            "source_name": "Rene Cayetano Elem. School",
+            "listed_barangays": [
+                "176-D"
+            ],
+            "normalized_name": "Rene Cayetano Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7778122,
+            "longitude": 121.0518109,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/571943238",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Rene Cayetano Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact normalized school-name match, but the project has no validated Barangay 176-D polygon.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-039",
+            "source_name": "Kalayaan National High School",
+            "listed_barangays": [
+                "176-E"
+            ],
+            "normalized_name": "Kalayaan National High School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7805973,
+            "longitude": 121.0319181,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/563503014",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Kalayaan National High School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact school-name match. The public map address identifies 176-F while the official evacuation list says 176-E; this cannot be spatially resolved until validated split polygons exist.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        },
+        {
+            "record_id": "EC-040",
+            "source_name": "Kalayaan Elementary School",
+            "listed_barangays": [
+                "176-F"
+            ],
+            "normalized_name": "Kalayaan Elementary School",
+            "source_agency": "City Government of Caloocan / Caloocan PIO",
+            "designation": "Evacuation Center",
+            "coordinate_status": "HIGH_CONFIDENCE",
+            "latitude": 14.7808181,
+            "longitude": 121.0313008,
+            "coordinate_source": {
+                "provider": "OpenStreetMap via Nominatim",
+                "reference": "https://www.openstreetmap.org/way/792098002",
+                "geocoder": "https://nominatim.openstreetmap.org/",
+                "mapped_name": "Kalayaan Elementary School",
+                "retrieved_on": "2026-08-19",
+                "license_note": "OpenStreetMap data is available under ODbL; the coordinate is the mapped feature representative point returned by Nominatim.",
+                "corroboration_reference": "https://www.depedncr.com.ph/directory-of-public-schools/"
+            },
+            "validation_notes": [
+                "Exact school-name match, but the project has no validated Barangay 176-F polygon.",
+                "No old Barangay 176 polygon or inferred 176-A–F geometry was used."
+            ],
+            "inside_caloocan": true,
+            "spatial_barangay_name": null,
+            "spatial_barangay_psgc": null,
+            "barangay_match_status": "UNVALIDATED_176_SPLIT",
+            "ready_for_staging": false
+        }
+    ],
+    "ready_record_ids": [
+        "EC-001",
+        "EC-002",
+        "EC-003",
+        "EC-006",
+        "EC-007",
+        "EC-008",
+        "EC-010",
+        "EC-014",
+        "EC-016",
+        "EC-017",
+        "EC-022",
+        "EC-025",
+        "EC-028",
+        "EC-033",
+        "EC-042"
+    ],
+    "integrity": {
+        "city_boundary_sha256": "9647F3CAC1758A07CFDC6A5BB8767FE9E4F1EB70B4E7D2C14A99ABF2DE1F9D50",
+        "barangay_boundary_sha256": "09CA37029157EA8347EB571A760CF712637F6BF1938DCCDF49964553DDD3093D",
+        "coordinates_fabricated": false,
+        "source_geometry_modified": false,
+        "database_write_performed": false
+    },
+    "limitations": [
+        "Public map coordinates are suitable for a carefully labeled development subset but are not a substitute for an LGU survey or facility-owner confirmation.",
+        "The original Caloocan PIO publication URL/date was not supplied and should be attached during manual provenance review.",
+        "Barangays 176-A through 176-F remain excluded from readiness until validated split polygons are obtained.",
+        "Generic halls, courts, and other facilities without a facility-specific public map match remain NOT_FOUND or AMBIGUOUS."
+    ]
+}

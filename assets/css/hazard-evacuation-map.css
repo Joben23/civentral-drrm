@@ -146,7 +146,72 @@
   background: #105b74;
 }
 
+.civ-hazard-map-module .civ-barangay-suggestions {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  left: 0;
+  z-index: 1000;
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid #dbe3ed;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.3rem;
+  box-shadow: 0 12px 28px -12px rgba(15, 23, 42, 0.32);
+}
+
+.civ-hazard-map-module .civ-barangay-suggestions[hidden] {
+  display: none;
+}
+
+.civ-hazard-map-module .civ-barangay-suggestion {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  color: #334155;
+  text-align: left;
+}
+
+.civ-hazard-map-module .civ-barangay-suggestion:hover,
+.civ-hazard-map-module .civ-barangay-suggestion.is-active {
+  background: var(--civ-map-brand-light);
+  color: var(--civ-map-brand-dark);
+}
+
+.civ-hazard-map-module .civ-barangay-suggestion-name {
+  overflow: hidden;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.civ-hazard-map-module .civ-barangay-suggestion-code {
+  color: #64748b;
+  font-size: 0.56rem;
+  font-weight: 700;
+}
+
+.civ-hazard-map-module .civ-clear-barangay-selection {
+  flex: 0 0 auto;
+  color: var(--civ-map-brand-dark);
+  font-size: 0.58rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.civ-hazard-map-module .civ-clear-barangay-selection:hover {
+  text-decoration: underline;
+}
+
 .civ-hazard-map-module .civ-map-search-button:focus-visible,
+.civ-hazard-map-module .civ-barangay-suggestion:focus-visible,
+.civ-hazard-map-module .civ-clear-barangay-selection:focus-visible,
 .civ-hazard-map-module .civ-route-button:focus-visible,
 .civ-hazard-map-module .civ-layer-checkbox:focus-visible {
   outline: 3px solid rgba(134, 182, 246, 0.45);
@@ -235,6 +300,15 @@
   color: #475569;
   font-size: 0.65rem;
   font-weight: 800;
+}
+
+.civ-hazard-map-module .civ-risk-legend-context {
+  color: #475569;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-transform: uppercase;
 }
 
 .civ-hazard-map-module .civ-risk-dot {
@@ -501,6 +575,38 @@
   color: #334155;
 }
 
+.civ-hazard-map-module .civ-evacuation-marker-wrap {
+  border: 0;
+  background: transparent;
+}
+
+.civ-hazard-map-module .civ-evacuation-marker {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 12%;
+  background: #176b87;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 28%);
+  color: #fff;
+  font-size: 13px;
+  transform: rotate(-45deg);
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.civ-hazard-map-module .civ-evacuation-marker i {
+  transform: rotate(45deg);
+}
+
+.civ-hazard-map-module .civ-evacuation-marker-wrap:hover .civ-evacuation-marker,
+.civ-hazard-map-module .civ-evacuation-marker-wrap:focus .civ-evacuation-marker,
+.civ-hazard-map-module .civ-evacuation-marker-wrap.is-selected .civ-evacuation-marker {
+  background: #0e7490;
+  box-shadow: 0 0 0 4px rgb(134 182 246 / 45%), 0 6px 16px rgb(15 23 42 / 32%);
+  transform: rotate(-45deg) scale(1.1);
+}
+
 .dark .civ-hazard-map-module .civ-map-card,
 .dark .civ-hazard-map-module .civ-map-panel {
   border-color: rgba(51, 65, 85, 0.8);
@@ -553,11 +659,35 @@
   color: #94a3b8;
 }
 
+.dark .civ-hazard-map-module .civ-barangay-suggestions {
+  border-color: #334155;
+  background: #0f172a;
+  box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.7);
+}
+
+.dark .civ-hazard-map-module .civ-barangay-suggestion {
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-barangay-suggestion:hover,
+.dark .civ-hazard-map-module .civ-barangay-suggestion.is-active {
+  background: #1e293b;
+  color: var(--civ-map-brand-medium);
+}
+
+.dark .civ-hazard-map-module .civ-barangay-suggestion-code {
+  color: #94a3b8;
+}
+
 .dark .civ-hazard-map-module .civ-layer-option,
 .dark .civ-hazard-map-module .civ-risk-item {
   border-color: #334155;
   background: rgba(15, 23, 42, 0.55);
   color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-risk-legend-context {
+  color: #94a3b8;
 }
 
 .dark .civ-hazard-map-module .civ-layer-option:hover {

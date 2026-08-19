@@ -44,6 +44,20 @@ include '../../includes/sidebar.php';
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     }),
+    draftFloodPreview: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/flood-zones-draft.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    draftEvacuationCenterPreview: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/evacuation-centers-draft.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
     cityBoundary: Object.freeze({
       endpoint: <?php echo json_encode(
           $basePath . 'data/import/caloocan-city-boundary.geojson',
