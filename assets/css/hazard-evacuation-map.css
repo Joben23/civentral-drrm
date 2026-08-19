@@ -1,0 +1,712 @@
+.civ-hazard-map-module {
+  --civ-map-brand-light: #eef5ff;
+  --civ-map-brand-border: #b4d4ff;
+  --civ-map-brand-medium: #86b6f6;
+  --civ-map-brand-dark: #176b87;
+  min-width: 0;
+}
+
+.civ-hazard-map-module .civ-hazard-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 310px) minmax(0, 1fr);
+  grid-template-areas:
+    "controls map"
+    "context context";
+  align-items: start;
+  gap: 1rem;
+}
+
+.civ-hazard-map-module .civ-map-primary-controls,
+.civ-hazard-map-module .civ-map-context-rail {
+  min-width: 0;
+}
+
+.civ-hazard-map-module .civ-map-primary-controls {
+  grid-area: controls;
+}
+
+.civ-hazard-map-module .civ-map-context-rail {
+  grid-area: context;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.civ-hazard-map-module .civ-map-card,
+.civ-hazard-map-module .civ-map-panel {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px -18px rgba(15, 23, 42, 0.28);
+}
+
+.civ-hazard-map-module .civ-map-card {
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.civ-hazard-map-module .civ-map-panel {
+  grid-area: map;
+  overflow: hidden;
+  border-radius: 1.25rem;
+}
+
+.civ-hazard-map-module .civ-preparedness-card {
+  overflow: hidden;
+}
+
+.civ-hazard-map-module .civ-map-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.civ-hazard-map-module .civ-map-card-heading h2 {
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.civ-hazard-map-module .civ-map-card-icon {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(180, 212, 255, 0.75);
+  border-radius: 0.55rem;
+  background: var(--civ-map-brand-light);
+  color: var(--civ-map-brand-dark);
+  font-size: 0.68rem;
+}
+
+.civ-hazard-map-module .civ-map-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #fcd34d;
+  border-radius: 9999px;
+  background: #fffbeb;
+  padding: 0.5rem 0.75rem;
+  color: #92400e;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-map-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+
+.civ-hazard-map-module .civ-map-input {
+  border: 1px solid #dbe3ed;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #334155;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.civ-hazard-map-module .civ-map-input:focus {
+  border-color: var(--civ-map-brand-medium);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(134, 182, 246, 0.18);
+}
+
+.civ-hazard-map-module .civ-map-input:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+  opacity: 0.85;
+}
+
+.civ-hazard-map-module .civ-map-search-button {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background: var(--civ-map-brand-dark);
+  color: #fff;
+  font-size: 0.65rem;
+  transition: background-color 160ms ease;
+}
+
+.civ-hazard-map-module .civ-map-search-button:hover {
+  background: #105b74;
+}
+
+.civ-hazard-map-module .civ-map-search-button:focus-visible,
+.civ-hazard-map-module .civ-route-button:focus-visible,
+.civ-hazard-map-module .civ-layer-checkbox:focus-visible {
+  outline: 3px solid rgba(134, 182, 246, 0.45);
+  outline-offset: 2px;
+}
+
+.civ-hazard-map-module .civ-map-label {
+  display: block;
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-map-helper {
+  color: #64748b;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.civ-hazard-map-module .civ-map-empty-state {
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.75rem;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.civ-hazard-map-module .civ-layer-option {
+  display: flex;
+  min-height: 2.6rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 700;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.civ-hazard-map-module .civ-layer-option:hover {
+  border-color: var(--civ-map-brand-border);
+  background: rgba(238, 245, 255, 0.6);
+}
+
+.civ-hazard-map-module .civ-layer-symbol {
+  display: inline-flex;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 0.62rem;
+}
+
+.civ-hazard-map-module .civ-layer-symbol-flood { background: #eff6ff; color: #2563eb; }
+.civ-hazard-map-module .civ-layer-symbol-landslide { background: #fff7ed; color: #c2410c; }
+.civ-hazard-map-module .civ-layer-symbol-earthquake { background: #f5f3ff; color: #7c3aed; }
+.civ-hazard-map-module .civ-layer-symbol-center { background: #ecfdf5; color: #047857; }
+
+.civ-hazard-map-module .civ-layer-checkbox {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  cursor: pointer;
+  accent-color: var(--civ-map-brand-dark);
+}
+
+.civ-hazard-map-module .civ-risk-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.5rem 0.6rem;
+  color: #475569;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.civ-hazard-map-module .civ-risk-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
+}
+
+.civ-hazard-map-module .civ-risk-low { background: #16a34a; }
+.civ-hazard-map-module .civ-risk-moderate { background: #eab308; }
+.civ-hazard-map-module .civ-risk-high { background: #f97316; }
+.civ-hazard-map-module .civ-risk-critical { background: #dc2626; }
+
+.civ-hazard-map-module .civ-route-button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--civ-map-brand-dark);
+  padding: 0.6rem 0.85rem;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.civ-hazard-map-module .civ-route-button:disabled {
+  cursor: not-allowed;
+  background: #cbd5e1;
+  color: #f8fafc;
+}
+
+.civ-hazard-map-module .civ-model-status {
+  flex: 0 0 auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #f8fafc;
+  padding: 0.25rem 0.5rem;
+  color: #64748b;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-tool-connection-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #f8fafc;
+  padding: 0.28rem 0.48rem;
+  color: #64748b;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-preparedness-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f1f5f9;
+  padding: 0.25rem;
+}
+
+.civ-hazard-map-module .civ-preparedness-tab {
+  min-width: 0;
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.35rem;
+  color: #64748b;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  transition: background-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.civ-hazard-map-module .civ-preparedness-tab:hover {
+  color: var(--civ-map-brand-dark);
+}
+
+.civ-hazard-map-module .civ-preparedness-tab.is-active {
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.12);
+  color: var(--civ-map-brand-dark);
+}
+
+.civ-hazard-map-module .civ-preparedness-tab:focus-visible {
+  outline: 3px solid rgba(134, 182, 246, 0.45);
+  outline-offset: 2px;
+}
+
+.civ-hazard-map-module .civ-preparedness-panel {
+  padding-top: 0.9rem;
+}
+
+.civ-hazard-map-module .civ-preparedness-panel[hidden] {
+  display: none;
+}
+
+.civ-hazard-map-module .civ-map-panel-header,
+.civ-hazard-map-module .civ-map-data-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+}
+
+.civ-hazard-map-module .civ-map-panel-header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.civ-hazard-map-module .civ-basemap-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--civ-map-brand-border);
+  border-radius: 9999px;
+  background: var(--civ-map-brand-light);
+  padding: 0.35rem 0.6rem;
+  color: var(--civ-map-brand-dark);
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-map-canvas-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.civ-hazard-map-module #civentralHazardMap {
+  width: 100%;
+  height: clamp(32rem, calc(100vh - 14.5rem), 43rem);
+  min-height: 32rem;
+  background: #f8fafc;
+  isolation: isolate;
+}
+
+.civ-hazard-map-module .civ-map-focus-control {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.16);
+}
+
+.civ-hazard-map-module .civ-map-focus-button {
+  min-height: 2rem;
+  border: 0;
+  border-right: 1px solid #e2e8f0;
+  background: transparent;
+  padding: 0.35rem 0.55rem;
+  color: #475569;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.civ-hazard-map-module .civ-map-focus-button:last-child {
+  border-right: 0;
+}
+
+.civ-hazard-map-module .civ-map-focus-button:hover,
+.civ-hazard-map-module .civ-map-focus-button[aria-pressed="true"] {
+  background: var(--civ-map-brand-light);
+  color: var(--civ-map-brand-dark);
+}
+
+.civ-hazard-map-module .civ-map-focus-button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid rgba(134, 182, 246, 0.55);
+  outline-offset: -3px;
+}
+
+.civ-hazard-map-module .civ-map-unavailable {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: #f8fafc;
+  padding: 2rem;
+  color: #475569;
+  text-align: left;
+}
+
+.civ-hazard-map-module .civ-map-unavailable:not(.hidden) {
+  display: flex;
+}
+
+.civ-hazard-map-module .civ-map-unavailable i {
+  color: #d97706;
+  font-size: 1.25rem;
+}
+
+.civ-hazard-map-module .civ-map-unavailable strong,
+.civ-hazard-map-module .civ-map-unavailable span {
+  display: block;
+}
+
+.civ-hazard-map-module .civ-map-unavailable strong {
+  color: #1e293b;
+  font-size: 0.75rem;
+}
+
+.civ-hazard-map-module .civ-map-unavailable span {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+}
+
+.civ-hazard-map-module .civ-map-data-notice {
+  justify-content: flex-start;
+  border-top: 1px solid #e2e8f0;
+  background: #fffbeb;
+  padding: 0.65rem 0.85rem;
+  color: #92400e;
+  font-size: 0.6rem;
+  line-height: 1.4;
+}
+
+.civ-hazard-map-module .civ-map-data-notice.hidden {
+  display: none;
+}
+
+.civ-hazard-map-module .civ-map-data-notice i {
+  flex: 0 0 auto;
+  color: #d97706;
+}
+
+.civ-hazard-map-module .leaflet-control-zoom,
+.civ-hazard-map-module .leaflet-control-attribution {
+  border-color: rgba(148, 163, 184, 0.5);
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.14);
+}
+
+.civ-hazard-map-module .leaflet-control-zoom a {
+  background: rgba(255, 255, 255, 0.96);
+  color: #334155;
+}
+
+.civ-hazard-map-module .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.9);
+  color: #475569;
+  font-size: 0.62rem;
+}
+
+.civ-hazard-map-module .leaflet-popup-content-wrapper,
+.civ-hazard-map-module .leaflet-popup-tip {
+  background: #fff;
+  color: #334155;
+}
+
+.dark .civ-hazard-map-module .civ-map-card,
+.dark .civ-hazard-map-module .civ-map-panel {
+  border-color: rgba(51, 65, 85, 0.8);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.dark .civ-hazard-map-module .civ-map-card-heading h2,
+.dark .civ-hazard-map-module .civ-map-unavailable strong {
+  color: #f8fafc;
+}
+
+.dark .civ-hazard-map-module .civ-tool-connection-status {
+  border-color: #334155;
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-preparedness-tabs {
+  border-color: #334155;
+  background: #020617;
+}
+
+.dark .civ-hazard-map-module .civ-preparedness-tab {
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-preparedness-tab:hover,
+.dark .civ-hazard-map-module .civ-preparedness-tab.is-active {
+  background: #1e293b;
+  color: var(--civ-map-brand-medium);
+}
+
+.dark .civ-hazard-map-module .civ-map-card-icon {
+  border-color: #334155;
+  background: #1e293b;
+  color: var(--civ-map-brand-medium);
+}
+
+.dark .civ-hazard-map-module .civ-map-status-badge {
+  border-color: rgba(180, 83, 9, 0.6);
+  background: rgba(120, 53, 15, 0.32);
+  color: #fcd34d;
+}
+
+.dark .civ-hazard-map-module .civ-map-input,
+.dark .civ-hazard-map-module .civ-map-empty-state,
+.dark .civ-hazard-map-module .civ-model-status {
+  border-color: #334155;
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-layer-option,
+.dark .civ-hazard-map-module .civ-risk-item {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.55);
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-layer-option:hover {
+  border-color: rgba(134, 182, 246, 0.5);
+  background: #1e293b;
+}
+
+.dark .civ-hazard-map-module .civ-map-label,
+.dark .civ-hazard-map-module .civ-map-helper {
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-route-button:disabled {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-map-panel-header,
+.dark .civ-hazard-map-module .civ-map-data-notice {
+  border-color: #334155;
+}
+
+.dark .civ-hazard-map-module .civ-map-data-notice {
+  background: rgba(120, 53, 15, 0.25);
+  color: #fcd34d;
+}
+
+.dark .civ-hazard-map-module .civ-basemap-label {
+  border-color: #334155;
+  background: #1e293b;
+  color: var(--civ-map-brand-medium);
+}
+
+.dark .civ-hazard-map-module .leaflet-control-zoom a,
+.dark .civ-hazard-map-module .leaflet-control-attribution,
+.dark .civ-hazard-map-module .civ-map-focus-control {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.94);
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-map-focus-button {
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-map-focus-button:hover,
+.dark .civ-hazard-map-module .civ-map-focus-button[aria-pressed="true"] {
+  background: #1e293b;
+  color: var(--civ-map-brand-medium);
+}
+
+.dark .civ-hazard-map-module .leaflet-control-attribution a {
+  color: #93c5fd;
+}
+
+.dark .civ-hazard-map-module .leaflet-popup-content-wrapper,
+.dark .civ-hazard-map-module .leaflet-popup-tip {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.dark .civ-hazard-map-module .civ-map-unavailable {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module #civentralHazardMap {
+  background: #0b1220;
+}
+
+@media (min-width: 1320px) {
+  .civ-hazard-map-module .civ-hazard-layout {
+    grid-template-columns: minmax(250px, 285px) minmax(390px, 1fr) minmax(255px, 310px);
+    grid-template-areas: "controls map context";
+  }
+
+  .civ-hazard-map-module .civ-map-context-rail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1099px) {
+  .civ-hazard-map-module .civ-hazard-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "map"
+      "controls"
+      "context";
+  }
+
+  .civ-hazard-map-module #civentralHazardMap {
+    height: 34rem;
+    min-height: 28rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .civ-hazard-map-module .civ-map-context-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .civ-hazard-map-module #civentralHazardMap {
+    height: 27rem;
+    min-height: 24rem;
+  }
+
+  .civ-hazard-map-module .civ-map-panel-header,
+  .civ-hazard-map-module .civ-map-data-notice {
+    padding: 0.85rem;
+  }
+
+  .civ-hazard-map-module .civ-map-focus-control {
+    flex-direction: column;
+  }
+
+  .civ-hazard-map-module .civ-map-focus-button {
+    min-height: 1.85rem;
+    border-right: 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .civ-hazard-map-module .civ-map-focus-button:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .civ-hazard-map-module .civ-map-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .civ-hazard-map-module #civentralHazardMap {
+    height: 23rem;
+    min-height: 21rem;
+  }
+
+  .civ-hazard-map-module .civ-map-status-badge {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .civ-hazard-map-module *,
+  .civ-hazard-map-module *::before,
+  .civ-hazard-map-module *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

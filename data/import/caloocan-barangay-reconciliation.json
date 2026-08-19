@@ -1,0 +1,1236 @@
+{
+    "report_type": "Caloocan barangay administrative reconciliation",
+    "source_dataset": {
+        "historical_barangay_file": "data/import/caloocan-barangays.geojson",
+        "historical_barangay_sha256": "1b586b1678c52815043899409daa3735ab2c2f2058f8478a341234efad7f4e6d",
+        "city_boundary_file": "data/import/caloocan-city-boundary.geojson",
+        "city_boundary_sha256": "9647f3cac1758a07cfdc6a5bb8767fe9e4f1eb70b4e7d2c14a99abf2de1f9d50",
+        "version": "v03",
+        "valid_on": "2025-02-13",
+        "valid_to": null,
+        "legacy_code_format_note": "Source ADM4 codes use the historical PH-prefixed hierarchy (for example PH1307501176). They are preserved and are not silently replaced by current PSA 10-digit PSGC codes.",
+        "administrative_currency_warning": "The source valid_on date does not prove current administrative alignment: this layer still contains unsplit Barangay 176 with valid_to set to null."
+    },
+    "counts": {
+        "historical_features": 188,
+        "unaffected_current_barangays_with_source_geometry": 187,
+        "retired_historical_features": 1,
+        "current_replacement_barangays_requiring_geometry": 6,
+        "current_expected_barangays": 193
+    },
+    "retired_barangay": {
+        "name": "Barangay 176",
+        "source_adm4_pcode": "PH1307501176",
+        "source_version": "v03",
+        "source_valid_on": "2025-02-13",
+        "source_valid_to": null,
+        "geometry_type": "Polygon",
+        "area_sqkm": 4.53850269,
+        "status": "retired_or_superseded_for_current_structure",
+        "import_as_current_barangay": false,
+        "source_metadata_warning": "The source valid_to value is null even though this feature is superseded in the current structure."
+    },
+    "unaffected_barangays": [
+        {
+            "name": "Barangay 1",
+            "source_adm4_pcode": "PH1307501001",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 2",
+            "source_adm4_pcode": "PH1307501002",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 3",
+            "source_adm4_pcode": "PH1307501003",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 4",
+            "source_adm4_pcode": "PH1307501004",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 5",
+            "source_adm4_pcode": "PH1307501005",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 6",
+            "source_adm4_pcode": "PH1307501006",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 7",
+            "source_adm4_pcode": "PH1307501007",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 8",
+            "source_adm4_pcode": "PH1307501008",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 9",
+            "source_adm4_pcode": "PH1307501009",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 10",
+            "source_adm4_pcode": "PH1307501010",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 11",
+            "source_adm4_pcode": "PH1307501011",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 12",
+            "source_adm4_pcode": "PH1307501012",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 13",
+            "source_adm4_pcode": "PH1307501013",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 14",
+            "source_adm4_pcode": "PH1307501014",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 15",
+            "source_adm4_pcode": "PH1307501015",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 16",
+            "source_adm4_pcode": "PH1307501016",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 17",
+            "source_adm4_pcode": "PH1307501017",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 18",
+            "source_adm4_pcode": "PH1307501018",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 19",
+            "source_adm4_pcode": "PH1307501019",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 20",
+            "source_adm4_pcode": "PH1307501020",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 21",
+            "source_adm4_pcode": "PH1307501021",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 22",
+            "source_adm4_pcode": "PH1307501022",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 23",
+            "source_adm4_pcode": "PH1307501023",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 24",
+            "source_adm4_pcode": "PH1307501024",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 25",
+            "source_adm4_pcode": "PH1307501025",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 26",
+            "source_adm4_pcode": "PH1307501026",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 27",
+            "source_adm4_pcode": "PH1307501027",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 28",
+            "source_adm4_pcode": "PH1307501028",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 29",
+            "source_adm4_pcode": "PH1307501029",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 30",
+            "source_adm4_pcode": "PH1307501030",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 31",
+            "source_adm4_pcode": "PH1307501031",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 32",
+            "source_adm4_pcode": "PH1307501032",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 33",
+            "source_adm4_pcode": "PH1307501033",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 34",
+            "source_adm4_pcode": "PH1307501034",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 35",
+            "source_adm4_pcode": "PH1307501035",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 36",
+            "source_adm4_pcode": "PH1307501036",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 37",
+            "source_adm4_pcode": "PH1307501037",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 38",
+            "source_adm4_pcode": "PH1307501038",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 39",
+            "source_adm4_pcode": "PH1307501039",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 40",
+            "source_adm4_pcode": "PH1307501040",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 41",
+            "source_adm4_pcode": "PH1307501041",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 42",
+            "source_adm4_pcode": "PH1307501042",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 43",
+            "source_adm4_pcode": "PH1307501043",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 44",
+            "source_adm4_pcode": "PH1307501044",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 45",
+            "source_adm4_pcode": "PH1307501045",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 46",
+            "source_adm4_pcode": "PH1307501046",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 47",
+            "source_adm4_pcode": "PH1307501047",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 48",
+            "source_adm4_pcode": "PH1307501048",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 49",
+            "source_adm4_pcode": "PH1307501049",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 50",
+            "source_adm4_pcode": "PH1307501050",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 51",
+            "source_adm4_pcode": "PH1307501051",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 52",
+            "source_adm4_pcode": "PH1307501052",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 53",
+            "source_adm4_pcode": "PH1307501053",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 54",
+            "source_adm4_pcode": "PH1307501054",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 55",
+            "source_adm4_pcode": "PH1307501055",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 56",
+            "source_adm4_pcode": "PH1307501056",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 57",
+            "source_adm4_pcode": "PH1307501057",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 58",
+            "source_adm4_pcode": "PH1307501058",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 59",
+            "source_adm4_pcode": "PH1307501059",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 60",
+            "source_adm4_pcode": "PH1307501060",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 61",
+            "source_adm4_pcode": "PH1307501061",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 62",
+            "source_adm4_pcode": "PH1307501062",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 63",
+            "source_adm4_pcode": "PH1307501063",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 64",
+            "source_adm4_pcode": "PH1307501064",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 65",
+            "source_adm4_pcode": "PH1307501065",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 66",
+            "source_adm4_pcode": "PH1307501066",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 67",
+            "source_adm4_pcode": "PH1307501067",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 68",
+            "source_adm4_pcode": "PH1307501068",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 69",
+            "source_adm4_pcode": "PH1307501069",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 70",
+            "source_adm4_pcode": "PH1307501070",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 71",
+            "source_adm4_pcode": "PH1307501071",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 72",
+            "source_adm4_pcode": "PH1307501072",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 73",
+            "source_adm4_pcode": "PH1307501073",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 74",
+            "source_adm4_pcode": "PH1307501074",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 75",
+            "source_adm4_pcode": "PH1307501075",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 76",
+            "source_adm4_pcode": "PH1307501076",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 77",
+            "source_adm4_pcode": "PH1307501077",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 78",
+            "source_adm4_pcode": "PH1307501078",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 79",
+            "source_adm4_pcode": "PH1307501079",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 80",
+            "source_adm4_pcode": "PH1307501080",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 81",
+            "source_adm4_pcode": "PH1307501081",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 82",
+            "source_adm4_pcode": "PH1307501082",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 83",
+            "source_adm4_pcode": "PH1307501083",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 84",
+            "source_adm4_pcode": "PH1307501084",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 85",
+            "source_adm4_pcode": "PH1307501085",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 86",
+            "source_adm4_pcode": "PH1307501086",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 87",
+            "source_adm4_pcode": "PH1307501087",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 88",
+            "source_adm4_pcode": "PH1307501088",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 89",
+            "source_adm4_pcode": "PH1307501089",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 90",
+            "source_adm4_pcode": "PH1307501090",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 91",
+            "source_adm4_pcode": "PH1307501091",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 92",
+            "source_adm4_pcode": "PH1307501092",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 93",
+            "source_adm4_pcode": "PH1307501093",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 94",
+            "source_adm4_pcode": "PH1307501094",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 95",
+            "source_adm4_pcode": "PH1307501095",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 96",
+            "source_adm4_pcode": "PH1307501096",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 97",
+            "source_adm4_pcode": "PH1307501097",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 98",
+            "source_adm4_pcode": "PH1307501098",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 99",
+            "source_adm4_pcode": "PH1307501099",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 100",
+            "source_adm4_pcode": "PH1307501100",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 101",
+            "source_adm4_pcode": "PH1307501101",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 102",
+            "source_adm4_pcode": "PH1307501102",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 103",
+            "source_adm4_pcode": "PH1307501103",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 104",
+            "source_adm4_pcode": "PH1307501104",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 105",
+            "source_adm4_pcode": "PH1307501105",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 106",
+            "source_adm4_pcode": "PH1307501106",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 107",
+            "source_adm4_pcode": "PH1307501107",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 108",
+            "source_adm4_pcode": "PH1307501108",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 109",
+            "source_adm4_pcode": "PH1307501109",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 110",
+            "source_adm4_pcode": "PH1307501110",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 111",
+            "source_adm4_pcode": "PH1307501111",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 112",
+            "source_adm4_pcode": "PH1307501112",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 113",
+            "source_adm4_pcode": "PH1307501113",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 114",
+            "source_adm4_pcode": "PH1307501114",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 115",
+            "source_adm4_pcode": "PH1307501115",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 116",
+            "source_adm4_pcode": "PH1307501116",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 117",
+            "source_adm4_pcode": "PH1307501117",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 118",
+            "source_adm4_pcode": "PH1307501118",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 119",
+            "source_adm4_pcode": "PH1307501119",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 120",
+            "source_adm4_pcode": "PH1307501120",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 121",
+            "source_adm4_pcode": "PH1307501121",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 122",
+            "source_adm4_pcode": "PH1307501122",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 123",
+            "source_adm4_pcode": "PH1307501123",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 124",
+            "source_adm4_pcode": "PH1307501124",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 125",
+            "source_adm4_pcode": "PH1307501125",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 126",
+            "source_adm4_pcode": "PH1307501126",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 127",
+            "source_adm4_pcode": "PH1307501127",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 128",
+            "source_adm4_pcode": "PH1307501128",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 129",
+            "source_adm4_pcode": "PH1307501129",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 130",
+            "source_adm4_pcode": "PH1307501130",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 131",
+            "source_adm4_pcode": "PH1307501131",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 132",
+            "source_adm4_pcode": "PH1307501132",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 133",
+            "source_adm4_pcode": "PH1307501133",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 134",
+            "source_adm4_pcode": "PH1307501134",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 135",
+            "source_adm4_pcode": "PH1307501135",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 136",
+            "source_adm4_pcode": "PH1307501136",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 137",
+            "source_adm4_pcode": "PH1307501137",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 138",
+            "source_adm4_pcode": "PH1307501138",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 139",
+            "source_adm4_pcode": "PH1307501139",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 140",
+            "source_adm4_pcode": "PH1307501140",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 141",
+            "source_adm4_pcode": "PH1307501141",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 142",
+            "source_adm4_pcode": "PH1307501142",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 143",
+            "source_adm4_pcode": "PH1307501143",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 144",
+            "source_adm4_pcode": "PH1307501144",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 145",
+            "source_adm4_pcode": "PH1307501145",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 146",
+            "source_adm4_pcode": "PH1307501146",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 147",
+            "source_adm4_pcode": "PH1307501147",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 148",
+            "source_adm4_pcode": "PH1307501148",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 149",
+            "source_adm4_pcode": "PH1307501149",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 150",
+            "source_adm4_pcode": "PH1307501150",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 151",
+            "source_adm4_pcode": "PH1307501151",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 152",
+            "source_adm4_pcode": "PH1307501152",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 153",
+            "source_adm4_pcode": "PH1307501153",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 154",
+            "source_adm4_pcode": "PH1307501154",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 155",
+            "source_adm4_pcode": "PH1307501155",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 156",
+            "source_adm4_pcode": "PH1307501156",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 157",
+            "source_adm4_pcode": "PH1307501157",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 158",
+            "source_adm4_pcode": "PH1307501158",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 159",
+            "source_adm4_pcode": "PH1307501159",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 160",
+            "source_adm4_pcode": "PH1307501160",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 161",
+            "source_adm4_pcode": "PH1307501161",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 162",
+            "source_adm4_pcode": "PH1307501162",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 163",
+            "source_adm4_pcode": "PH1307501163",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 164",
+            "source_adm4_pcode": "PH1307501164",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 165",
+            "source_adm4_pcode": "PH1307501165",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 166",
+            "source_adm4_pcode": "PH1307501166",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 167",
+            "source_adm4_pcode": "PH1307501167",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 168",
+            "source_adm4_pcode": "PH1307501168",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 169",
+            "source_adm4_pcode": "PH1307501169",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 170",
+            "source_adm4_pcode": "PH1307501170",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 171",
+            "source_adm4_pcode": "PH1307501171",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 172",
+            "source_adm4_pcode": "PH1307501172",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 173",
+            "source_adm4_pcode": "PH1307501173",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 174",
+            "source_adm4_pcode": "PH1307501174",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 175",
+            "source_adm4_pcode": "PH1307501175",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 177",
+            "source_adm4_pcode": "PH1307501177",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 178",
+            "source_adm4_pcode": "PH1307501178",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 179",
+            "source_adm4_pcode": "PH1307501179",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 180",
+            "source_adm4_pcode": "PH1307501180",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 181",
+            "source_adm4_pcode": "PH1307501181",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 182",
+            "source_adm4_pcode": "PH1307501182",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 183",
+            "source_adm4_pcode": "PH1307501183",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 184",
+            "source_adm4_pcode": "PH1307501184",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 185",
+            "source_adm4_pcode": "PH1307501185",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 186",
+            "source_adm4_pcode": "PH1307501186",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 187",
+            "source_adm4_pcode": "PH1307501187",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        },
+        {
+            "name": "Barangay 188",
+            "source_adm4_pcode": "PH1307501188",
+            "geometry_type": "Polygon",
+            "geometry_status": "source_geometry_retained_and_structurally_validated"
+        }
+    ],
+    "current_replacement_barangays": [
+        {
+            "name": "Barangay 176-A",
+            "psgc_code_10_digit": "1380100189",
+            "supersedes": "Barangay 176",
+            "validated_geometry_available_locally": false,
+            "geometry_status": "required_from_validated_current_source"
+        },
+        {
+            "name": "Barangay 176-B",
+            "psgc_code_10_digit": "1380100190",
+            "supersedes": "Barangay 176",
+            "validated_geometry_available_locally": false,
+            "geometry_status": "required_from_validated_current_source"
+        },
+        {
+            "name": "Barangay 176-C",
+            "psgc_code_10_digit": "1380100191",
+            "supersedes": "Barangay 176",
+            "validated_geometry_available_locally": false,
+            "geometry_status": "required_from_validated_current_source"
+        },
+        {
+            "name": "Barangay 176-D",
+            "psgc_code_10_digit": "1380100192",
+            "supersedes": "Barangay 176",
+            "validated_geometry_available_locally": false,
+            "geometry_status": "required_from_validated_current_source"
+        },
+        {
+            "name": "Barangay 176-E",
+            "psgc_code_10_digit": "1380100193",
+            "supersedes": "Barangay 176",
+            "validated_geometry_available_locally": false,
+            "geometry_status": "required_from_validated_current_source"
+        },
+        {
+            "name": "Barangay 176-F",
+            "psgc_code_10_digit": "1380100194",
+            "supersedes": "Barangay 176",
+            "validated_geometry_available_locally": false,
+            "geometry_status": "required_from_validated_current_source"
+        }
+    ],
+    "geometry_readiness": {
+        "current_barangays_with_available_source_geometry": 187,
+        "current_barangays_requiring_validated_geometry": [
+            "Barangay 176-A",
+            "Barangay 176-B",
+            "Barangay 176-C",
+            "Barangay 176-D",
+            "Barangay 176-E",
+            "Barangay 176-F"
+        ],
+        "local_validated_geometry_found_for_replacements": false,
+        "unaffected_subset_geometry_usable": true,
+        "unaffected_geometry_validation_scope": "The 187 features are unique, polygonal, and byte-preserved from the inspected source. This is structural/data-integrity validation, not an independent legal boundary survey.",
+        "complete_current_193_barangay_dataset_safe_for_import": false,
+        "blocking_reason": "Validated polygon boundaries for Barangay 176-A through Barangay 176-F are not available locally. The retired Barangay 176 polygon must not be split, guessed, duplicated, or imported as a current barangay."
+    },
+    "validation": {
+        "unaffected_feature_count": 187,
+        "retired_barangay_176_excluded": true,
+        "duplicate_names": [],
+        "duplicate_administrative_codes": [],
+        "geometry_types": {
+            "Polygon": 187
+        },
+        "all_geometries_polygon_or_multipolygon": true,
+        "coordinates_preserved": true,
+        "coordinate_preservation_method": "The 187 raw source feature JSON objects were copied byte-for-byte; no geometry was decoded, simplified, split, or re-encoded.",
+        "historical_source_unchanged": true,
+        "city_boundary_unchanged": true
+    },
+    "current_code_reference": {
+        "coding_system": "Current PSA PSGC 10-digit barangay codes supplied for this reconciliation task",
+        "geometry_source": null,
+        "note": "These current codes are recorded for reconciliation only and are not assigned to historical geometries."
+    }
+}

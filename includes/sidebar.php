@@ -70,6 +70,45 @@
             <span class="sidebar-text truncate">Dashboard Overview</span>
           </a>
 
+          <span class="sidebar-text text-[9px] font-bold tracking-widest text-slate-400 uppercase block px-3 pt-4 pb-1">DRRM Modules</span>
+
+          <a href="<?php echo $basePath ?? '../'; ?>pages/drrm/hazard-evacuation-map.php" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide transition cursor-pointer <?php echo $currentPage == 'hazard-evacuation-map.php' ? 'bg-white text-brand-dark border border-brand-border font-bold shadow-xs' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-brand-dark dark:hover:text-[#86B6F6] border border-transparent font-semibold'; ?>">
+            <i class="fa-solid fa-map-location-dot text-sm <?php echo $currentPage == 'hazard-evacuation-map.php' ? 'text-brand-medium' : 'text-slate-400'; ?>"></i>
+            <span class="sidebar-text truncate">Hazard & Evacuation Map System</span>
+          </a>
+
+          <button type="button" disabled aria-disabled="true" title="Not yet implemented" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide border border-transparent font-semibold text-slate-400 dark:text-slate-500 opacity-70 cursor-not-allowed">
+            <i class="fa-solid fa-box-open text-sm"></i>
+            <span class="sidebar-text flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span class="truncate text-left">Relief Goods Distribution Tracker</span>
+              <span class="shrink-0 rounded-md bg-slate-200/70 dark:bg-slate-700/70 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider">Soon</span>
+            </span>
+          </button>
+
+          <button type="button" disabled aria-disabled="true" title="Not yet implemented" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide border border-transparent font-semibold text-slate-400 dark:text-slate-500 opacity-70 cursor-not-allowed">
+            <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+            <span class="sidebar-text flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span class="truncate text-left">Incident Reporting & Response Log</span>
+              <span class="shrink-0 rounded-md bg-slate-200/70 dark:bg-slate-700/70 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider">Soon</span>
+            </span>
+          </button>
+
+          <button type="button" disabled aria-disabled="true" title="Not yet implemented" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide border border-transparent font-semibold text-slate-400 dark:text-slate-500 opacity-70 cursor-not-allowed">
+            <i class="fa-solid fa-bell text-sm"></i>
+            <span class="sidebar-text flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span class="truncate text-left">Disaster Early Warning System</span>
+              <span class="shrink-0 rounded-md bg-slate-200/70 dark:bg-slate-700/70 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider">Soon</span>
+            </span>
+          </button>
+
+          <button type="button" disabled aria-disabled="true" title="Not yet implemented" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide border border-transparent font-semibold text-slate-400 dark:text-slate-500 opacity-70 cursor-not-allowed">
+            <i class="fa-solid fa-people-group text-sm"></i>
+            <span class="sidebar-text flex min-w-0 flex-1 items-center justify-between gap-2">
+              <span class="truncate text-left">Barangay DRRM Coordination Tool</span>
+              <span class="shrink-0 rounded-md bg-slate-200/70 dark:bg-slate-700/70 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider">Soon</span>
+            </span>
+          </button>
+
           <?php 
           $canAccessUserMgmt = $isSuperAdmin || $hasResourceAccess(['user directory', 'user account', 'users account', 'account status', 'user', 'account', 'employee']);
           if ($canAccessUserMgmt): 
