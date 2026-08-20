@@ -1,0 +1,234 @@
+{
+  "report_type": "Caloocan DENR-MGB rain-induced landslide susceptibility retrieval and validation",
+  "retrieval_timestamp": "2026-08-19T15:52:55.136Z",
+  "official_source": {
+    "agency": "DENR-MGB",
+    "service_url": "https://controlmap.mgb.gov.ph/arcgis/rest/services/GeospatialDataInventory/GDI_Detailed_Rain_induced_Landslide_Susceptibility/FeatureServer/0",
+    "layer_name": "Detailed Rain-induced Landslide Susceptibility",
+    "service_layer_type": "Feature Layer",
+    "source_geometry_type": "esriGeometryPolygon",
+    "source_spatial_reference": {
+      "wkid": 102100,
+      "latest_wkid": 3857
+    },
+    "supported_query_formats": [
+      "JSON",
+      "geoJSON",
+      "PBF"
+    ],
+    "classification_field": "LndslideSusc",
+    "official_renderer_classifications": {
+      "VHL": "Very High Susceptibility to Landslide",
+      "HL": "High Susceptibility to Landslide",
+      "ML": "Moderate Susceptibility to Landslide",
+      "LL": "Low Susceptibility to Landslide",
+      "DF": "Debris flow path/Possible accumulation zone"
+    },
+    "distinct_values_currently_returned_by_national_layer": [
+      null,
+      "DF",
+      "HL",
+      "LF",
+      "LL",
+      "ML",
+      "NL",
+      "Very High Susceptibility to Landslide",
+      "VHL"
+    ]
+  },
+  "area_of_interest": {
+    "source_file": "data/import/caloocan-city-boundary.geojson",
+    "feature_name": "Caloocan City",
+    "geometry_type": "MultiPolygon",
+    "source_valid_on": "2025-02-13",
+    "source_version": "v03",
+    "sha256_before_and_after": "9647f3cac1758a07cfdc6a5bb8767fe9e4f1eb70b4e7d2c14a99abf2de1f9d50",
+    "unchanged": true,
+    "geometry_valid": true
+  },
+  "retrieval": {
+    "server_spatial_filter": "Exact Caloocan MultiPolygon; esriSpatialRelIntersects; input SRID 4326",
+    "source_feature_count_retrieved": 13,
+    "source_object_ids": [
+      22,
+      341,
+      59091,
+      59092,
+      59094,
+      59152,
+      59153,
+      59154,
+      59155,
+      59156,
+      59162,
+      59163,
+      59165
+    ],
+    "feature_geometry_retrieval_formats": {
+      "GeoJSON": 12,
+      "PBF": 1
+    },
+    "geojson_supported": true,
+    "pbf_supported": true,
+    "service_limitation": "1 oversized/complex source feature(s) returned an ArcGIS query error in GeoJSON and were retrieved from the same official layer using its advertised PBF format."
+  },
+  "clipping": {
+    "performed": true,
+    "method": "Exact local polygon intersection with the unchanged validated Caloocan MultiPolygon",
+    "coordinate_system": "EPSG:4326",
+    "simplification": "None",
+    "repair_buffer_or_manual_redraw": "None",
+    "final_clipped_feature_count": 13,
+    "all_output_inside_caloocan": true,
+    "per_feature": [
+      {
+        "source_object_id": 22,
+        "source_polygon_count": 5464,
+        "bbox_candidate_polygon_component_checks": 4,
+        "final_polygon_component_count": 11,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 341,
+        "source_polygon_count": 23,
+        "bbox_candidate_polygon_component_checks": 3,
+        "final_polygon_component_count": 2,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59091,
+        "source_polygon_count": 116,
+        "bbox_candidate_polygon_component_checks": 23,
+        "final_polygon_component_count": 3,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59092,
+        "source_polygon_count": 120,
+        "bbox_candidate_polygon_component_checks": 14,
+        "final_polygon_component_count": 12,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59094,
+        "source_polygon_count": 2,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59152,
+        "source_polygon_count": 1,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59153,
+        "source_polygon_count": 1,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59154,
+        "source_polygon_count": 1,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59155,
+        "source_polygon_count": 1,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59156,
+        "source_polygon_count": 1,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59162,
+        "source_polygon_count": 116,
+        "bbox_candidate_polygon_component_checks": 28,
+        "final_polygon_component_count": 4,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59163,
+        "source_polygon_count": 120,
+        "bbox_candidate_polygon_component_checks": 15,
+        "final_polygon_component_count": 7,
+        "outside_area_square_degrees": 0
+      },
+      {
+        "source_object_id": 59165,
+        "source_polygon_count": 2,
+        "bbox_candidate_polygon_component_checks": 1,
+        "final_polygon_component_count": 1,
+        "outside_area_square_degrees": 0
+      }
+    ]
+  },
+  "classification_counts": {
+    "VHL": 2,
+    "HL": 2,
+    "ML": 2,
+    "LL": 7,
+    "DF": 0,
+    "blank_or_no_rating": 0
+  },
+  "classification_validation": {
+    "expected_codes": [
+      "VHL",
+      "HL",
+      "ML",
+      "LL",
+      "DF"
+    ],
+    "observed_caloocan_codes": [
+      "HL",
+      "LL",
+      "ML",
+      "VHL"
+    ],
+    "unexpected_caloocan_codes": [],
+    "note": "The national service distinct-value response also contains null, LF, NL, and a spelled-out Very High value, but none occur in the exact Caloocan-intersecting source records."
+  },
+  "geometry_validation": {
+    "valid_geojson_feature_collection": true,
+    "non_empty_geometry_count": 13,
+    "valid_geometry_count": 13,
+    "invalid_geometry_count": 0,
+    "geometry_types": [
+      "MultiPolygon",
+      "Polygon"
+    ],
+    "longitude_latitude_ranges_valid": true,
+    "closed_polygon_rings": true,
+    "duplicate_source_object_ids": [],
+    "total_coordinate_positions": 2074,
+    "final_bounding_box": [
+      121.01122165706906,
+      14.740194067000061,
+      121.09980859900008,
+      14.782954259775511
+    ]
+  },
+  "output": {
+    "geojson_file": "data/import/caloocan-mgb-landslide-susceptibility.geojson",
+    "report_file": "data/import/caloocan-mgb-landslide-susceptibility-report.json"
+  },
+  "compatibility_mapping_proposal_not_applied": {
+    "LL": "LOW",
+    "ML": "MODERATE",
+    "HL": "HIGH",
+    "VHL": "CRITICAL",
+    "DF": null,
+    "warning": "CRITICAL would be an internal CIVENTRAL compatibility/display mapping only; DENR-MGB uses Very High. DF is a distinct debris-flow path/possible accumulation-zone class and must not be forced into the four risk levels."
+  }
+}

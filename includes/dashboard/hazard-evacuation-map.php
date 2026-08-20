@@ -174,7 +174,7 @@
             <span class="civ-map-card-icon"><i class="fa-solid fa-kit-medical" aria-hidden="true"></i></span>
             <h2 id="preparednessToolsTitle">Preparedness Tools</h2>
           </div>
-          <span class="civ-tool-connection-status"><i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> Not Connected</span>
+          <span id="preparednessConnectionStatus" class="civ-tool-connection-status"><i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> Not Connected</span>
         </div>
 
         <div class="civ-preparedness-tabs mt-3" role="tablist" aria-label="Preparedness tools">
@@ -203,29 +203,95 @@
           <div class="space-y-3">
             <div>
               <label for="routeStartInput" class="civ-map-label">Starting Location</label>
-              <input id="routeStartInput" type="text" value="Not connected" class="civ-map-input mt-1.5 w-full px-3 py-2.5 text-xs" disabled>
+              <input id="routeStartInput" type="text" value="No starting point selected" class="civ-map-input mt-1.5 w-full px-3 py-2.5 text-xs" readonly>
+              <div class="civ-route-action-row mt-2">
+                <button id="setRouteOriginButton" type="button" class="civ-route-secondary-button">
+                  <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
+                  <span>Set Location on Map</span>
+                </button>
+                <button id="clearRouteOriginButton" type="button" class="civ-route-text-button" hidden>Clear</button>
+              </div>
+              <p id="routeOriginStatus" class="civ-map-helper mt-1.5" role="status" aria-live="polite">Choose an exact point inside Caloocan City.</p>
             </div>
             <div>
               <label for="routeCenterSelect" class="civ-map-label">Evacuation Center</label>
               <select id="routeCenterSelect" class="civ-map-input mt-1.5 w-full px-3 py-2.5 text-xs" disabled>
-                <option>Not connected</option>
+                <option value="">Loading development centers...</option>
               </select>
+              <p class="civ-map-helper mt-1.5">Development-preview locations are pending LGU verification.</p>
             </div>
             <button id="findSafeRouteButton" type="button" class="civ-route-button w-full" disabled>
               <i class="fa-solid fa-route" aria-hidden="true"></i>
               <span>Find Safe Route</span>
             </button>
-            <p class="civ-map-helper">Safe routing will become available after verified evacuation centers and hazard data are connected.</p>
+            <div class="flex items-start justify-between gap-2">
+              <p id="routeRequestStatus" class="civ-map-helper" role="status" aria-live="polite">Select a starting point and evacuation center.</p>
+              <button id="clearRouteButton" type="button" class="civ-route-text-button" hidden>Clear route</button>
+            </div>
+            <div id="routeResultContent" class="civ-route-result" aria-live="polite" hidden></div>
+            <p class="civ-map-helper">Development decision support only. Any recommended route is pending LGU verification; road and hazard conditions may change during an actual emergency.</p>
           </div>
         </div>
 
         <div id="floodForecastPanel" class="civ-preparedness-panel" role="tabpanel" aria-labelledby="floodForecastTab" hidden>
           <div class="flex items-center justify-between gap-2">
-            <h3 id="floodForecastTitle" class="text-[11px] font-black text-slate-700 dark:text-slate-200">Flood Risk Forecast</h3>
-            <span id="floodModelStatus" class="civ-model-status">Not Integrated</span>
+            <h3 id="floodForecastTitle" class="text-[11px] font-black text-slate-700 dark:text-slate-200">Flood Preparedness Outlook</h3>
+            <span id="floodForecastConnectionStatus" class="civ-model-status">Development Preview</span>
           </div>
-          <p id="floodForecastContent" class="civ-map-empty-state mt-3" aria-live="polite">Risk prediction is not yet connected.</p>
-          <p class="civ-map-helper mt-3">No warning level or flood prediction is shown until a validated forecasting source is integrated.</p>
+
+          <div class="mt-3 space-y-3">
+            <section class="civ-forecast-section" aria-labelledby="forecastLocationTitle">
+              <h4 id="forecastLocationTitle" class="civ-forecast-section-title">Forecast Location</h4>
+              <label class="sr-only" for="forecastLocationInput">Selected forecast location</label>
+              <input id="forecastLocationInput" type="text" value="No forecast point selected" class="civ-map-input mt-2 w-full px-3 py-2.5 text-xs" readonly>
+              <div class="civ-forecast-actions mt-2">
+                <button id="setForecastLocationButton" type="button" class="civ-route-secondary-button">
+                  <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
+                  <span>Set on Map</span>
+                </button>
+                <button id="useRouteOriginForForecastButton" type="button" class="civ-route-secondary-button" disabled>
+                  <i class="fa-solid fa-share-from-square" aria-hidden="true"></i>
+                  <span>Use Route Origin</span>
+                </button>
+              </div>
+              <div class="mt-1.5 flex items-start justify-between gap-2">
+                <p id="forecastLocationStatus" class="civ-map-helper" role="status" aria-live="polite">Select an exact point inside Caloocan City.</p>
+                <button id="clearForecastLocationButton" type="button" class="civ-route-text-button" hidden>Clear</button>
+              </div>
+            </section>
+
+            <section class="civ-forecast-section" aria-labelledby="pagasaOutlookTitle">
+              <div class="flex items-start justify-between gap-2">
+                <h4 id="pagasaOutlookTitle" class="civ-forecast-section-title">PAGASA Weather Outlook</h4>
+                <span id="pagasaForecastStatusBadge" class="civ-model-status">Checking</span>
+              </div>
+              <div id="pagasaForecastContent" class="civ-forecast-content mt-2" role="status" aria-live="polite">
+                Checking official DOST-PAGASA TenDay access...
+              </div>
+              <div id="pagasaForecastEntries" class="civ-forecast-entries mt-2" hidden></div>
+              <details id="pagasaFullForecastDetails" class="civ-forecast-full-outlook mt-2" hidden>
+                <summary>View Full 10-Day Outlook</summary>
+                <div id="pagasaFullForecastEntries" class="civ-forecast-entries mt-2"></div>
+              </details>
+            </section>
+
+            <section class="civ-forecast-section" aria-labelledby="mappedFloodSusceptibilityTitle">
+              <h4 id="mappedFloodSusceptibilityTitle" class="civ-forecast-section-title">Mapped Flood Susceptibility</h4>
+              <div id="mappedFloodSusceptibilityContent" class="civ-forecast-content mt-2" aria-live="polite">
+                Select a forecast point to check the current DENR-MGB flood layer.
+              </div>
+            </section>
+
+            <section class="civ-forecast-section" aria-labelledby="aiFloodPredictionTitle">
+              <div class="flex items-start justify-between gap-2">
+                <h4 id="aiFloodPredictionTitle" class="civ-forecast-section-title">AI Risk Prediction</h4>
+                <span id="floodModelStatus" class="civ-model-status">Pending</span>
+              </div>
+              <p id="floodForecastContent" class="civ-forecast-content mt-2">Pending TensorFlow model integration. No AI flood probability is currently generated.</p>
+            </section>
+
+            <p class="civ-map-helper">Development preparedness foundation only. PAGASA weather and DENR-MGB mapped susceptibility are shown separately and do not constitute an AI flood-risk prediction.</p>
+          </div>
         </div>
       </section>
     </aside>

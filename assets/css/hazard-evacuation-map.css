@@ -343,6 +343,238 @@
   color: #f8fafc;
 }
 
+.civ-hazard-map-module .civ-route-button:not(:disabled):hover {
+  background: #0e5f78;
+}
+
+.civ-hazard-map-module .civ-route-button.is-loading {
+  cursor: wait;
+  opacity: 0.78;
+}
+
+.civ-hazard-map-module .civ-route-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.civ-hazard-map-module .civ-route-secondary-button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid var(--civ-map-brand-border);
+  border-radius: 0.65rem;
+  background: var(--civ-map-brand-light);
+  padding: 0.48rem 0.65rem;
+  color: var(--civ-map-brand-dark);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.civ-hazard-map-module .civ-route-secondary-button[aria-pressed="true"] {
+  border-color: var(--civ-map-brand-dark);
+  background: var(--civ-map-brand-dark);
+  color: #fff;
+}
+
+.civ-hazard-map-module .civ-route-text-button {
+  flex: 0 0 auto;
+  border-radius: 0.45rem;
+  color: var(--civ-map-brand-dark);
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.civ-hazard-map-module .civ-route-secondary-button:focus-visible,
+.civ-hazard-map-module .civ-route-text-button:focus-visible {
+  outline: 3px solid rgba(134, 182, 246, 0.42);
+  outline-offset: 2px;
+}
+
+.civ-hazard-map-module .civ-route-result {
+  display: grid;
+  gap: 0.42rem;
+  border: 1px solid rgba(134, 182, 246, 0.65);
+  border-radius: 0.8rem;
+  background: rgba(238, 245, 255, 0.78);
+  padding: 0.75rem;
+  color: #334155;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.civ-hazard-map-module .civ-route-result[hidden] {
+  display: none;
+}
+
+.civ-hazard-map-module .civ-route-result strong {
+  color: #0f172a;
+  font-size: 0.7rem;
+}
+
+.civ-hazard-map-module .civ-route-result-label {
+  font-weight: 800;
+}
+
+.civ-hazard-map-module .civ-route-result-warning {
+  border-left: 3px solid #d97706;
+  padding-left: 0.55rem;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.civ-hazard-map-module #civentralHazardMap.is-selecting-route-origin,
+.civ-hazard-map-module #civentralHazardMap.is-selecting-route-origin .leaflet-interactive,
+.civ-hazard-map-module #civentralHazardMap.is-selecting-forecast-location,
+.civ-hazard-map-module #civentralHazardMap.is-selecting-forecast-location .leaflet-interactive {
+  cursor: crosshair;
+}
+
+.civ-hazard-map-module .civ-route-origin-marker-wrap,
+.civ-hazard-map-module .civ-route-destination-marker-wrap {
+  border: 0;
+  background: transparent;
+}
+
+.civ-hazard-map-module .civ-route-origin-marker,
+.civ-hazard-map-module .civ-route-destination-marker {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 32%);
+  color: #fff;
+  font-size: 11px;
+}
+
+.civ-hazard-map-module .civ-route-origin-marker {
+  background: #0f766e;
+}
+
+.civ-hazard-map-module .civ-route-destination-marker {
+  background: #176b87;
+}
+
+.civ-hazard-map-module .civ-forecast-location-marker-wrap {
+  border: 0;
+  background: transparent;
+}
+
+.civ-hazard-map-module .civ-forecast-location-marker {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 12%;
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 32%);
+  color: #fff;
+  font-size: 11px;
+  transform: rotate(-45deg);
+}
+
+.civ-hazard-map-module .civ-forecast-location-marker i {
+  transform: rotate(45deg);
+}
+
+.civ-hazard-map-module .civ-forecast-section {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  background: rgba(248, 250, 252, 0.72);
+  padding: 0.7rem;
+}
+
+.civ-hazard-map-module .civ-forecast-section-title {
+  color: #334155;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-forecast-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button {
+  width: 100%;
+  padding-inline: 0.45rem;
+  line-height: 1.25;
+}
+
+.civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button:disabled {
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.civ-hazard-map-module .civ-forecast-content {
+  display: grid;
+  gap: 0.22rem;
+  color: #475569;
+  font-size: 0.62rem;
+  line-height: 1.48;
+}
+
+.civ-hazard-map-module .civ-forecast-entries {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.civ-hazard-map-module .civ-forecast-entry {
+  border-left: 3px solid var(--civ-map-brand-medium);
+  border-radius: 0.45rem;
+  background: #fff;
+  padding: 0.55rem 0.6rem;
+  color: #475569;
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
+.civ-hazard-map-module .civ-forecast-entry strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #1e293b;
+  font-size: 0.62rem;
+}
+
+.civ-hazard-map-module .civ-forecast-entry span {
+  display: block;
+}
+
+.civ-hazard-map-module .civ-forecast-full-outlook summary {
+  cursor: pointer;
+  color: var(--civ-map-brand-dark);
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.civ-hazard-map-module .civ-forecast-susceptibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 900;
+}
+
+.civ-hazard-map-module .civ-forecast-susceptibility-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 9999px;
+}
+
 .civ-hazard-map-module .civ-model-status {
   flex: 0 0 auto;
   border: 1px solid #e2e8f0;
@@ -703,6 +935,51 @@
 .dark .civ-hazard-map-module .civ-route-button:disabled {
   background: #334155;
   color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-route-secondary-button {
+  border-color: #334155;
+  background: #1e293b;
+  color: var(--civ-map-brand-medium);
+}
+
+.dark .civ-hazard-map-module .civ-route-result {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.82);
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-route-result strong {
+  color: #f8fafc;
+}
+
+.dark .civ-hazard-map-module .civ-route-result-warning {
+  color: #fcd34d;
+}
+
+.dark .civ-hazard-map-module .civ-forecast-section {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.dark .civ-hazard-map-module .civ-forecast-section-title,
+.dark .civ-hazard-map-module .civ-forecast-entry strong {
+  color: #e2e8f0;
+}
+
+.dark .civ-hazard-map-module .civ-forecast-content,
+.dark .civ-hazard-map-module .civ-forecast-entry {
+  color: #94a3b8;
+}
+
+.dark .civ-hazard-map-module .civ-forecast-entry {
+  background: #0f172a;
+}
+
+.dark .civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button:disabled {
+  border-color: #334155;
+  background: #0f172a;
+  color: #64748b;
 }
 
 .dark .civ-hazard-map-module .civ-map-panel-header,

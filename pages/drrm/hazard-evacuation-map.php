@@ -35,6 +35,9 @@ include '../../includes/sidebar.php';
   src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   crossorigin=""
 ></script>
+<?php if ($draftBarangayPreviewEnabled): ?>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
+<?php endif; ?>
 <script>
   window.CiventralDrrmMapConfig = Object.freeze({
     draftBarangayPreview: Object.freeze({
@@ -51,10 +54,38 @@ include '../../includes/sidebar.php';
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     }),
+    draftLandslidePreview: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/landslide-zones-draft.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
     draftEvacuationCenterPreview: Object.freeze({
       enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
       endpoint: <?php echo json_encode(
           $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/evacuation-centers-draft.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    draftFaultInformationPreview: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/fault-information-draft.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    developmentEvacuationRoute: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/evacuation-route-preview.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    developmentFloodForecast: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? $basePath . 'api/drrm/dev/flood-forecast-preview.php' : null,
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     }),

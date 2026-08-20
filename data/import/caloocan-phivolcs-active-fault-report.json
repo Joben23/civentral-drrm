@@ -1,0 +1,124 @@
+{
+    "report_type": "CIVENTRAL DRRM Module 1 PHIVOLCS Active Fault Validation",
+    "retrieval_timestamp": "2026-08-19T15:23:20+00:00",
+    "official_source": {
+        "agency": "DOST-PHIVOLCS",
+        "mapserver_url": "https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCS/ActiveFault/MapServer",
+        "vector_endpoint_used": "https://gisweb.phivolcs.dost.gov.ph/arcgis/services/PHIVOLCS/ActiveFault/MapServer/KmlServer",
+        "wms_capabilities_url": "https://gisweb.phivolcs.dost.gov.ph/arcgis/services/PHIVOLCS/ActiveFault/MapServer/WMSServer?service=WMS&request=GetCapabilities",
+        "layer_name": "Active Fault (Fault System Information)",
+        "spatial_reference": "EPSG:4326",
+        "rest_advertised_query_formats": "JSON, AMF, geoJSON",
+        "rest_advertises_geojson": true,
+        "rest_layer_count_at_retrieval": 0,
+        "vector_access_note": "The MapServer REST root advertised GeoJSON but exposed no live queryable child layer at retrieval time. Official vector geometry was retrieved from the same PHIVOLCS ArcGIS service through its KMLServer endpoint using a bounded map view."
+    },
+    "caloocan_area_of_interest": {
+        "source_file": "data/import/caloocan-city-boundary.geojson",
+        "geometry_type": "MultiPolygon",
+        "source_sha256_before_and_after": "9647f3cac1758a07cfdc6a5bb8767fe9e4f1eb70b4e7d2c14a99abf2de1f9d50",
+        "source_unchanged": true,
+        "bounding_box": [
+            120.9606435510002,
+            14.635162092000087,
+            121.0998791180001,
+            14.785291728000175
+        ]
+    },
+    "retrieval": {
+        "requested_search_radius_meters": 20000,
+        "bounded_query_bbox": [
+            120.774684184576,
+            14.45529801925518,
+            121.2858384844243,
+            14.965155800745082
+        ],
+        "source_vector_feature_count": 286,
+        "source_returned_geometry_extent": [
+            121.042910916,
+            14.40495863899997,
+            121.307748169,
+            15.02207320000002
+        ],
+        "nearby_feature_count": 254,
+        "nearby_output_extent": [
+            121.050359975,
+            14.46267744599999,
+            121.243328785,
+            15.02207320000002
+        ],
+        "complete_source_features_preserved": true,
+        "clipped_to_caloocan": false
+    },
+    "fault_features": {
+        "geometry_types": [
+            "LineString"
+        ],
+        "geometry_validity": {
+            "valid_geojson_structure": true,
+            "coordinates_in_longitude_latitude_range": true,
+            "all_lines_have_at_least_two_points": true,
+            "empty_geometries": 0,
+            "validation_scope": "Structural LineString/MultiLineString and coordinate validation; no geometry repair or modification was performed."
+        },
+        "fault_name_counts": {
+            "East Valley Fault": 37,
+            "Unnamed Fault": 1,
+            "West Valley Fault": 216
+        }
+    },
+    "caloocan_intersection": {
+        "result": "CASE_B_NEARBY_NO_INTERSECTION",
+        "active_fault_intersects_caloocan": false,
+        "intersecting_feature_count": 0,
+        "intersecting_features": [],
+        "nearest_active_fault": {
+            "source_object_id": 2438,
+            "official_fault_name": "West Valley Fault",
+            "official_fault_system": "Valley Fault System",
+            "distance_meters": 3758.382259782223,
+            "nearest_fault_point": [
+                121.132376643,
+                14.75046741400001
+            ],
+            "nearest_city_boundary_point": [
+                121.09979889200008,
+                14.762714034000055
+            ]
+        }
+    },
+    "hazardhunter_independent_check": {
+        "assessment_point": {
+            "longitude": 120.98951,
+            "latitude": 14.64953
+        },
+        "reported_nearest_fault": "West Valley Fault",
+        "reported_approximate_distance_meters": 9800,
+        "calculated_nearest_active_fault": {
+            "source_object_id": 2577,
+            "official_fault_name": "West Valley Fault",
+            "official_fault_system": "Valley Fault System",
+            "distance_meters": 9795.037962566026,
+            "nearest_fault_point": [
+                121.0789633110001,
+                14.633129129
+            ]
+        },
+        "absolute_difference_from_reported_meters": 4.96,
+        "comparison_note": "The calculated value uses the retrieved official vector version and a nearest-segment great-circle distance. Differences may reflect PHIVOLCS dataset version, line segmentation, coordinate precision, and HazardHunter methodology."
+    },
+    "distance_method": {
+        "method": "Nearest point-to-segment search in a local equirectangular metric frame, with final distances calculated by the great-circle haversine formula on longitude/latitude coordinates.",
+        "earth_radius_meters": 6371008.8,
+        "decimal_degrees_treated_as_meters": false,
+        "distance_units": "meters",
+        "limitation": "This local-area spherical geodesic method is not an ellipsoidal survey measurement; it is appropriate for screening and should not replace a formal PHIVOLCS site assessment."
+    },
+    "source_limitations": [
+        "The REST service advertised GeoJSON but did not expose a queryable child feature layer at retrieval time.",
+        "The official KML endpoint returns map-view-selected vector features and may preserve portions of those source features beyond the requested view.",
+        "Fault traces are segmented into multiple official source records; multiple rows may share the same official fault name.",
+        "Results describe proximity to mapped active-fault traces and do not constitute a site-specific PHIVOLCS assessment."
+    ],
+    "frontend_display_recommendation": "CASE B: No official active-fault feature intersects Caloocan. A future frontend should state the nearest fault and distance, and show nearby geometry only with clear context that it does not cross Caloocan."
+}
