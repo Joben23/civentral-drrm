@@ -85,6 +85,15 @@
     operationalMinZoom: null,
     focusControl: null,
     focusButtons: null,
+    mapPointSelectionHandlerBound: false,
+    routeOriginSetButtonHandlerBound: false,
+    routeOriginSetButtonClickCount: 0,
+    routeOriginMapClickCount: 0,
+    routeOriginFeatureClickCount: 0,
+    routeOriginSelectionAttemptCount: 0,
+    routeOriginLastAttemptLat: null,
+    routeOriginLastAttemptLng: null,
+    routeOriginLastResult: 'NOT_USED',
     routeOriginSelectionActive: false,
     routeOrigin: null,
     routeOriginMarker: null,
@@ -106,6 +115,10 @@
     forecastLocationSelectionActive: false,
     forecastLocation: null,
     forecastLocationMarker: null,
+    forecastUsesRouteOrigin: false,
+    useRouteOriginHandlerBound: false,
+    useRouteOriginClickCount: 0,
+    useRouteOriginLastResult: 'NOT_USED',
     pagasaForecastStatus: 'NOT_LOADED',
     pagasaForecastFetchCount: 0,
     pagasaForecastEntries: 0,
@@ -1078,8 +1091,8 @@
                 state.selectedFloodLayer.bringToFront();
               }
             });
-            layer.on('click', function () {
-              if (mapPointSelectionActive()) return;
+            layer.on('click', function (event) {
+              if (delegateFeatureClickToMapPointSelection(event)) return;
               selectFloodFeature(layer, feature.properties);
             });
           }
@@ -1294,8 +1307,8 @@
                 state.selectedLandslideLayer.bringToFront();
               }
             });
-            layer.on('click', function () {
-              if (mapPointSelectionActive()) return;
+            layer.on('click', function (event) {
+              if (delegateFeatureClickToMapPointSelection(event)) return;
               selectLandslideFeature(layer, feature.properties);
             });
           }
@@ -1668,8 +1681,8 @@
           onEachFeature: function (feature, layer) {
             layer.bindTooltip(feature.properties.name, { direction: 'top', opacity: 0.96 });
             layer.bindPopup(createEvacuationCenterContent(feature.properties, false));
-            layer.on('click', function () {
-              if (mapPointSelectionActive()) return;
+            layer.on('click', function (event) {
+              if (delegateFeatureClickToMapPointSelection(event)) return;
               selectEvacuationCenter(layer, feature.properties);
             });
           }
@@ -1729,19 +1742,25 @@
     }
   }
 
-  function routeGeospatialToolsAvailable() {
+  function pointSelectionToolsAvailable() {
     return Boolean(
       window.turf &&
       typeof window.turf.point === 'function' &&
-      typeof window.turf.lineString === 'function' &&
-      typeof window.turf.length === 'function' &&
-      typeof window.turf.along === 'function' &&
       typeof window.turf.booleanPointInPolygon === 'function'
     );
   }
 
+  function routeGeospatialToolsAvailable() {
+    return Boolean(
+      pointSelectionToolsAvailable() &&
+      typeof window.turf.lineString === 'function' &&
+      typeof window.turf.length === 'function' &&
+      typeof window.turf.along === 'function'
+    );
+  }
+
   function routePointIsInsideCaloocan(latitude, longitude) {
-    if (!routeGeospatialToolsAvailable() || !state.cityBoundaryFeatureCollection) return false;
+    if (!pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) return false;
 
     const point = window.turf.point([longitude, latitude]);
     return state.cityBoundaryFeatureCollection.features.some(function (feature) {
@@ -1751,6 +1770,37 @@
 
   function mapPointSelectionActive() {
     return state.routeOriginSelectionActive || state.forecastLocationSelectionActive;
+  }
+
+  function handleMapPointSelection(event, clickSource) {
+    if (!mapPointSelectionActive() || !event || !event.latlng) return false;
+
+    if (state.routeOriginSelectionActive) {
+      return handleRouteOriginPoint(event.latlng, clickSource || 'MAP');
+    }
+
+    if (state.forecastLocationSelectionActive) {
+      const latitude = Number(event.latlng.lat);
+      const longitude = Number(event.latlng.lng);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+      void setForecastLocation(latitude, longitude, 'MAP_CLICK');
+      return true;
+    }
+
+    return false;
+  }
+
+  function delegateFeatureClickToMapPointSelection(event) {
+    if (!mapPointSelectionActive()) return false;
+
+    handleMapPointSelection(event, 'FEATURE');
+    if (event && event.originalEvent && L.DomEvent) {
+      L.DomEvent.stopPropagation(event.originalEvent);
+    }
+    if (state.map && typeof state.map.closePopup === 'function') {
+      state.map.closePopup();
+    }
+    return true;
   }
 
   function routeOriginMarkerIcon() {
@@ -1776,6 +1826,12 @@
   function setRouteOriginSelectionActive(active) {
     if (active === true && state.forecastLocationSelectionActive) {
       setForecastLocationSelectionActive(false);
+      setStatus(
+        'forecastLocationStatus',
+        state.forecastLocation
+          ? 'Flood Risk Check evaluates the selected exact location inside Caloocan City.'
+          : 'Select an exact point inside Caloocan City.'
+      );
     }
     state.routeOriginSelectionActive = active === true;
     const container = document.getElementById(CONFIG.containerId);
@@ -1787,6 +1843,27 @@
       const label = button.querySelector('span');
       if (label) label.textContent = state.routeOriginSelectionActive ? 'Click Inside Caloocan' : 'Set Location on Map';
     }
+  }
+
+  function activateRouteOriginSelectionMode() {
+    state.routeOriginSetButtonClickCount += 1;
+
+    if (
+      !getEvacuationRoutePreviewConfig() ||
+      !state.map ||
+      !state.layerGroups ||
+      !pointSelectionToolsAvailable() ||
+      !state.cityBoundaryFeatureCollection
+    ) {
+      state.routeOriginLastResult = 'MODE_NOT_ACTIVE';
+      setStatus('routeOriginStatus', 'Route-origin map selection is not available yet.');
+      return false;
+    }
+
+    setRouteOriginSelectionActive(true);
+    state.routeOriginLastResult = 'MODE_ACTIVATED';
+    setStatus('routeOriginStatus', 'Click an exact point inside the Caloocan boundary.');
+    return true;
   }
 
   function resetRouteDiagnostics() {
@@ -1840,8 +1917,20 @@
     );
   }
 
-  function setRouteOrigin(latitude, longitude) {
+  function applyRouteOrigin(latlng) {
+    const latitude = Number(latlng && latlng.lat);
+    const longitude = Number(latlng && latlng.lng);
+    state.routeOriginLastAttemptLat = Number.isFinite(latitude) ? latitude : null;
+    state.routeOriginLastAttemptLng = Number.isFinite(longitude) ? longitude : null;
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      state.routeOriginLastResult = 'INVALID_COORDINATES';
+      setStatus('routeOriginStatus', 'Choose a valid point inside the validated Caloocan boundary.');
+      return false;
+    }
+
     if (!state.map || !state.layerGroups || !routePointIsInsideCaloocan(latitude, longitude)) {
+      state.routeOriginLastResult = 'OUTSIDE_CALOOCAN';
       setStatus('routeOriginStatus', 'Choose a point inside the validated Caloocan boundary.');
       return false;
     }
@@ -1873,7 +1962,24 @@
     setRouteOriginSelectionActive(false);
     updateFindRouteButton();
     updateForecastRouteOriginButton();
+    state.routeOriginLastResult = 'POINT_ACCEPTED';
     return true;
+  }
+
+  function handleRouteOriginPoint(latlng, clickSource) {
+    if (clickSource === 'FEATURE') {
+      state.routeOriginFeatureClickCount += 1;
+    } else {
+      state.routeOriginMapClickCount += 1;
+    }
+
+    if (!state.routeOriginSelectionActive) {
+      state.routeOriginLastResult = 'MODE_NOT_ACTIVE';
+      return false;
+    }
+
+    state.routeOriginSelectionAttemptCount += 1;
+    return applyRouteOrigin(latlng);
   }
 
   function clearRouteOrigin() {
@@ -1893,11 +1999,6 @@
     setStatus('routeRequestStatus', 'Select a starting point and evacuation center.');
     updateFindRouteButton();
     updateForecastRouteOriginButton();
-  }
-
-  function handleRouteOriginMapClick(event) {
-    if (!state.routeOriginSelectionActive || !event || !event.latlng) return;
-    setRouteOrigin(Number(event.latlng.lat), Number(event.latlng.lng));
   }
 
   function populateRouteCenterOptions() {
@@ -1952,12 +2053,17 @@
     return ROUTE_HAZARD_WEIGHTS[first] >= ROUTE_HAZARD_WEIGHTS[second] ? first : second;
   }
 
-  function routeExposureCategory(scoreDensity) {
+  function routeExposureCategory(scoreDensity, exposedSamplePercentage, highestEncountered) {
     // CIVENTRAL development categories based on weighted score per route
     // sample: 0=MINIMAL, <=1.5=LOW, <=4=MODERATE, >4=HIGH.
-    if (scoreDensity === 0) return 'MINIMAL';
-    if (scoreDensity <= 1.5) return 'LOW';
-    if (scoreDensity <= 4) return 'MODERATE';
+    const exposureFraction = Math.max(0, Math.min(1, exposedSamplePercentage / 100));
+    const highestExposureScore = highestEncountered
+      ? ROUTE_HAZARD_WEIGHTS[highestEncountered] * exposureFraction
+      : 0;
+    const effectiveScore = Math.max(scoreDensity, highestExposureScore);
+    if (effectiveScore === 0) return 'MINIMAL';
+    if (effectiveScore <= 1.5) return 'LOW';
+    if (effectiveScore <= 4) return 'MODERATE';
     return 'HIGH';
   }
 
@@ -2012,7 +2118,7 @@
       exposedDistanceMeters: exposedDistanceMeters,
       hazardScore: hazardScore,
       scoreDensity: scoreDensity,
-      category: routeExposureCategory(scoreDensity),
+      category: routeExposureCategory(scoreDensity, (exposedSamples / segmentCount) * 100, highestEncountered),
       highestEncountered: highestEncountered,
       flood: Object.freeze(flood),
       landslide: Object.freeze(landslide)
@@ -2268,16 +2374,6 @@
     if (setOriginButton.dataset.routeToolBound === 'true') return state.routeCenterOptionsLoaded;
     setOriginButton.dataset.routeToolBound = 'true';
 
-    setOriginButton.addEventListener('click', function () {
-      if (!config || !routeGeospatialToolsAvailable() || !state.cityBoundaryFeatureCollection) return;
-      setRouteOriginSelectionActive(!state.routeOriginSelectionActive);
-      setStatus(
-        'routeOriginStatus',
-        state.routeOriginSelectionActive
-          ? 'Click an exact point inside the Caloocan boundary.'
-          : (state.routeOrigin ? 'Exact map location selected inside Caloocan City.' : 'Choose an exact point inside Caloocan City.')
-      );
-    });
     clearOriginButton.addEventListener('click', clearRouteOrigin);
     if (clearRouteButton) clearRouteButton.addEventListener('click', function () {
       clearRenderedRoute(true);
@@ -2296,9 +2392,7 @@
       updateFindRouteButton();
     });
     findButton.addEventListener('click', findDevelopmentEvacuationRoute);
-    state.map.on('click', handleRouteOriginMapClick);
-
-    if (!config || !routeGeospatialToolsAvailable() || !state.cityBoundaryFeatureCollection) {
+    if (!config || !pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) {
       setOriginButton.disabled = true;
       centerSelect.disabled = true;
       centerSelect.replaceChildren(new Option('Route preview unavailable', ''));
@@ -2339,6 +2433,12 @@
   function setForecastLocationSelectionActive(active) {
     if (active === true && state.routeOriginSelectionActive) {
       setRouteOriginSelectionActive(false);
+      setStatus(
+        'routeOriginStatus',
+        state.routeOrigin
+          ? 'Exact map location selected inside Caloocan City.'
+          : 'Choose an exact point inside Caloocan City.'
+      );
     }
     state.forecastLocationSelectionActive = active === true;
     const container = document.getElementById(CONFIG.containerId);
@@ -2350,18 +2450,58 @@
     if (button) {
       button.setAttribute('aria-pressed', state.forecastLocationSelectionActive ? 'true' : 'false');
       const label = button.querySelector('span');
-      if (label) label.textContent = state.forecastLocationSelectionActive ? 'Click Inside Caloocan' : 'Set on Map';
+      if (label) label.textContent = state.forecastLocationSelectionActive ? 'Click Inside Caloocan' : 'Choose Assessment Location';
     }
+  }
+
+  function getCurrentRouteOrigin() {
+    let candidate = state.routeOrigin;
+
+    if (!candidate && state.routeOriginMarker && typeof state.routeOriginMarker.getLatLng === 'function') {
+      const markerPosition = state.routeOriginMarker.getLatLng();
+      if (markerPosition) {
+        candidate = {
+          latitude: Number(markerPosition.lat),
+          longitude: Number(markerPosition.lng)
+        };
+      }
+    }
+
+    if (!candidate) return null;
+    const latitude = Number(candidate.latitude);
+    const longitude = Number(candidate.longitude);
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      !routePointIsInsideCaloocan(latitude, longitude)
+    ) {
+      return null;
+    }
+
+    if (
+      !state.routeOrigin ||
+      state.routeOrigin.latitude !== latitude ||
+      state.routeOrigin.longitude !== longitude
+    ) {
+      state.routeOrigin = Object.freeze({ latitude: latitude, longitude: longitude });
+    }
+
+    return state.routeOrigin;
   }
 
   function updateForecastRouteOriginButton() {
     const button = document.getElementById('useRouteOriginForForecastButton');
-    if (!button) return;
-    button.disabled = !state.routeOrigin || !getFloodForecastPreviewConfig();
+    if (!button) return false;
+
+    const enabled = Boolean(getCurrentRouteOrigin() && getFloodForecastPreviewConfig());
+    button.disabled = false;
+    button.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    button.classList.toggle('is-disabled', !enabled);
+    return enabled;
   }
 
   function findBarangayAtPoint(latitude, longitude) {
-    if (!routeGeospatialToolsAvailable()) return null;
+    if (!pointSelectionToolsAvailable()) return null;
     const point = window.turf.point([longitude, latitude]);
 
     return state.searchableBarangays.find(function (record) {
@@ -2376,16 +2516,17 @@
     }
     state.forecastLocation = null;
     state.forecastLocationMarker = null;
+    state.forecastUsesRouteOrigin = false;
     state.mappedFloodSusceptibility = null;
 
     const input = document.getElementById('forecastLocationInput');
     const clearButton = document.getElementById('clearForecastLocationButton');
-    if (input) input.value = 'No forecast point selected';
+    if (input) input.value = 'No assessment location selected';
     if (clearButton) clearButton.hidden = true;
     setStatus('forecastLocationStatus', 'Select an exact point inside Caloocan City.');
     setStatus(
       'mappedFloodSusceptibilityContent',
-      'Select a forecast point to check the current DENR-MGB flood layer.'
+      'Flood Risk Check evaluates the selected exact location against DENR-MGB mapped flood susceptibility.'
     );
   }
 
@@ -2395,7 +2536,7 @@
 
     content.textContent = 'Checking the selected point against DENR-MGB flood susceptibility...';
     const loaded = await loadDraftFloodPreview();
-    if (!loaded || !state.floodPreviewFeatureCollection || !routeGeospatialToolsAvailable()) {
+    if (!loaded || !state.floodPreviewFeatureCollection || !pointSelectionToolsAvailable()) {
       state.mappedFloodSusceptibility = 'UNAVAILABLE';
       content.textContent = 'Mapped flood susceptibility is unavailable for this development preview.';
       return false;
@@ -2461,12 +2602,13 @@
       longitude: longitude,
       barangayName: barangay ? barangay.properties.name : null
     });
+    state.forecastUsesRouteOrigin = sourceLabel === 'ROUTE_ORIGIN';
     state.forecastLocationMarker = L.marker([latitude, longitude], {
       pane: 'markerPane',
       icon: forecastLocationMarkerIcon(),
       keyboard: true,
-      title: 'Selected flood forecast location'
-    }).bindTooltip('Flood forecast location', { direction: 'top', opacity: 0.96 });
+      title: 'Selected flood risk check location'
+    }).bindTooltip('Flood risk check location', { direction: 'top', opacity: 0.96 });
     state.forecastLocationMarker.addTo(state.layerGroups.forecastLocations);
 
     const input = document.getElementById('forecastLocationInput');
@@ -2477,17 +2619,85 @@
     setStatus(
       'forecastLocationStatus',
       sourceLabel === 'ROUTE_ORIGIN'
-        ? 'Using the current exact evacuation-route origin.'
-        : 'Exact map point selected inside Caloocan City.'
+        ? 'Using the current Evacuation Route starting location in the Flood Risk Check.'
+        : 'Flood Risk Check evaluates this exact location inside Caloocan City.'
     );
     setForecastLocationSelectionActive(false);
     await evaluateMappedFloodSusceptibility();
     return true;
   }
 
-  function handleForecastLocationMapClick(event) {
-    if (!state.forecastLocationSelectionActive || !event || !event.latlng) return;
-    setForecastLocation(Number(event.latlng.lat), Number(event.latlng.lng), 'MAP_CLICK');
+  function createUseRouteOriginResult(success, reason, routeOrigin, forecastLocation) {
+    const routeCoordinates = routeOrigin
+      ? Object.freeze({ latitude: routeOrigin.latitude, longitude: routeOrigin.longitude })
+      : null;
+    const forecastCoordinates = forecastLocation
+      ? Object.freeze({
+          latitude: forecastLocation.latitude,
+          longitude: forecastLocation.longitude
+        })
+      : null;
+    const exactCoordinateMatch = Boolean(
+      routeCoordinates &&
+      forecastCoordinates &&
+      routeCoordinates.latitude === forecastCoordinates.latitude &&
+      routeCoordinates.longitude === forecastCoordinates.longitude
+    );
+
+    return Object.freeze({
+      success: success,
+      reason: reason,
+      routeOrigin: routeCoordinates,
+      forecastLocation: forecastCoordinates,
+      exactCoordinateMatch: exactCoordinateMatch
+    });
+  }
+
+  async function handleUseRouteOrigin() {
+    state.useRouteOriginClickCount += 1;
+    const hadOriginCandidate = Boolean(state.routeOrigin || state.routeOriginMarker);
+    const origin = getCurrentRouteOrigin();
+
+    if (!origin) {
+      state.useRouteOriginLastResult = hadOriginCandidate ? 'INVALID_ORIGIN' : 'NO_ORIGIN';
+      updateForecastRouteOriginButton();
+      setStatus('forecastLocationStatus', 'Set an Evacuation Route starting location first.');
+      return createUseRouteOriginResult(
+        false,
+        state.useRouteOriginLastResult,
+        null,
+        state.forecastLocation
+      );
+    }
+
+    try {
+      const applied = await setForecastLocation(
+        origin.latitude,
+        origin.longitude,
+        'ROUTE_ORIGIN'
+      );
+      const exactCoordinateMatch = Boolean(
+        applied &&
+        state.forecastLocation &&
+        state.forecastLocation.latitude === origin.latitude &&
+        state.forecastLocation.longitude === origin.longitude
+      );
+
+      state.useRouteOriginLastResult = exactCoordinateMatch ? 'SUCCESS' : 'APPLY_FAILED';
+      if (!exactCoordinateMatch) {
+        setStatus('forecastLocationStatus', 'The Evacuation Route starting location could not be reused.');
+      }
+      return createUseRouteOriginResult(
+        exactCoordinateMatch,
+        state.useRouteOriginLastResult,
+        origin,
+        state.forecastLocation
+      );
+    } catch (error) {
+      state.useRouteOriginLastResult = 'APPLY_FAILED';
+      setStatus('forecastLocationStatus', 'The Evacuation Route starting location could not be reused.');
+      return createUseRouteOriginResult(false, 'APPLY_FAILED', origin, state.forecastLocation);
+    }
   }
 
   function nullableForecastString(value) {
@@ -2672,7 +2882,7 @@
     setButton.dataset.forecastToolBound = 'true';
 
     setButton.addEventListener('click', function () {
-      if (!config || !routeGeospatialToolsAvailable() || !state.cityBoundaryFeatureCollection) return;
+      if (!config || !pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) return;
       setForecastLocationSelectionActive(!state.forecastLocationSelectionActive);
       setStatus(
         'forecastLocationStatus',
@@ -2681,18 +2891,12 @@
           : (state.forecastLocation ? 'Exact forecast point selected inside Caloocan City.' : 'Select an exact point inside Caloocan City.')
       );
     });
-    useRouteButton.addEventListener('click', function () {
-      if (!state.routeOrigin) return;
-      setForecastLocation(state.routeOrigin.latitude, state.routeOrigin.longitude, 'ROUTE_ORIGIN');
-    });
     clearButton.addEventListener('click', clearForecastLocation);
-    state.map.on('click', handleForecastLocationMapClick);
-
-    if (!config || !routeGeospatialToolsAvailable() || !state.cityBoundaryFeatureCollection) {
+    if (!config || !pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) {
       setButton.disabled = true;
       useRouteButton.disabled = true;
       setStatus('floodForecastConnectionStatus', 'Unavailable');
-      setStatus('pagasaForecastContent', 'Flood forecast preview is not available in this environment.');
+      setStatus('pagasaForecastContent', 'PAGASA detailed forecast requires API access.');
       setStatus('mappedFloodSusceptibilityContent', 'Mapped flood susceptibility is not available in this environment.');
       return false;
     }
@@ -2808,6 +3012,45 @@
         }
       });
     });
+  }
+
+  function bindPreparednessActionDelegation() {
+    const container = document.getElementById('preparednessToolsContainer');
+    if (!container) return false;
+    if (container.dataset.preparednessActionsBound === 'true') {
+      state.routeOriginSetButtonHandlerBound = Boolean(
+        document.getElementById('setRouteOriginButton')
+      );
+      state.useRouteOriginHandlerBound = true;
+      return true;
+    }
+
+    container.dataset.preparednessActionsBound = 'true';
+    container.addEventListener('click', function (event) {
+      const target = event && event.target;
+      const setRouteOriginButton = target && typeof target.closest === 'function'
+        ? target.closest('[data-action="set-route-origin"]')
+        : null;
+      if (setRouteOriginButton && container.contains(setRouteOriginButton)) {
+        event.preventDefault();
+        activateRouteOriginSelectionMode();
+        return;
+      }
+
+      const useRouteOriginButton = target && typeof target.closest === 'function'
+        ? target.closest('[data-action="use-route-origin"]')
+        : null;
+      if (!useRouteOriginButton || !container.contains(useRouteOriginButton)) return;
+
+      event.preventDefault();
+      void handleUseRouteOrigin();
+    });
+    state.routeOriginSetButtonHandlerBound = Boolean(
+      document.getElementById('setRouteOriginButton')
+    );
+    state.useRouteOriginHandlerBound = true;
+    updateForecastRouteOriginButton();
+    return true;
   }
 
   function createDraftPopup(properties) {
@@ -2980,8 +3223,8 @@
               state.selectedBarangayLayer.bringToFront();
             }
           });
-          layer.on('click', function () {
-            if (mapPointSelectionActive()) return;
+          layer.on('click', function (event) {
+            if (delegateFeatureClickToMapPointSelection(event)) return;
             selectDraftBarangay(record);
           });
         }
@@ -3074,7 +3317,7 @@
       return replaceGeoJsonLayer('riskPredictions', featureCollection, options);
     },
     displayFloodRiskPrediction: function () {
-      setStatus('floodForecastContent', 'Pending TensorFlow model integration. No AI flood probability is currently generated.');
+      setStatus('floodForecastContent', 'TensorFlow AI prediction is not yet connected.');
       setStatus('floodModelStatus', 'Pending');
       state.tensorflowPredictionAvailable = false;
       return false;
@@ -3083,6 +3326,9 @@
 
   function getDiagnostics() {
     const container = document.getElementById(CONFIG.containerId);
+    const routeOriginSetButton = document.getElementById('setRouteOriginButton');
+    const useRouteOriginButton = document.getElementById('useRouteOriginForForecastButton');
+    const currentRouteOrigin = getCurrentRouteOrigin();
     const attribution = container ? container.querySelector('.leaflet-control-attribution') : null;
     const tileLayerCount = container
       ? container.querySelectorAll('.leaflet-tile-pane > .leaflet-layer').length
@@ -3145,7 +3391,20 @@
       evacuationCenterMarkerCount: container
         ? container.querySelectorAll('.civ-evacuation-marker-wrap').length
         : 0,
-      routeOriginSelected: Boolean(state.routeOrigin),
+      routeOriginSetButtonFound: Boolean(routeOriginSetButton),
+      routeOriginSetButtonHandlerBound: state.routeOriginSetButtonHandlerBound,
+      routeOriginSetButtonClickCount: state.routeOriginSetButtonClickCount,
+      routeOriginSelected: Boolean(currentRouteOrigin),
+      routeOriginSelectionMode: state.routeOriginSelectionActive,
+      routeOriginMapClickCount: state.routeOriginMapClickCount,
+      routeOriginFeatureClickCount: state.routeOriginFeatureClickCount,
+      routeOriginSelectionAttemptCount: state.routeOriginSelectionAttemptCount,
+      routeOriginLastAttemptLat: state.routeOriginLastAttemptLat,
+      routeOriginLastAttemptLng: state.routeOriginLastAttemptLng,
+      routeOriginLastResult: state.routeOriginLastResult,
+      routeOriginLat: currentRouteOrigin ? currentRouteOrigin.latitude : null,
+      routeOriginLng: currentRouteOrigin ? currentRouteOrigin.longitude : null,
+      routeOriginMarkerExists: Boolean(state.routeOriginMarker),
       selectedEvacuationCenterId: state.selectedEvacuationCenterId,
       routingFetchCount: state.routingFetchCount,
       routeAlternativesReceived: state.routeAlternativesReceived,
@@ -3158,8 +3417,19 @@
       routeGeometryRendered: state.routeGeometryRendered,
       routeSampleIntervalMeters: CONFIG.routeSampleIntervalMeters,
       forecastLocationSelected: Boolean(state.forecastLocation),
+      forecastLocationSelectionMode: state.forecastLocationSelectionActive,
       forecastLocationLat: state.forecastLocation ? state.forecastLocation.latitude : null,
       forecastLocationLng: state.forecastLocation ? state.forecastLocation.longitude : null,
+      forecastUsesRouteOrigin: state.forecastUsesRouteOrigin,
+      useRouteOriginButtonFound: Boolean(useRouteOriginButton),
+      useRouteOriginButtonEnabled: Boolean(
+        useRouteOriginButton &&
+        !useRouteOriginButton.disabled &&
+        useRouteOriginButton.getAttribute('aria-disabled') !== 'true'
+      ),
+      useRouteOriginHandlerBound: state.useRouteOriginHandlerBound,
+      useRouteOriginClickCount: state.useRouteOriginClickCount,
+      useRouteOriginLastResult: state.useRouteOriginLastResult,
       pagasaForecastStatus: state.pagasaForecastStatus,
       pagasaForecastFetchCount: state.pagasaForecastFetchCount,
       pagasaForecastEntries: state.pagasaForecastEntries,
@@ -3182,7 +3452,8 @@
         marker: 600
       }),
       maximumBoundsConfigured: Boolean(state.operationalMaxBounds),
-      maxBoundsViscosity: state.map ? state.map.options.maxBoundsViscosity : null
+      maxBoundsViscosity: state.map ? state.map.options.maxBoundsViscosity : null,
+      mapPointSelectionHandlerBound: state.mapPointSelectionHandlerBound
     });
   }
 
@@ -3192,6 +3463,7 @@
     if (container._leaflet_id) return null;
 
     bindPreparednessTabs();
+    bindPreparednessActionDelegation();
 
     if (typeof window.L === 'undefined') {
       showMapUnavailable();
@@ -3209,6 +3481,10 @@
     });
 
     createCityContextPanes();
+    state.map.on('click', function (event) {
+      handleMapPointSelection(event, 'MAP');
+    });
+    state.mapPointSelectionHandlerBound = true;
     state.layerGroups.barangays.addTo(state.map);
     state.layerGroups.evacuationRoutes.addTo(state.map);
     state.layerGroups.forecastLocations.addTo(state.map);
@@ -3223,13 +3499,38 @@
     return state.map;
   }
 
-  window.CiventralHazardMap = Object.freeze({
+  const publicApi = {
     init: init,
     refresh: scheduleMapResize,
     focus: focusMapArea,
     diagnostics: getDiagnostics,
     dataHooks: dataHooks
-  });
+  };
+  if (getEvacuationRoutePreviewConfig()) {
+    publicApi.getRouteOriginDebugState = function () {
+      const origin = getCurrentRouteOrigin();
+      return Object.freeze({
+        buttonFound: Boolean(document.getElementById('setRouteOriginButton')),
+        handlerBound: state.routeOriginSetButtonHandlerBound,
+        buttonClickCount: state.routeOriginSetButtonClickCount,
+        selectionMode: state.routeOriginSelectionActive,
+        mapClickCount: state.routeOriginMapClickCount,
+        featureClickCount: state.routeOriginFeatureClickCount,
+        selectionAttemptCount: state.routeOriginSelectionAttemptCount,
+        routeOriginSelected: Boolean(origin),
+        latitude: origin ? origin.latitude : null,
+        longitude: origin ? origin.longitude : null,
+        markerExists: Boolean(state.routeOriginMarker),
+        lastAttemptLat: state.routeOriginLastAttemptLat,
+        lastAttemptLng: state.routeOriginLastAttemptLng,
+        lastResult: state.routeOriginLastResult
+      });
+    };
+  }
+  if (getFloodForecastPreviewConfig()) {
+    publicApi.testUseRouteOrigin = handleUseRouteOrigin;
+  }
+  window.CiventralHazardMap = Object.freeze(publicApi);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });

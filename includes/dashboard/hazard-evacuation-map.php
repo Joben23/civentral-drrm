@@ -168,7 +168,7 @@
         </div>
       </section>
 
-      <section class="civ-map-card civ-preparedness-card" aria-labelledby="preparednessToolsTitle">
+      <section id="preparednessToolsContainer" class="civ-map-card civ-preparedness-card" aria-labelledby="preparednessToolsTitle">
         <div class="flex items-start justify-between gap-3">
           <div class="civ-map-card-heading">
             <span class="civ-map-card-icon"><i class="fa-solid fa-kit-medical" aria-hidden="true"></i></span>
@@ -195,7 +195,7 @@
             aria-selected="false"
             aria-controls="floodForecastPanel"
             tabindex="-1"
-          >Flood Forecast</button>
+          >Flood Risk Check</button>
         </div>
 
         <div id="evacuationRoutePanel" class="civ-preparedness-panel" role="tabpanel" aria-labelledby="evacuationRouteTab">
@@ -205,7 +205,13 @@
               <label for="routeStartInput" class="civ-map-label">Starting Location</label>
               <input id="routeStartInput" type="text" value="No starting point selected" class="civ-map-input mt-1.5 w-full px-3 py-2.5 text-xs" readonly>
               <div class="civ-route-action-row mt-2">
-                <button id="setRouteOriginButton" type="button" class="civ-route-secondary-button">
+                <button
+                  id="setRouteOriginButton"
+                  type="button"
+                  class="civ-route-secondary-button"
+                  data-action="set-route-origin"
+                  aria-pressed="false"
+                >
                   <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
                   <span>Set Location on Map</span>
                 </button>
@@ -235,29 +241,36 @@
 
         <div id="floodForecastPanel" class="civ-preparedness-panel" role="tabpanel" aria-labelledby="floodForecastTab" hidden>
           <div class="flex items-center justify-between gap-2">
-            <h3 id="floodForecastTitle" class="text-[11px] font-black text-slate-700 dark:text-slate-200">Flood Preparedness Outlook</h3>
+            <h3 id="floodForecastTitle" class="text-[11px] font-black text-slate-700 dark:text-slate-200">Flood Risk Check</h3>
             <span id="floodForecastConnectionStatus" class="civ-model-status">Development Preview</span>
           </div>
 
           <div class="mt-3 space-y-3">
             <section class="civ-forecast-section" aria-labelledby="forecastLocationTitle">
-              <h4 id="forecastLocationTitle" class="civ-forecast-section-title">Forecast Location</h4>
-              <label class="sr-only" for="forecastLocationInput">Selected forecast location</label>
-              <input id="forecastLocationInput" type="text" value="No forecast point selected" class="civ-map-input mt-2 w-full px-3 py-2.5 text-xs" readonly>
+              <h4 id="forecastLocationTitle" class="civ-forecast-section-title">Assessment Location</h4>
+              <label class="sr-only" for="forecastLocationInput">Selected assessment location</label>
+              <input id="forecastLocationInput" type="text" value="No assessment location selected" class="civ-map-input mt-2 w-full px-3 py-2.5 text-xs" readonly>
               <div class="civ-forecast-actions mt-2">
                 <button id="setForecastLocationButton" type="button" class="civ-route-secondary-button">
                   <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
-                  <span>Set on Map</span>
+                  <span>Choose Assessment Location</span>
                 </button>
-                <button id="useRouteOriginForForecastButton" type="button" class="civ-route-secondary-button" disabled>
+                <button
+                  id="useRouteOriginForForecastButton"
+                  type="button"
+                  class="civ-route-secondary-button is-disabled"
+                  data-action="use-route-origin"
+                  aria-disabled="true"
+                >
                   <i class="fa-solid fa-share-from-square" aria-hidden="true"></i>
-                  <span>Use Route Origin</span>
+                  <span>Use Evacuation Starting Point</span>
                 </button>
               </div>
               <div class="mt-1.5 flex items-start justify-between gap-2">
-                <p id="forecastLocationStatus" class="civ-map-helper" role="status" aria-live="polite">Select an exact point inside Caloocan City.</p>
+                <p id="forecastLocationStatus" class="civ-map-helper" role="status" aria-live="polite">Flood Risk Check evaluates the selected exact location.</p>
                 <button id="clearForecastLocationButton" type="button" class="civ-route-text-button" hidden>Clear</button>
               </div>
+              <p class="civ-map-helper mt-1.5">Use Evacuation Starting Point copies the current Evacuation Route starting location into the Flood Risk Check.</p>
             </section>
 
             <section class="civ-forecast-section" aria-labelledby="pagasaOutlookTitle">
@@ -266,7 +279,7 @@
                 <span id="pagasaForecastStatusBadge" class="civ-model-status">Checking</span>
               </div>
               <div id="pagasaForecastContent" class="civ-forecast-content mt-2" role="status" aria-live="polite">
-                Checking official DOST-PAGASA TenDay access...
+                PAGASA detailed forecast requires API access.
               </div>
               <div id="pagasaForecastEntries" class="civ-forecast-entries mt-2" hidden></div>
               <details id="pagasaFullForecastDetails" class="civ-forecast-full-outlook mt-2" hidden>
@@ -278,19 +291,19 @@
             <section class="civ-forecast-section" aria-labelledby="mappedFloodSusceptibilityTitle">
               <h4 id="mappedFloodSusceptibilityTitle" class="civ-forecast-section-title">Mapped Flood Susceptibility</h4>
               <div id="mappedFloodSusceptibilityContent" class="civ-forecast-content mt-2" aria-live="polite">
-                Select a forecast point to check the current DENR-MGB flood layer.
+                DENR-MGB mapped flood susceptibility is currently available.
               </div>
             </section>
 
             <section class="civ-forecast-section" aria-labelledby="aiFloodPredictionTitle">
               <div class="flex items-start justify-between gap-2">
-                <h4 id="aiFloodPredictionTitle" class="civ-forecast-section-title">AI Risk Prediction</h4>
+                <h4 id="aiFloodPredictionTitle" class="civ-forecast-section-title">TensorFlow AI Prediction</h4>
                 <span id="floodModelStatus" class="civ-model-status">Pending</span>
               </div>
-              <p id="floodForecastContent" class="civ-forecast-content mt-2">Pending TensorFlow model integration. No AI flood probability is currently generated.</p>
+              <p id="floodForecastContent" class="civ-forecast-content mt-2">TensorFlow AI prediction is not yet connected.</p>
             </section>
 
-            <p class="civ-map-helper">Development preparedness foundation only. PAGASA weather and DENR-MGB mapped susceptibility are shown separately and do not constitute an AI flood-risk prediction.</p>
+            <p class="civ-map-helper">Flood Risk Check evaluates the selected exact location. DENR-MGB mapped flood susceptibility is currently available. PAGASA detailed forecast requires API access. TensorFlow AI prediction is not yet connected.</p>
           </div>
         </div>
       </section>

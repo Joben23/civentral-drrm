@@ -513,7 +513,9 @@
   line-height: 1.25;
 }
 
-.civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button:disabled {
+.civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button:disabled,
+.civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button.is-disabled,
+.civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button[aria-disabled="true"] {
   cursor: not-allowed;
   border-color: #e2e8f0;
   background: #f1f5f9;
@@ -976,7 +978,9 @@
   background: #0f172a;
 }
 
-.dark .civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button:disabled {
+.dark .civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button:disabled,
+.dark .civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button.is-disabled,
+.dark .civ-hazard-map-module .civ-forecast-actions .civ-route-secondary-button[aria-disabled="true"] {
   border-color: #334155;
   background: #0f172a;
   color: #64748b;
