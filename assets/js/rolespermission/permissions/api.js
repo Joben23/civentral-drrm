@@ -112,9 +112,17 @@ async function fetchPermissionsData() {
 
 // ACTION: SAVE PERMISSION MATRIX CHANGES TO DATABASE
 async function saveChanges() {
+  const canManageByServerPageGate = (typeof window.currentUserCanManagePermissions === 'boolean')
+    ? window.currentUserCanManagePermissions
+    : false;
   const isSuperAdmin = currentUserScope ? !!currentUserScope.is_superadmin : false;
+  const isGlobalAccess = currentUserScope ? !!currentUserScope.is_global_access : false;
   const grantedActions = currentUserScope ? (currentUserScope.granted_actions || []) : [];
-  let canEdit = isSuperAdmin || grantedActions.includes('EDIT') || grantedActions.includes('CREATE');
+  let canEdit = canManageByServerPageGate
+    || isSuperAdmin
+    || isGlobalAccess
+    || grantedActions.includes('EDIT')
+    || grantedActions.includes('CREATE');
 
   if (window.selectedRoleId && window.currentUserRoleId && parseInt(window.selectedRoleId) === parseInt(window.currentUserRoleId)) {
     canEdit = false;
@@ -131,7 +139,10 @@ async function saveChanges() {
   }
 
   const roleId = window.selectedRoleId;
-  if (!roleId) return;
+  if (!roleId) {
+    if (typeof showToast === 'function') showToast('Select a role before saving permissions.', true);
+    return;
+  }
 
   const currentRolePerms = window.currentPermissions[roleId] || {};
   const grantedPairs = [];

@@ -2,6 +2,11 @@
 $basePath = '../../';
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
+
+$canManagePermissions = !empty($headerUser['is_superadmin'])
+  || !empty($headerUser['is_global_access'])
+  || in_array('EDIT', $headerUser['granted_actions'] ?? [], true)
+  || in_array('CREATE', $headerUser['granted_actions'] ?? [], true);
 ?>
 <script>
   window.currentUserRoleId = <?php echo json_encode($_SESSION['current_user_details']['role_id'] ?? null); ?>;
@@ -9,6 +14,7 @@ include '../../includes/sidebar.php';
   window.currentUserDeptName = <?php echo json_encode($headerUser['department_name'] ?? ''); ?>;
   window.currentUserDeptCode = <?php echo json_encode($headerUser['department_code'] ?? ''); ?>;
   window.currentUserIsSuperAdmin = <?php echo json_encode(!empty($headerUser['is_superadmin']) || !empty($headerUser['is_global_access'])); ?>;
+  window.currentUserCanManagePermissions = <?php echo json_encode($canManagePermissions); ?>;
 </script>
 
 
@@ -62,12 +68,12 @@ include '../../includes/sidebar.php';
           <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Access Parameters Configuration</p>
           <h2 id="editingRoleHeader" class="text-sm font-black text-slate-900 tracking-tight">Editing Permissions for: Loading...</h2>
         </div>
-        <?php if (!empty($headerUser['is_superadmin']) || !empty($headerUser['is_global_access']) || (in_array('EDIT', $headerUser['granted_actions'] ?? [])) || (in_array('CREATE', $headerUser['granted_actions'] ?? []))): ?>
+        <?php if ($canManagePermissions): ?>
         <div class="flex items-center gap-2">
-          <button onclick="resetToDefaults()" class="border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+          <button type="button" onclick="resetToDefaults()" class="border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
             Reset to Defaults
           </button>
-          <button onclick="saveChanges()" class="bg-[#0f172a] hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer">
+          <button type="button" onclick="saveChanges()" class="bg-[#0f172a] hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer">
             Save Changes
           </button>
         </div>
@@ -132,8 +138,8 @@ include '../../includes/sidebar.php';
       <span class="text-xs font-bold tracking-wide">You have unsaved changes in the permission assignments.</span>
     </div>
     <div class="flex items-center space-x-2">
-      <button onclick="discardChanges()" class="hover:bg-slate-800 text-slate-350 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer">Discard</button>
-      <button onclick="saveChanges()" class="bg-brand-medium hover:bg-brand-medium/90 text-white px-4 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">Save Changes</button>
+      <button type="button" onclick="discardChanges()" class="hover:bg-slate-800 text-slate-350 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer">Discard</button>
+      <button type="button" onclick="saveChanges()" class="bg-brand-medium hover:bg-brand-medium/90 text-white px-4 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">Save Changes</button>
     </div>
   </div>
 
