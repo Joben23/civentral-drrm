@@ -53,6 +53,24 @@ final class SupabaseRestClient
     }
 
     /**
+     * Update only records selected by explicit PostgREST filters.
+     *
+     * @param array<mixed> $payload
+     * @param array<string, scalar> $query
+     * @return array<mixed>
+     */
+    public function patch(string $resource, array $payload, array $query): array
+    {
+        if ($payload === []) {
+            throw new RuntimeException('A Supabase REST update payload cannot be empty.');
+        }
+
+        $this->requireRecordSelectionFilter($query, 'update');
+
+        return $this->request('PATCH', $resource, $query, $payload, true);
+    }
+
+    /**
      * Delete only records selected by explicit PostgREST filters.
      *
      * @param array<string, scalar> $query
@@ -60,18 +78,7 @@ final class SupabaseRestClient
      */
     public function delete(string $resource, array $query): array
     {
-        if ($query === []) {
-            throw new RuntimeException('A Supabase REST delete requires at least one explicit filter.');
-        }
-
-        $filterCount = count(array_filter(
-            array_keys($query),
-            static fn (string $key): bool => $key !== 'select'
-        ));
-
-        if ($filterCount === 0) {
-            throw new RuntimeException('A Supabase REST delete requires a record-selection filter.');
-        }
+        $this->requireRecordSelectionFilter($query, 'delete');
 
         return $this->request('DELETE', $resource, $query, null, true);
     }
@@ -92,7 +99,7 @@ final class SupabaseRestClient
             throw new RuntimeException('The PHP cURL extension is required for Supabase requests.');
         }
 
-        if (!in_array($method, ['GET', 'POST', 'DELETE'], true)) {
+        if (!in_array($method, ['GET', 'POST', 'PATCH', 'DELETE'], true)) {
             throw new RuntimeException('The Supabase REST method is not supported.');
         }
 
@@ -146,7 +153,7 @@ final class SupabaseRestClient
         } elseif ($method === 'POST') {
             $options[CURLOPT_POST] = true;
         } else {
-            $options[CURLOPT_CUSTOMREQUEST] = 'DELETE';
+            $options[CURLOPT_CUSTOMREQUEST] = $method;
         }
 
         if ($payload !== null) {
@@ -196,5 +203,27 @@ final class SupabaseRestClient
         }
 
         return $decodedResponse;
+    }
+
+    /** @param array<string, scalar> $query */
+    private function requireRecordSelectionFilter(array $query, string $operation): void
+    {
+        if ($query === []) {
+            throw new RuntimeException(
+                'A Supabase REST ' . $operation . ' requires at least one explicit filter.'
+            );
+        }
+
+        $nonFilterKeys = ['select', 'order', 'limit', 'offset'];
+        $filterCount = count(array_filter(
+            array_keys($query),
+            static fn (string $key): bool => !in_array($key, $nonFilterKeys, true)
+        ));
+
+        if ($filterCount === 0) {
+            throw new RuntimeException(
+                'A Supabase REST ' . $operation . ' requires a record-selection filter.'
+            );
+        }
     }
 }

@@ -31,6 +31,10 @@
     ndrrmcFetchCount: 0,
     ndrrmcSourceStatus: 'NOT_LOADED',
     ndrrmcAdvisoryCount: 0,
+    recentWarnings: [],
+    barangays: null,
+    selectedWarningId: null,
+    mutationInFlight: false,
     lastResult: 'NOT_STARTED'
   };
 
@@ -63,9 +67,8 @@
   }
 
   /**
-   * Future Module 4 mutations must use this helper so the session-bound token
-   * is carried only in the X-CSRF-Token header, never in a URL. This phase does
-   * not issue any mutation requests.
+   * Module 4 mutations use this helper so the session-bound token is carried
+   * only in the X-CSRF-Token header, never in a URL.
    */
   function buildMutationHeaders(additionalHeaders = {}) {
     const csrfToken = typeof configuredSecurity.csrfToken === 'string'
@@ -82,6 +85,93 @@
       'X-CSRF-Token': csrfToken,
       ...additionalHeaders
     };
+  }
+
+  function setElementVisible(element, visible, flex = false) {
+    if (!element) {
+      return;
+    }
+
+    element.hidden = !visible;
+    element.classList.toggle('hidden', !visible);
+    if (flex) {
+      element.classList.toggle('flex', visible);
+    }
+  }
+
+  function setWorkflowStatus(element, message, type = 'info') {
+    if (!element) {
+      return;
+    }
+
+    element.textContent = message;
+    element.className = 'rounded-xl border px-3 py-2 text-[10px] font-bold';
+    element.classList.add(
+      type === 'error' ? 'border-rose-200' : 'border-emerald-200',
+      type === 'error' ? 'bg-rose-50' : 'bg-emerald-50',
+      type === 'error' ? 'text-rose-700' : 'text-emerald-700'
+    );
+    element.hidden = false;
+    element.classList.remove('hidden');
+  }
+
+  function clearWorkflowStatus(element) {
+    if (!element) {
+      return;
+    }
+    element.textContent = '';
+    element.hidden = true;
+    element.classList.add('hidden');
+  }
+
+  async function mutationRequest(endpoint, body) {
+    if (typeof endpoint !== 'string' || endpoint === '') {
+      throw new Error('The warning-management endpoint is unavailable.');
+    }
+
+    const response = await window.fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: window.CiventralEarlyWarningSecurity.buildMutationHeaders(),
+      body: JSON.stringify(body)
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      throw new Error('The warning-management response was invalid.');
+    }
+
+    if (!response.ok || !payload || payload.success !== true) {
+      const message = payload && typeof payload.message === 'string'
+        ? payload.message
+        : 'The warning-management request failed.';
+      throw new Error(message);
+    }
+
+    return requireObject(payload.data, 'The warning-management response data is malformed.');
+  }
+
+  function localDateTimeValue(date = new Date()) {
+    const localTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    return localTime.toISOString().slice(0, 16);
+  }
+
+  function dateTimeInputToIso(value, required) {
+    if (typeof value !== 'string' || value.trim() === '') {
+      if (required) {
+        throw new Error('Issued At is required.');
+      }
+      return null;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new Error('Enter a valid warning date and time.');
+    }
+    return date.toISOString();
   }
 
   function formatDateTime(value) {
@@ -308,6 +398,297 @@
     row.appendChild(cell);
   }
 
+  function createReviewButton(warningId) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'rounded-lg border border-slate-200 px-2.5 py-1.5 text-[9px] font-black text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800';
+    button.dataset.reviewWarningId = warningId;
+    button.textContent = 'Review';
+    return button;
+  }
+
+  function appendActionsCell(row, warningId) {
+    const cell = document.createElement('td');
+    cell.className = 'px-5 py-3 text-right';
+    cell.appendChild(createReviewButton(warningId));
+    row.appendChild(cell);
+  }
+
+  async function loadBarangays() {
+    if (Array.isArray(state.barangays)) {
+      return state.barangays;
+    }
+    if (typeof config.barangaysEndpoint !== 'string' || config.barangaysEndpoint === '') {
+      throw new Error('The validated barangay list is unavailable.');
+    }
+
+    const response = await window.fetch(config.barangaysEndpoint, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' }
+    });
+    const payload = await response.json();
+
+    if (!response.ok || !payload || payload.success !== true) {
+      throw new Error('The validated barangay list could not be loaded.');
+    }
+
+    const data = requireObject(payload.data, 'The barangay response is malformed.');
+    const barangays = requireArray(data.barangays, 'The barangay list is malformed.');
+    if (data.count !== 187 || barangays.length !== 187) {
+      throw new Error('The validated barangay list is incomplete.');
+    }
+
+    state.barangays = barangays;
+    return barangays;
+  }
+
+  function renderBarangayOptions(barangays) {
+    const container = document.querySelector('[data-barangay-options]');
+    if (!container) {
+      return;
+    }
+    container.replaceChildren();
+
+    barangays.forEach((barangay) => {
+      if (!barangay || typeof barangay.barangay_id !== 'string' || typeof barangay.name !== 'string') {
+        throw new Error('A validated barangay option is malformed.');
+      }
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      const text = document.createElement('span');
+      label.className = 'flex items-center gap-2 rounded-lg border border-slate-100 px-2.5 py-2 text-[10px] font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800';
+      label.dataset.barangaySearchValue = barangay.name.toLowerCase();
+      checkbox.type = 'checkbox';
+      checkbox.value = barangay.barangay_id;
+      checkbox.dataset.barangayId = barangay.barangay_id;
+      checkbox.className = 'h-4 w-4 accent-slate-900';
+      text.textContent = barangay.name;
+      label.append(checkbox, text);
+      container.appendChild(label);
+    });
+  }
+
+  async function ensureBarangaysVisible() {
+    const status = document.querySelector('[data-barangay-load-status]');
+    if (status) {
+      status.textContent = 'Loading 187 validated development-preview barangays...';
+    }
+    try {
+      const barangays = await loadBarangays();
+      renderBarangayOptions(barangays);
+      if (status) {
+        status.textContent = '187 validated barangays available. Barangay 176 and 176-A through 176-F are unavailable.';
+      }
+    } catch (error) {
+      if (status) {
+        status.textContent = 'Validated barangays could not be loaded.';
+      }
+    }
+  }
+
+  function updateSourceReferenceRequirement() {
+    const source = document.querySelector('[data-warning-source]');
+    const reference = document.querySelector('[data-source-reference]');
+    if (!source || !reference) {
+      return;
+    }
+    reference.required = ['PAGASA', 'PHIVOLCS', 'NDRRMC'].includes(source.value);
+  }
+
+  function updateAffectedAreaSelector() {
+    const selected = document.querySelector('input[name="scope_type"]:checked');
+    const selector = document.querySelector('[data-barangay-selector]');
+    const showBarangays = selected && selected.value === 'BARANGAY';
+    setElementVisible(selector, Boolean(showBarangays));
+    if (showBarangays) {
+      ensureBarangaysVisible();
+    }
+  }
+
+  function toggleCreateWarningModal(show) {
+    const modal = document.querySelector('[data-create-warning-modal]');
+    if (!modal) {
+      return;
+    }
+    setElementVisible(modal, show, true);
+    document.body.classList.toggle('module4-modal-open', show);
+
+    if (show) {
+      const form = modal.querySelector('[data-create-warning-form]');
+      if (form) {
+        form.reset();
+        const issuedAt = form.elements.namedItem('issued_at');
+        if (issuedAt instanceof HTMLInputElement) {
+          issuedAt.value = localDateTimeValue();
+        }
+      }
+      clearWorkflowStatus(modal.querySelector('[data-warning-workflow-status]'));
+      updateSourceReferenceRequirement();
+      updateAffectedAreaSelector();
+      const title = modal.querySelector('input[name="title"]');
+      if (title) {
+        window.setTimeout(() => title.focus(), 0);
+      }
+    }
+  }
+
+  function warningById(warningId) {
+    return state.recentWarnings.find((warning) => warning && warning.id === warningId) || null;
+  }
+
+  function setReviewField(name, value) {
+    setText(`[data-review-field="${name}"]`, value);
+  }
+
+  function updateReviewActions(warning) {
+    const activate = document.querySelector('[data-activate-warning]');
+    const cancel = document.querySelector('[data-cancel-warning]');
+    const canActivate = warning.status === 'DRAFT' && securityCapabilities.canActivateWarning;
+    const canCancel = ['DRAFT', 'ACTIVE'].includes(warning.status) && securityCapabilities.canCancelWarning;
+    setElementVisible(activate, canActivate);
+    setElementVisible(cancel, canCancel);
+  }
+
+  function openReviewWarning(warningId) {
+    const warning = warningById(warningId);
+    const modal = document.querySelector('[data-review-warning-modal]');
+    if (!warning || !modal) {
+      return;
+    }
+
+    const level = warning.warning_level && typeof warning.warning_level === 'object'
+      ? warning.warning_level
+      : {};
+    const source = warning.source && typeof warning.source === 'object' ? warning.source : {};
+    state.selectedWarningId = warningId;
+    setReviewField('title', String(warning.title || 'Not available'));
+    setReviewField('hazard', formatCode(warning.hazard_type));
+    setReviewField('level', String(level.name || level.code || 'Not available'));
+    setReviewField('areas', affectedAreaText(warning));
+    setReviewField('source', String(source.name || source.code || 'Not available'));
+    setReviewField('status', formatCode(warning.status));
+    setReviewField('source_reference', String(warning.source_reference || 'Not provided'));
+    setReviewField('issued_at', formatDateTime(warning.issued_at));
+    setReviewField('valid_until', warning.valid_until ? formatDateTime(warning.valid_until) : 'No expiry specified');
+    setReviewField('summary', String(warning.summary || 'Not available'));
+    clearWorkflowStatus(modal.querySelector('[data-review-workflow-status]'));
+    updateReviewActions(warning);
+    setElementVisible(modal, true, true);
+    document.body.classList.add('module4-modal-open');
+  }
+
+  function closeReviewWarning() {
+    const modal = document.querySelector('[data-review-warning-modal]');
+    setElementVisible(modal, false, true);
+    state.selectedWarningId = null;
+    document.body.classList.remove('module4-modal-open');
+  }
+
+  async function submitCreateWarning(event) {
+    event.preventDefault();
+    if (state.mutationInFlight || !securityCapabilities.canCreateWarning) {
+      return;
+    }
+
+    const form = event.currentTarget;
+    const status = form.querySelector('[data-warning-workflow-status]');
+    if (!form.reportValidity()) {
+      return;
+    }
+
+    const data = new FormData(form);
+    const scopeType = String(data.get('scope_type') || '');
+    const barangayIds = scopeType === 'BARANGAY'
+      ? Array.from(form.querySelectorAll('[data-barangay-id]:checked')).map((input) => input.value)
+      : [];
+
+    if (scopeType === 'BARANGAY' && barangayIds.length === 0) {
+      setWorkflowStatus(status, 'Select at least one validated barangay.', 'error');
+      return;
+    }
+
+    let payload;
+    try {
+      payload = {
+        title: String(data.get('title') || '').trim(),
+        hazard_type: String(data.get('hazard_type') || ''),
+        warning_level: String(data.get('warning_level') || ''),
+        source_code: String(data.get('source_code') || ''),
+        summary: String(data.get('summary') || '').trim(),
+        issued_at: dateTimeInputToIso(String(data.get('issued_at') || ''), true),
+        valid_until: dateTimeInputToIso(String(data.get('valid_until') || ''), false),
+        source_reference: String(data.get('source_reference') || '').trim() || null,
+        scope_type: scopeType,
+        barangay_ids: barangayIds
+      };
+    } catch (error) {
+      setWorkflowStatus(status, error.message, 'error');
+      return;
+    }
+
+    const submitButton = form.querySelector('[data-save-warning-draft]');
+    state.mutationInFlight = true;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Saving Draft...';
+    }
+    clearWorkflowStatus(status);
+
+    try {
+      await mutationRequest(config.createEndpoint, payload);
+      setWorkflowStatus(status, 'Warning saved as DRAFT. No alert was delivered.', 'success');
+      await loadDashboard();
+      window.setTimeout(() => toggleCreateWarningModal(false), 650);
+    } catch (error) {
+      setWorkflowStatus(status, error.message || 'Unable to save warning.', 'error');
+    } finally {
+      state.mutationInFlight = false;
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Save as Draft';
+      }
+    }
+  }
+
+  async function submitWarningAction(action) {
+    if (state.mutationInFlight || !state.selectedWarningId) {
+      return;
+    }
+    const warning = warningById(state.selectedWarningId);
+    const modal = document.querySelector('[data-review-warning-modal]');
+    const status = modal ? modal.querySelector('[data-review-workflow-status]') : null;
+    if (!warning) {
+      return;
+    }
+
+    const confirmation = action === 'ACTIVATE'
+      ? 'Activate this CIVENTRAL warning? Alert delivery is not connected.'
+      : 'Cancel this warning? This action cannot be reversed in this phase.';
+    if (!window.confirm(confirmation)) {
+      return;
+    }
+
+    state.mutationInFlight = true;
+    clearWorkflowStatus(status);
+    try {
+      await mutationRequest(config.statusEndpoint, {
+        warning_id: warning.id,
+        action
+      });
+      setWorkflowStatus(status, action === 'ACTIVATE'
+        ? 'Warning activated. No alert was delivered.'
+        : 'Warning cancelled.', 'success');
+      await loadDashboard();
+      window.setTimeout(closeReviewWarning, 500);
+    } catch (error) {
+      setWorkflowStatus(status, error.message || 'Unable to update warning status.', 'error');
+    } finally {
+      state.mutationInFlight = false;
+    }
+  }
+
   function appendEmptyRecentWarningsRow(body) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
@@ -315,7 +696,7 @@
     const title = document.createElement('p');
     const note = document.createElement('p');
 
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = 'px-5 py-10 text-center';
     wrapper.className = 'mx-auto flex max-w-sm flex-col items-center';
     title.className = 'text-[11px] font-black text-slate-600 dark:text-slate-300';
@@ -354,6 +735,10 @@
       const row = document.createElement('tr');
       row.className = 'border-t border-slate-100 text-[10px] text-slate-600 dark:border-slate-800 dark:text-slate-300';
 
+      if (typeof warning.id !== 'string' || warning.id === '') {
+        throw new Error('A recent warning is missing its identifier.');
+      }
+
       appendCell(row, String(warning.title || 'Untitled warning'), 'px-5 py-3 font-bold');
       appendCell(row, formatCode(warning.hazard_type), 'px-4 py-3');
       appendCell(row, affectedAreaText(warning), 'px-4 py-3');
@@ -361,6 +746,7 @@
       appendCell(row, String(source.name || source.code || 'Not available'), 'px-4 py-3');
       appendCell(row, formatDateTime(warning.issued_at), 'px-4 py-3');
       appendCell(row, formatCode(warning.status), 'px-5 py-3 font-bold');
+      appendActionsCell(row, warning.id);
       body.appendChild(row);
     });
 
@@ -402,6 +788,7 @@
     renderSources(sources);
     renderCurrentWarning(data.current_warning ?? null);
     renderRecentWarnings(recentWarnings);
+    state.recentWarnings = recentWarnings;
 
     state.loaded = true;
     state.lastResult = 'SUCCESS';
@@ -496,12 +883,95 @@
     setText('[data-ndrrmc-advisory-message]', 'The PAGASA and Module 4 summary sections remain available.');
   }
 
+  function bindWarningWorkflow() {
+    const createButton = document.querySelector('[data-open-create-warning]');
+    const createModal = document.querySelector('[data-create-warning-modal]');
+    const createForm = document.querySelector('[data-create-warning-form]');
+    const reviewModal = document.querySelector('[data-review-warning-modal]');
+    const recentBody = document.querySelector('[data-recent-warnings-body]');
+    const source = document.querySelector('[data-warning-source]');
+    const barangaySearch = document.querySelector('[data-barangay-search]');
+
+    if (createButton) {
+      createButton.addEventListener('click', () => toggleCreateWarningModal(true));
+    }
+    if (createForm) {
+      createForm.addEventListener('submit', submitCreateWarning);
+      createForm.addEventListener('change', (event) => {
+        if (event.target && event.target.name === 'scope_type') {
+          updateAffectedAreaSelector();
+        }
+      });
+    }
+    if (source) {
+      source.addEventListener('change', updateSourceReferenceRequirement);
+    }
+    if (barangaySearch) {
+      barangaySearch.addEventListener('input', () => {
+        const query = barangaySearch.value.trim().toLowerCase();
+        document.querySelectorAll('[data-barangay-search-value]').forEach((option) => {
+          option.hidden = query !== '' && !option.dataset.barangaySearchValue.includes(query);
+        });
+      });
+    }
+
+    document.querySelectorAll('[data-close-create-warning]').forEach((button) => {
+      button.addEventListener('click', () => toggleCreateWarningModal(false));
+    });
+    document.querySelectorAll('[data-close-review-warning]').forEach((button) => {
+      button.addEventListener('click', closeReviewWarning);
+    });
+    if (recentBody) {
+      recentBody.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-review-warning-id]');
+        if (button) {
+          openReviewWarning(button.dataset.reviewWarningId);
+        }
+      });
+    }
+
+    const activateButton = document.querySelector('[data-activate-warning]');
+    const cancelButton = document.querySelector('[data-cancel-warning]');
+    if (activateButton) {
+      activateButton.addEventListener('click', () => submitWarningAction('ACTIVATE'));
+    }
+    if (cancelButton) {
+      cancelButton.addEventListener('click', () => submitWarningAction('CANCEL'));
+    }
+
+    [createModal, reviewModal].forEach((modal) => {
+      if (modal) {
+        modal.addEventListener('click', (event) => {
+          if (event.target === modal) {
+            if (modal === createModal) {
+              toggleCreateWarningModal(false);
+            } else {
+              closeReviewWarning();
+            }
+          }
+        });
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      if (createModal && !createModal.hidden) {
+        toggleCreateWarningModal(false);
+      } else if (reviewModal && !reviewModal.hidden) {
+        closeReviewWarning();
+      }
+    });
+  }
+
   function initialize() {
     if (state.initialized) {
       return;
     }
 
     state.initialized = true;
+    bindWarningWorkflow();
     loadDashboard().catch(handleLoadFailure);
     loadPagasaOverview().catch(handlePagasaFailure);
     loadNdrrmcOverview().catch(handleNdrrmcFailure);
@@ -525,6 +995,11 @@
         ndrrmcFetchCount: state.ndrrmcFetchCount,
         ndrrmcSourceStatus: state.ndrrmcSourceStatus,
         ndrrmcAdvisoryCount: state.ndrrmcAdvisoryCount,
+        warningManagementEnabled: securityCapabilities.canCreateWarning
+          || securityCapabilities.canActivateWarning
+          || securityCapabilities.canCancelWarning,
+        barangayCount: Array.isArray(state.barangays) ? state.barangays.length : 0,
+        mutationInFlight: state.mutationInFlight,
         lastResult: state.lastResult
       };
     }

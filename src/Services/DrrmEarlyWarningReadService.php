@@ -169,7 +169,7 @@ final class DrrmEarlyWarningReadService
         }
 
         $rows = $this->assertRecordList($this->client->get('early_warnings', [
-            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until',
+            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
             'order' => 'issued_at.desc',
             'limit' => $limit,
         ]));
@@ -232,7 +232,7 @@ final class DrrmEarlyWarningReadService
         }
 
         $rows = $this->assertRecordList($this->client->get('early_warnings', [
-            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until',
+            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
             'status' => 'eq.ACTIVE',
             'order' => 'issued_at.desc',
         ]));
@@ -300,6 +300,7 @@ final class DrrmEarlyWarningReadService
             }
 
             $normalized[] = [
+                'id' => $warningId,
                 'title' => (string) $warning['title'],
                 'hazard_type' => (string) $warning['hazard_type'],
                 'warning_level' => [
@@ -310,6 +311,9 @@ final class DrrmEarlyWarningReadService
                 'status' => (string) $warning['status'],
                 'issued_at' => (string) $warning['issued_at'],
                 'valid_until' => $warning['valid_until'] === null ? null : (string) $warning['valid_until'],
+                'source_reference' => $warning['source_reference'] === null
+                    ? null
+                    : (string) $warning['source_reference'],
                 'source' => [
                     'code' => (string) $source['source_code'],
                     'name' => (string) $source['source_name'],

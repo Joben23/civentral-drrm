@@ -1,4 +1,8 @@
 /* Module 4 keeps the shared sidebar visible on small screens as a compact icon rail. */
+body.module4-modal-open {
+  overflow: hidden;
+}
+
 @media (max-width: 767px) {
   body > .flex-1.flex.relative {
     width: 100%;
