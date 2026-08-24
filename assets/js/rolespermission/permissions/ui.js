@@ -17,18 +17,53 @@ const resourceSupportedActionsMap = {
   'audit logs system': ['VIEW', 'EXPORT'],
   'user activities': ['VIEW', 'EXPORT'],
   'login history': ['VIEW', 'EXPORT'],
-  'data changes': ['VIEW', 'EXPORT']
+  'data changes': ['VIEW', 'EXPORT'],
+  'hazard & evacuation map system': ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT'],
+  'hazard & evacuation map': ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT'],
+  'incident reporting & response log': ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'REVIEW_INCIDENT', 'VERIFY_INCIDENT', 'ASSIGN_INCIDENT', 'UPDATE_RESPONSE', 'RESOLVE_INCIDENT', 'CLOSE_INCIDENT', 'REJECT_INCIDENT'],
+  'disaster early warning system': ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'CREATE_WARNING', 'ACTIVATE_WARNING', 'CANCEL_WARNING'],
+  'scholarship types': ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT']
 };
+
+function getSavedResourceActionsForPermissions(resourceId, resourceName) {
+  try {
+    const storeKey = 'civentral_user_custom_actions_map';
+    const store = JSON.parse(localStorage.getItem(storeKey) || '{}');
+    if (resourceId && store['id_' + resourceId]) return store['id_' + resourceId];
+    if (resourceName && store['name_' + resourceName.toLowerCase().trim()]) return store['name_' + resourceName.toLowerCase().trim()];
+  } catch (e) {}
+  return null;
+}
 
 function isActionSupportedForResource(resObj, actObj) {
   if (!resObj || !actObj) return true;
   const resName = (resObj.name || '').toLowerCase().trim();
   const actName = (actObj.action_name || '').toUpperCase().trim();
 
+  // 1. Check custom configured applicable actions from Resource Management
+  let customActions = (resObj.applicable_actions && Array.isArray(resObj.applicable_actions) && resObj.applicable_actions.length > 0)
+    ? resObj.applicable_actions
+    : getSavedResourceActionsForPermissions(resObj.id, resObj.name);
+
+  if (customActions && Array.isArray(customActions)) {
+    const upperCustom = customActions.map(a => String(a).toUpperCase().trim());
+    return upperCustom.includes(actName);
+  }
+
+  // 2. Check default resource supported actions map
   if (resourceSupportedActionsMap[resName]) {
     return resourceSupportedActionsMap[resName].includes(actName);
   }
-  return true;
+
+  // 3. Keyword domain fallbacks
+  if (resName.includes('incident') || resName.includes('response')) {
+    return ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'REVIEW_INCIDENT', 'VERIFY_INCIDENT', 'ASSIGN_INCIDENT', 'UPDATE_RESPONSE', 'RESOLVE_INCIDENT', 'CLOSE_INCIDENT', 'REJECT_INCIDENT'].includes(actName);
+  }
+  if (resName.includes('warning') || resName.includes('early')) {
+    return ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'CREATE_WARNING', 'ACTIVATE_WARNING', 'CANCEL_WARNING'].includes(actName);
+  }
+
+  return ['VIEW', 'CREATE', 'EDIT', 'DELETE'].includes(actName);
 }
 
 // RENDER ROLE SELECTION SIDEBAR

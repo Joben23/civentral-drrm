@@ -9,9 +9,11 @@ function filterResources() {
   const selectedStatus = statusFilter ? statusFilter.value : 'ALL';
 
   const filtered = systemResources.filter(res => {
+    const actionsText = (res.applicable_actions || []).join(' ').toLowerCase();
     const matchesQuery = res.name.toLowerCase().includes(query) || 
                          res.route.toLowerCase().includes(query) ||
                          res.module.toLowerCase().includes(query) ||
+                         actionsText.includes(query) ||
                          (res.desc && res.desc.toLowerCase().includes(query));
 
     const matchesModule = selectedModule === 'ALL' || 

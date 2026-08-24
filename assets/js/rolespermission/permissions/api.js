@@ -34,6 +34,7 @@ async function fetchPermissionsData() {
             id: r.resource_id,
             name: r.resource_name,
             desc: r.description || r.resource_route || '',
+            applicable_actions: r.applicable_actions || null,
             department_id: r.department_id || m.department_id || null
           }));
         

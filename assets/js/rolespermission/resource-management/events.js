@@ -10,11 +10,17 @@ async function handleSaveResource(event) {
   const route = document.getElementById('resourceRoute').value.trim();
   const desc = document.getElementById('resourceDesc').value.trim();
 
+  // Collect checked applicable actions
+  const checkedActions = Array.from(
+    document.querySelectorAll('#applicableActionsContainer input[name="applicable_action"]:checked')
+  ).map(cb => cb.value);
+
   const payload = {
     module_id: parseInt(moduleId),
     resource_name: name,
     resource_route: route,
     description: desc,
+    applicable_actions: checkedActions,
     status: status
   };
 
@@ -33,6 +39,18 @@ async function handleSaveResource(event) {
     const result = await response.json();
 
     if (result.status === 'success') {
+      const savedResId = payload.resource_id || (result.data ? (result.data.resource_id || result.data.id) : null);
+      if (typeof saveResourceActionsLocally === 'function') {
+        saveResourceActionsLocally(savedResId, name, checkedActions);
+      }
+
+      if (typeof systemResources !== 'undefined' && Array.isArray(systemResources)) {
+        const existing = systemResources.find(r => (savedResId && r.id === savedResId) || r.name.toLowerCase().trim() === name.toLowerCase().trim());
+        if (existing) {
+          existing.applicable_actions = checkedActions;
+        }
+      }
+
       if (typeof showToast === 'function') showToast(result.message || 'Resource saved successfully.');
       if (typeof closeResourceModal === 'function') closeResourceModal();
       if (typeof fetchResources === 'function') await fetchResources();
