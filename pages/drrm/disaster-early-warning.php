@@ -370,10 +370,24 @@ include '../../includes/sidebar.php';
       <section class="rounded-2xl border border-brand-border/80 bg-brand-light/50 p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900" aria-labelledby="aiRiskPredictionTitle">
         <div class="flex items-start justify-between gap-3">
           <span class="flex h-10 w-10 items-center justify-center rounded-xl border border-brand-border bg-white text-brand-dark dark:border-slate-700 dark:bg-slate-800 dark:text-brand-medium"><i class="fa-solid fa-brain" aria-hidden="true"></i></span>
-          <span class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[8px] font-black uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">TensorFlow Integration Pending</span>
+          <span class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[8px] font-black uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" data-ai-readiness-badge>Checking</span>
         </div>
         <h2 id="aiRiskPredictionTitle" class="mt-3 text-sm font-black text-slate-800 dark:text-white">AI Risk Prediction</h2>
-        <p class="mt-2 text-[10px] font-medium leading-relaxed text-slate-500 dark:text-slate-400">Future risk predictions may support flood-risk classification using weather, location, mapped hazard susceptibility, and historical disaster information.</p>
+        <p class="mt-1 text-[9px] font-black uppercase tracking-wider text-brand-dark dark:text-brand-medium">TensorFlow-Based Decision Support</p>
+        <dl class="mt-3 grid grid-cols-2 gap-2" aria-label="AI infrastructure and prediction readiness">
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">AI Service</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-service-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">TensorFlow Runtime</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-tensorflow-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Model</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-model-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Risk Policy</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-risk-policy-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Prediction Ready</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-prediction-ready>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Last Checked</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-last-checked>Not checked</dd></div>
+        </dl>
+        <p class="mt-3 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-[10px] font-semibold leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300" role="status" aria-live="polite" data-ai-status-message>Loading sanitized AI service status...</p>
+        <button type="button" class="mt-3 inline-flex items-center gap-2 rounded-lg border border-brand-border bg-white px-3 py-2 text-[9px] font-black uppercase tracking-wider text-brand-dark transition hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-brand-medium" data-refresh-ai-status>
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          <span>Refresh AI Status</span>
+        </button>
+        <p class="mt-3 text-[9px] font-medium leading-relaxed text-slate-500 dark:text-slate-400">Prediction requires verified weather inputs and an approved TensorFlow model. AI results are decision-support information and require DRRM officer review.</p>
       </section>
     </div>
 
@@ -584,6 +598,10 @@ include '../../includes/sidebar.php';
         $basePath . 'api/drrm/early-warning-status.php',
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>,
+    aiStatusEndpoint: <?php echo json_encode(
+        $basePath . 'api/drrm/ai-status.php',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
     security: Object.freeze({
       csrfToken: <?php echo json_encode(
           $earlyWarningCsrfToken,
@@ -598,5 +616,196 @@ include '../../includes/sidebar.php';
 </script>
 <script src="<?php echo htmlspecialchars($earlyWarningJsUrl, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo htmlspecialchars($phivolcsJsUrl, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script>
+(function () {
+  'use strict';
+
+  const config = window.CiventralEarlyWarningConfig || {};
+  const state = {
+    initialized: false,
+    loading: false,
+    fetchCount: 0,
+    code: 'NOT_LOADED',
+    runtimeReachable: false,
+    predictionReady: false
+  };
+  const safeMessages = Object.freeze({
+    READY: 'Approved AI flood-risk decision support is ready for officer review.',
+    MODEL_NOT_AVAILABLE: 'TensorFlow model is not currently available for inference.',
+    MODEL_INVALID: 'The configured TensorFlow model is not valid for inference.',
+    MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED: 'The available TensorFlow model is not operationally validated.',
+    RISK_POLICY_NOT_CONFIGURED: 'The CIVENTRAL risk policy is not configured for AI decision support.',
+    AI_SERVICE_NOT_CONFIGURED: 'AI service access is not configured.',
+    AI_SERVICE_UNREACHABLE: 'AI service is currently unavailable. Warning management remains available.',
+    AI_AUTHENTICATION_FAILED: 'AI service authentication could not be completed.',
+    AI_SERVICE_INVALID_RESPONSE: 'AI service status could not be verified safely.',
+    AI_SERVICE_ERROR: 'AI service status is temporarily unavailable.'
+  });
+
+  function setText(selector, value) {
+    const element = document.querySelector(selector);
+    if (element) element.textContent = value;
+  }
+
+  function modelLabel(value) {
+    return Object.freeze({
+      MODEL_NOT_AVAILABLE: 'Not Available',
+      MODEL_INVALID: 'Invalid',
+      MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED: 'Not Operationally Validated',
+      MODEL_READY: 'Ready',
+      UNKNOWN: 'Unknown'
+    })[value] || 'Unknown';
+  }
+
+  function riskPolicyLabel(value) {
+    return Object.freeze({
+      NOT_CONFIGURED: 'Not Configured',
+      INVALID: 'Invalid',
+      AVAILABLE_NOT_APPROVED: 'Not Approved',
+      READY: 'Ready',
+      UNKNOWN: 'Unknown'
+    })[value] || 'Unknown';
+  }
+
+  function checkedTime() {
+    return new Intl.DateTimeFormat('en-PH', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit'
+    }).format(new Date());
+  }
+
+  function setBadge(label, tone) {
+    const badge = document.querySelector('[data-ai-readiness-badge]');
+    if (!badge) return;
+    badge.textContent = label;
+    badge.className = 'rounded-lg border px-2 py-1 text-[8px] font-black uppercase tracking-wider';
+    if (tone === 'positive') {
+      badge.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700', 'dark:border-emerald-900/50', 'dark:bg-emerald-950/30', 'dark:text-emerald-400');
+    } else if (tone === 'unavailable') {
+      badge.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700', 'dark:border-amber-900/50', 'dark:bg-amber-950/30', 'dark:text-amber-400');
+    } else {
+      badge.classList.add('border-slate-200', 'bg-white', 'text-slate-500', 'dark:border-slate-700', 'dark:bg-slate-800', 'dark:text-slate-400');
+    }
+  }
+
+  function assertStatusPayload(payload) {
+    const data = payload && payload.success === true ? payload.data : null;
+    if (!data || typeof data !== 'object' || Array.isArray(data)
+      || typeof data.runtime_reachable !== 'boolean'
+      || typeof data.service_health !== 'string'
+      || !(typeof data.tensorflow_installed === 'boolean' || data.tensorflow_installed === null)
+      || typeof data.model_status !== 'string'
+      || typeof data.risk_policy_status !== 'string'
+      || typeof data.prediction_ready !== 'boolean'
+      || typeof data.code !== 'string') {
+      throw new Error('Invalid AI status response.');
+    }
+    return Object.freeze({
+      runtimeReachable: data.runtime_reachable,
+      serviceHealth: data.service_health,
+      tensorflowInstalled: data.tensorflow_installed,
+      modelStatus: data.model_status,
+      riskPolicyStatus: data.risk_policy_status,
+      predictionReady: data.prediction_ready,
+      code: data.code
+    });
+  }
+
+  function renderStatus(status) {
+    const serviceHealthy = status.runtimeReachable && status.serviceHealth === 'HEALTHY';
+    setText('[data-ai-service-status]', serviceHealthy ? 'Connected / Healthy' : 'Unavailable');
+    setText(
+      '[data-ai-tensorflow-status]',
+      status.tensorflowInstalled === true ? 'Available' : (status.tensorflowInstalled === false ? 'Not Installed' : 'Unknown')
+    );
+    setText('[data-ai-model-status]', modelLabel(status.modelStatus));
+    setText('[data-ai-risk-policy-status]', riskPolicyLabel(status.riskPolicyStatus));
+    setText('[data-ai-prediction-ready]', status.predictionReady ? 'Yes' : 'No');
+    setText('[data-ai-last-checked]', checkedTime());
+    setText('[data-ai-status-message]', safeMessages[status.code] || safeMessages.AI_SERVICE_ERROR);
+    setBadge(
+      status.predictionReady ? 'Ready' : (serviceHealthy ? 'Not Ready' : 'Service Unavailable'),
+      status.predictionReady ? 'positive' : (serviceHealthy ? 'neutral' : 'unavailable')
+    );
+    state.code = status.code;
+    state.runtimeReachable = status.runtimeReachable;
+    state.predictionReady = status.predictionReady;
+  }
+
+  function renderUnavailable(code) {
+    setText('[data-ai-service-status]', 'Unavailable');
+    setText('[data-ai-tensorflow-status]', 'Unknown');
+    setText('[data-ai-model-status]', 'Unknown');
+    setText('[data-ai-risk-policy-status]', 'Unknown');
+    setText('[data-ai-prediction-ready]', 'No');
+    setText('[data-ai-last-checked]', checkedTime());
+    setText('[data-ai-status-message]', safeMessages[code] || safeMessages.AI_SERVICE_ERROR);
+    setBadge('Service Unavailable', 'unavailable');
+    state.code = code;
+    state.runtimeReachable = false;
+    state.predictionReady = false;
+  }
+
+  async function loadStatus() {
+    const refresh = document.querySelector('[data-refresh-ai-status]');
+    if (state.loading) return false;
+    if (typeof config.aiStatusEndpoint !== 'string' || config.aiStatusEndpoint === '') {
+      renderUnavailable('AI_SERVICE_NOT_CONFIGURED');
+      return false;
+    }
+
+    state.loading = true;
+    state.fetchCount += 1;
+    if (refresh) refresh.disabled = true;
+    setBadge('Checking', 'neutral');
+    try {
+      const response = await window.fetch(config.aiStatusEndpoint, {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' }
+      });
+      if (!response.ok) throw new Error('AI status request failed.');
+      renderStatus(assertStatusPayload(await response.json()));
+      return true;
+    } catch (error) {
+      renderUnavailable('AI_SERVICE_UNREACHABLE');
+      return false;
+    } finally {
+      state.loading = false;
+      if (refresh) refresh.disabled = false;
+    }
+  }
+
+  function initialize() {
+    if (state.initialized) return;
+    state.initialized = true;
+    const refresh = document.querySelector('[data-refresh-ai-status]');
+    if (refresh) refresh.addEventListener('click', function () { void loadStatus(); });
+    void loadStatus();
+  }
+
+  window.CiventralEarlyWarningAiStatus = Object.freeze({
+    refresh: loadStatus,
+    diagnostics: function () {
+      return Object.freeze({
+        initialized: state.initialized,
+        loading: state.loading,
+        fetchCount: state.fetchCount,
+        code: state.code,
+        runtimeReachable: state.runtimeReachable,
+        predictionReady: state.predictionReady
+      });
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  } else {
+    initialize();
+  }
+})();
+</script>
 
 <?php include '../../includes/footer.php'; ?>
