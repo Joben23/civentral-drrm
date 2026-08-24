@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/flood-preprocessing-artifact-v1.json",
+  "title": "CIVENTRAL fitted flood-risk preprocessing artifact",
+  "description": "Schema for a future approved fitted standard scaler. No instance or fitted statistics exist in Phase 7D-A.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "preprocessing_schema_version", "method", "feature_schema_version",
+    "training_dataset_hash", "feature_order", "means", "scales"
+  ],
+  "properties": {
+    "preprocessing_schema_version": {"const": "1.0"},
+    "method": {"const": "STANDARD_SCALER"},
+    "feature_schema_version": {"const": "1.0.0"},
+    "training_dataset_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "feature_order": {
+      "const": [
+        "forecast_rainfall_24h_mm", "antecedent_rainfall_24h_mm",
+        "antecedent_rainfall_72h_mm", "mgb_susceptibility_LF",
+        "mgb_susceptibility_MF", "mgb_susceptibility_HF",
+        "mgb_susceptibility_VHF", "mgb_susceptibility_NONE",
+        "month_sin", "month_cos"
+      ]
+    },
+    "means": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"type": "number"}},
+    "scales": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"type": "number", "exclusiveMinimum": 0}}
+  }
+}

@@ -1,0 +1,4 @@
+# Install only in the isolated inference environment that will load a governed
+# Phase 7C artifact. Native Windows support is CPU-only for this TensorFlow line.
+-r requirements.txt
+tensorflow==2.21.0

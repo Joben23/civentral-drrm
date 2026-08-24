@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/flood-model-artifact-manifest-v1.json",
+  "title": "CIVENTRAL flood-risk TensorFlow artifact manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_schema_version", "model_version", "model_status",
+    "feature_schema_version", "training_dataset_hash", "trained_at",
+    "tensorflow_version", "python_version", "artifact_filename",
+    "artifact_format", "artifact_checksum", "approved_for_inference",
+    "threshold_policy_version", "input_shape", "output_semantics",
+    "preprocessing_artifact_format", "preprocessing_artifact_filename",
+    "preprocessing_artifact_checksum",
+    "limitations"
+  ],
+  "properties": {
+    "manifest_schema_version": {"const": "1.0"},
+    "model_version": {"type": "string", "minLength": 1, "maxLength": 128},
+    "model_status": {"enum": ["DEVELOPMENT_NOT_OPERATIONALLY_VALIDATED", "OPERATIONALLY_VALIDATED"]},
+    "feature_schema_version": {"const": "1.0.0"},
+    "training_dataset_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "trained_at": {"type": "string", "format": "date-time"},
+    "tensorflow_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$"},
+    "python_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$"},
+    "artifact_filename": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.keras$"},
+    "artifact_format": {"const": "KERAS_V3"},
+    "artifact_checksum": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "approved_for_inference": {"type": "boolean"},
+    "threshold_policy_version": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+    "input_shape": {"const": 10},
+    "output_semantics": {"const": "FLOOD_PROBABILITY"},
+    "preprocessing_artifact_format": {"enum": ["STANDARD_SCALER_JSON", null]},
+    "preprocessing_artifact_filename": {"type": ["string", "null"]},
+    "preprocessing_artifact_checksum": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "limitations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 500}}
+  }
+}
