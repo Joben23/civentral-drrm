@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 /**
- * Future TensorFlow integration boundary. No implementation is provided in
- * the development weather/susceptibility baseline.
+ * Server-side TensorFlow integration boundary. Implementations must fail
+ * closed and must not treat model unavailability as low risk.
  */
 interface FloodRiskPredictorInterface
 {
@@ -14,7 +14,7 @@ interface FloodRiskPredictorInterface
 
     /**
      * @param array<string, mixed> $weatherInputs
-     * @param array{latitude: float, longitude: float, mapped_susceptibility: ?string} $locationContext
+     * @param array{barangay_id: string, latitude: float, longitude: float, mapped_susceptibility: ?string} $locationContext
      * @param array<string, mixed> $historicalInputs
      * @return array<string, mixed>
      */
