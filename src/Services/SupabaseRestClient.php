@@ -8,6 +8,8 @@ use App\Config\SupabaseConfig;
 use JsonException;
 use RuntimeException;
 
+require_once __DIR__ . '/DrrmDataStoreInterface.php';
+
 /**
  * Minimal server-side client for Supabase Data REST API requests.
  *
@@ -15,7 +17,7 @@ use RuntimeException;
  * methods return representations so controlled CLI jobs can verify exactly
  * what PostgreSQL accepted without exposing request headers.
  */
-final class SupabaseRestClient
+final class SupabaseRestClient implements DrrmDataStoreInterface
 {
     public function __construct(
         private readonly SupabaseConfig $config,
@@ -50,6 +52,21 @@ final class SupabaseRestClient
         }
 
         return $this->request('POST', $resource, $query, $payload, true);
+    }
+
+    /**
+     * Invoke one explicitly named PostgreSQL function through PostgREST.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<mixed>
+     */
+    public function rpc(string $function, array $payload = []): array
+    {
+        if (!preg_match('/^[a-z][a-z0-9_]*$/', $function)) {
+            throw new RuntimeException('The Supabase RPC function name is invalid.');
+        }
+
+        return $this->request('POST', 'rpc/' . $function, [], $payload, true);
     }
 
     /**
@@ -103,7 +120,14 @@ final class SupabaseRestClient
             throw new RuntimeException('The Supabase REST method is not supported.');
         }
 
-        if (!preg_match('/^[a-z][a-z0-9_]*$/', $resource)) {
+        $resourcePath = null;
+        if (preg_match('/^[a-z][a-z0-9_]*$/', $resource) === 1) {
+            $resourcePath = rawurlencode($resource);
+        } elseif (preg_match('/^rpc\/([a-z][a-z0-9_]*)$/', $resource, $matches) === 1) {
+            $resourcePath = 'rpc/' . rawurlencode($matches[1]);
+        }
+
+        if ($resourcePath === null) {
             throw new RuntimeException('The Supabase REST resource name is invalid.');
         }
 
@@ -113,7 +137,7 @@ final class SupabaseRestClient
             }
         }
 
-        $url = $this->config->restBaseUrl() . '/' . rawurlencode($resource);
+        $url = $this->config->restBaseUrl() . '/' . $resourcePath;
 
         if ($query !== []) {
             $url .= '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
@@ -159,7 +183,9 @@ final class SupabaseRestClient
         if ($payload !== null) {
             try {
                 $options[CURLOPT_POSTFIELDS] = json_encode(
-                    $payload,
+                    str_starts_with($resource, 'rpc/') && $payload === []
+                        ? (object) $payload
+                        : $payload,
                     JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR
                 );
             } catch (JsonException) {

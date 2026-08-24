@@ -85,13 +85,10 @@
             </span>
           </button>
 
-          <button type="button" disabled aria-disabled="true" title="Not yet implemented" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide border border-transparent font-semibold text-slate-400 dark:text-slate-500 opacity-70 cursor-not-allowed">
-            <i class="fa-solid fa-triangle-exclamation text-sm"></i>
-            <span class="sidebar-text flex min-w-0 flex-1 items-center justify-between gap-2">
-              <span class="truncate text-left">Incident Reporting & Response Log</span>
-              <span class="shrink-0 rounded-md bg-slate-200/70 dark:bg-slate-700/70 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider">Soon</span>
-            </span>
-          </button>
+          <a href="<?php echo $basePath ?? '../'; ?>pages/drrm/incident-reporting-response.php" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide transition cursor-pointer <?php echo $currentPage == 'incident-reporting-response.php' ? 'bg-white text-brand-dark border border-brand-border font-bold shadow-xs' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-brand-dark dark:hover:text-[#86B6F6] border border-transparent font-semibold'; ?>">
+            <i class="fa-solid fa-triangle-exclamation text-sm <?php echo $currentPage == 'incident-reporting-response.php' ? 'text-brand-medium' : 'text-slate-400'; ?>"></i>
+            <span class="sidebar-text truncate">Incident Reporting &amp; Response Log</span>
+          </a>
 
           <a href="<?php echo $basePath ?? '../'; ?>pages/drrm/disaster-early-warning.php" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs tracking-wide transition cursor-pointer <?php echo $currentPage == 'disaster-early-warning.php' ? 'bg-white text-brand-dark border border-brand-border font-bold shadow-xs' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-brand-dark dark:hover:text-[#86B6F6] border border-transparent font-semibold'; ?>">
             <i class="fa-solid fa-bell text-sm <?php echo $currentPage == 'disaster-early-warning.php' ? 'text-brand-medium' : 'text-slate-400'; ?>"></i>

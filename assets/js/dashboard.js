@@ -122,3 +122,53 @@ function toggleSidebar() {
 
     }
 }
+
+// Module 3 readiness is enhanced here because the DRRM overview remains a
+// shared, presentation-only include. Modules 2 and 5 are intentionally left
+// in their existing unavailable state.
+(function enableIncidentModuleOnDrrmOverview() {
+    const initialize = function () {
+        const moduleTitle = Array.from(document.querySelectorAll('h3')).find(function (heading) {
+            return heading.textContent.trim() === 'Incident Reporting & Response';
+        });
+        const moduleCard = moduleTitle ? moduleTitle.closest('article') : null;
+
+        if (moduleCard) {
+            moduleCard.classList.remove('border-slate-200/80', 'dark:border-slate-800');
+            moduleCard.classList.add('border-brand-border', 'dark:border-slate-700');
+
+            const badge = moduleCard.querySelector('div > span:last-child');
+            if (badge) {
+                badge.textContent = 'Module Available';
+                badge.className = 'inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-400';
+            }
+
+            const unavailableButton = moduleCard.querySelector('button[disabled]');
+            if (unavailableButton) {
+                const openLink = document.createElement('a');
+                const basePath = typeof window.civentralBasePath === 'string' ? window.civentralBasePath : '../';
+                openLink.href = basePath + 'pages/drrm/incident-reporting-response.php';
+                openLink.className = 'mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-dark px-4 py-2.5 text-xs font-black text-white shadow-xs transition hover:bg-[#12566d] focus:outline-none focus:ring-2 focus:ring-brand-medium/40 sm:w-auto';
+                openLink.textContent = 'Open Module';
+                unavailableButton.replaceWith(openLink);
+            }
+        }
+
+        const readinessTitle = document.getElementById('moduleReadinessTitle');
+        const readinessSection = readinessTitle ? readinessTitle.closest('section') : null;
+        const readinessLabel = Array.from(readinessSection ? readinessSection.querySelectorAll('.mt-2 > div > span:first-child') : []).find(function (label) {
+            return label.textContent.trim() === 'Incident Reporting & Response';
+        });
+        const readinessStatus = readinessLabel ? readinessLabel.parentElement.querySelector('span:last-child') : null;
+        if (readinessStatus) {
+            readinessStatus.textContent = 'Available';
+            readinessStatus.className = 'inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400';
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize, { once: true });
+    } else {
+        initialize();
+    }
+})();
