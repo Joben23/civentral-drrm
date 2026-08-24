@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/flood-source-manifest-v1.json",
+  "title": "CIVENTRAL flood-risk source provenance manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "sources"],
+  "properties": {
+    "manifest_version": {"const": "1.0.0"},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "source_name", "agency", "source_type", "official_reference", "local_file", "retrieved_at", "coverage", "time_range", "units", "accumulation_semantics", "version", "license_usage_notes", "sha256", "review_status", "review_notes"],
+        "properties": {
+          "source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+          "source_name": {"type": "string", "minLength": 1},
+          "agency": {"type": "string", "minLength": 1},
+          "source_type": {"enum": ["GIS_COVARIATE", "SPATIAL_REFERENCE", "FORECAST_API", "FORECAST_ARCHIVE", "OBSERVED_WEATHER", "WEATHER_BUNDLE", "INCIDENT_REPORT", "MONITORING_LOG", "SATELLITE_DERIVED"]},
+          "official_reference": {"type": "string", "format": "uri", "pattern": "^https://"},
+          "local_file": {"type": ["string", "null"]},
+          "retrieved_at": {"type": ["string", "null"]},
+          "coverage": {"type": "string", "minLength": 1},
+          "time_range": {"type": ["object", "null"]},
+          "units": {"type": ["object", "null"]},
+          "accumulation_semantics": {"type": ["object", "null"]},
+          "version": {"type": ["string", "null"]},
+          "license_usage_notes": {"type": "string", "minLength": 1},
+          "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+          "review_status": {"enum": ["APPROVED_FOR_GOVERNED_USE", "REQUIRES_HUMAN_REVIEW", "ACCESS_PENDING", "METADATA_PENDING", "REJECTED"]},
+          "review_notes": {"type": "string"}
+        }
+      }
+    }
+  }
+}

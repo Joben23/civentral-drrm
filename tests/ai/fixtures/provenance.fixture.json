@@ -1,0 +1,85 @@
+{
+  "manifest_version": "1.0.0",
+  "sources": [
+    {
+      "source_id": "fixture_positive_evidence",
+      "source_name": "TEST FIXTURE positive evidence",
+      "agency": "TEST FIXTURE ONLY",
+      "source_type": "INCIDENT_REPORT",
+      "official_reference": "https://example.invalid/test-fixture-positive",
+      "local_file": null,
+      "retrieved_at": "2025-01-03",
+      "coverage": "Fictional software-test coverage",
+      "time_range": null,
+      "units": null,
+      "accumulation_semantics": null,
+      "version": "fixture-1",
+      "license_usage_notes": "Fictional test fixture; prohibited from training or operational use.",
+      "sha256": null,
+      "review_status": "APPROVED_FOR_GOVERNED_USE",
+      "review_notes": "Approval applies only to isolated software tests."
+    },
+    {
+      "source_id": "fixture_negative_monitoring",
+      "source_name": "TEST FIXTURE explicit negative monitoring",
+      "agency": "TEST FIXTURE ONLY",
+      "source_type": "MONITORING_LOG",
+      "official_reference": "https://example.invalid/test-fixture-negative",
+      "local_file": null,
+      "retrieved_at": "2025-02-03",
+      "coverage": "Fictional software-test coverage",
+      "time_range": null,
+      "units": null,
+      "accumulation_semantics": null,
+      "version": "fixture-1",
+      "license_usage_notes": "Fictional test fixture; prohibited from training or operational use.",
+      "sha256": null,
+      "review_status": "APPROVED_FOR_GOVERNED_USE",
+      "review_notes": "Approval applies only to isolated software tests."
+    },
+    {
+      "source_id": "fixture_weather_archive",
+      "source_name": "TEST FIXTURE weather archive",
+      "agency": "TEST FIXTURE ONLY",
+      "source_type": "WEATHER_BUNDLE",
+      "official_reference": "https://example.invalid/test-fixture-weather",
+      "local_file": null,
+      "retrieved_at": "2025-02-03",
+      "coverage": "Fictional software-test coverage",
+      "time_range": null,
+      "units": {
+        "forecast_rainfall_24h_mm": "mm",
+        "antecedent_rainfall_24h_mm": "mm",
+        "antecedent_rainfall_72h_mm": "mm"
+      },
+      "accumulation_semantics": {
+        "forecast_rainfall_24h_mm": "FORECAST_TOTAL_VALID_24H",
+        "antecedent_rainfall_24h_mm": "OBSERVED_TOTAL_PRE_ISSUANCE_24H",
+        "antecedent_rainfall_72h_mm": "OBSERVED_TOTAL_PRE_ISSUANCE_72H"
+      },
+      "version": "fixture-1",
+      "license_usage_notes": "Fictional test fixture; prohibited from training or operational use.",
+      "sha256": null,
+      "review_status": "APPROVED_FOR_GOVERNED_USE",
+      "review_notes": "Approval applies only to isolated software tests."
+    },
+    {
+      "source_id": "fixture_mgb",
+      "source_name": "TEST FIXTURE MGB feature",
+      "agency": "TEST FIXTURE ONLY",
+      "source_type": "GIS_COVARIATE",
+      "official_reference": "https://example.invalid/test-fixture-mgb",
+      "local_file": null,
+      "retrieved_at": "2025-02-03",
+      "coverage": "Fictional software-test coverage",
+      "time_range": null,
+      "units": {"mgb_flood_susceptibility_code": "categorical LF/MF/HF/VHF/NONE"},
+      "accumulation_semantics": null,
+      "version": "fixture-1",
+      "license_usage_notes": "Fictional test fixture; prohibited from training or operational use.",
+      "sha256": null,
+      "review_status": "APPROVED_FOR_GOVERNED_USE",
+      "review_notes": "Approval applies only to isolated software tests."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "authorization_version": "1.0.0",
+  "prediction_type": "FLOOD_WITHIN_24H",
+  "status": "NOT_APPROVED",
+  "decision_reference": null,
+  "reviewed_at": null,
+  "scope": "Phase 7C use of reviewed Caloocan flood-risk observations",
+  "current_blockers": [
+    "No reviewed real canonical observations are present.",
+    "No explicit authoritative negative observations are present.",
+    "No historical at-issuance PAGASA forecast rainfall archive is present.",
+    "No verified antecedent rainfall series is present.",
+    "Candidate incident reports have not completed human spatial and temporal review."
+  ],
+  "notes": "Mechanical readiness checks cannot replace an explicit data-governance decision. Do not change status until blockers are resolved and the decision is documented."
+}

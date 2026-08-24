@@ -1,0 +1,10 @@
+{
+  "authorization_version": "1.0.0",
+  "prediction_type": "FLOOD_WITHIN_24H",
+  "status": "NOT_APPROVED",
+  "decision_reference": null,
+  "reviewed_at": null,
+  "scope": "TEST FIXTURE ONLY",
+  "current_blockers": ["Fixture records are prohibited from training."],
+  "notes": "This fixture ensures readiness remains false."
+}

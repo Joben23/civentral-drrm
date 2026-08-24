@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/flood-candidate-event-index-v1.json",
+  "title": "Non-training official flood candidate-event index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["index_version", "training_use_prohibited", "candidates"],
+  "properties": {
+    "index_version": {"const": "1.0.0"},
+    "training_use_prohibited": {"const": true},
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidate_id", "event_window", "official_source", "agency", "source_reference", "location_wording", "label_status", "spatial_mapping_status", "review_status", "notes"],
+        "properties": {
+          "candidate_id": {"type": "string"},
+          "event_window": {"type": "object", "required": ["start", "end", "precision"]},
+          "official_source": {"type": "string"},
+          "agency": {"type": "string"},
+          "source_reference": {"type": "string", "pattern": "^https://"},
+          "location_wording": {"type": "string"},
+          "label_status": {"const": "UNKNOWN"},
+          "spatial_mapping_status": {"enum": ["UNREVIEWED", "UNKNOWN_SPATIAL_MAPPING"]},
+          "review_status": {"const": "REQUIRES_HUMAN_REVIEW"},
+          "notes": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "policy_version": "1.0.0",
+  "prediction_type": "FLOOD_WITHIN_24H",
+  "valid_window_hours": 24,
+  "allowed_spatial_unit_types": ["BARANGAY"],
+  "allowed_susceptibility_codes": ["LF", "MF", "HF", "VHF", "NONE"],
+  "training_label_states": [
+    "VERIFIED_FLOOD_OBSERVED",
+    "VERIFIED_NO_FLOOD_OBSERVED"
+  ],
+  "non_training_label_states": ["UNKNOWN", "AMBIGUOUS", "EXCLUDED"],
+  "training_label_confidence": ["HIGH", "MEDIUM"],
+  "required_review_status": "REVIEWED",
+  "required_spatial_mapping_status": "VALIDATED",
+  "required_rainfall_metadata_status": "VERIFIED",
+  "required_leakage_review_status": "PASSED",
+  "rainfall_constraints": {
+    "unit": "mm",
+    "minimum": 0,
+    "maximum": null,
+    "note": "Only non-negativity and finiteness are enforced globally. Source-specific scientifically documented upper limits may be added later; no arbitrary ceiling is invented here."
+  },
+  "readiness": {
+    "minimum_independent_weather_events": 3,
+    "minimum_positive_events": 2,
+    "minimum_negative_events": 2,
+    "require_both_verified_labels": true,
+    "require_complete_features": true,
+    "require_approved_provenance": true,
+    "require_reviewed_labels": true,
+    "require_leakage_review_passed": true,
+    "note": "Meeting these mechanical checks is necessary but does not establish scientific sufficiency or authorize training. Phase approval still requires the documented governance review."
+  }
+}

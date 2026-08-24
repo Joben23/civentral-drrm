@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "prediction_type": "FLOOD_WITHIN_24H",
+  "target_column": "flood_outcome",
+  "input_shape": 10,
+  "features_in_order": [
+    {"name": "forecast_rainfall_24h_mm", "type": "float", "source": "verified archived forecast", "required": true},
+    {"name": "antecedent_rainfall_24h_mm", "type": "float", "source": "verified observation before issuance", "required": true},
+    {"name": "antecedent_rainfall_72h_mm", "type": "float", "source": "verified observation before issuance", "required": true},
+    {"name": "mgb_susceptibility_LF", "type": "binary", "source": "DENR-MGB static covariate", "required": true},
+    {"name": "mgb_susceptibility_MF", "type": "binary", "source": "DENR-MGB static covariate", "required": true},
+    {"name": "mgb_susceptibility_HF", "type": "binary", "source": "DENR-MGB static covariate", "required": true},
+    {"name": "mgb_susceptibility_VHF", "type": "binary", "source": "DENR-MGB static covariate", "required": true},
+    {"name": "mgb_susceptibility_NONE", "type": "binary", "source": "validated point outside imported MGB polygons", "required": true},
+    {"name": "month_sin", "type": "float", "source": "derived from valid_from month", "required": true},
+    {"name": "month_cos", "type": "float", "source": "derived from valid_from month", "required": true}
+  ],
+  "non_feature_audit_columns": [
+    "record_id", "event_id", "barangay_psgc", "barangay_name", "forecast_issued_at",
+    "valid_from", "valid_until", "flood_evidence_source", "weather_source",
+    "susceptibility_source", "source_document_reference"
+  ],
+  "prohibited_features": [
+    "warning_status", "warning_level", "employee_information", "barangay_id",
+    "barangay_psgc", "fault_information", "landslide_information",
+    "evacuation_centers"
+  ],
+  "notes": [
+    "Barangay identifiers are preserved for audit and event-grouped analysis but are not learned features.",
+    "Month features are regenerated deterministically; supplied values are consistency checks only.",
+    "No normalization statistics are fitted in Phase 7B."
+  ]
+}

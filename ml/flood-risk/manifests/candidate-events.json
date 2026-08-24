@@ -1,0 +1,30 @@
+{
+  "index_version": "1.0.0",
+  "training_use_prohibited": true,
+  "candidates": [
+    {
+      "candidate_id": "candidate-dswd-dromic-2019-06-24-caloocan",
+      "event_window": {"start": "2019-06-24", "end": "2019-07-08", "precision": "REPORT_DATE_RANGE"},
+      "official_source": "Flooding Incident in Caloocan City [24 Jun 2019] [Terminated]",
+      "agency": "DSWD DROMIC",
+      "source_reference": "https://dromic.dswd.gov.ph/flooding-incident-in-caloocan-city-24-june-2019/",
+      "location_wording": "Caloocan City",
+      "label_status": "UNKNOWN",
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "notes": "Review the linked initial and terminal documents for exact observed locations and times. Do not create a label from the page title alone."
+    },
+    {
+      "candidate_id": "candidate-ndrrmc-2023-07-31-caloocan",
+      "event_window": {"start": "2023-07-31", "end": null, "precision": "SITUATION_REPORT_ENTRY_DATE"},
+      "official_source": "NDRRMC Situation Report No. 18 for Southwest Monsoon enhanced by TCs Egay and Falcon",
+      "agency": "NDRRMC/OCD",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/4234/SitRep_No._18_for_Southwest_Monsoon_enhanced_by_TCs_EGAY_and_FALCON_2023.pdf",
+      "location_wording": "Caloocan Norte; Caloocan Sur",
+      "label_status": "UNKNOWN",
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "notes": "The wording is not a validated barangay identifier. A human must inspect the specific report revision and establish spatial and temporal mapping before any canonical record is considered."
+    }
+  ]
+}
