@@ -1,5 +1,15 @@
 <?php
+ini_set('session.use_strict_mode', '1');
 if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = isset($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off'
+        && (string) $_SERVER['HTTPS'] !== '';
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 header('Content-Type: application/json; charset=utf-8');
@@ -39,4 +49,8 @@ if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
     $body = file_get_contents('php://input');
 }
 $result = proxyRequest($remoteUrl, $method, $body);
+if (is_array($result['body'] ?? null)
+    && (($result['body']['status'] ?? null) === 'success' || ($result['body']['success'] ?? null) === true)) {
+    session_regenerate_id(true);
+}
 respond($result['body'], $result['code']);

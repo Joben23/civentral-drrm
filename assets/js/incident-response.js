@@ -426,6 +426,7 @@
     setDetailField('resolved_at', formatDateTime(incident.resolved_at));
     setDetailField('closed_at', formatDateTime(incident.closed_at));
     setDetailField('reporter_type', codeLabel(incident.reporter_type));
+    setDetailField('reporter_reference', nullableText(incident.reporter_reference));
     renderHistory(requireArray(incident.status_history, 'Incident history is malformed.'));
     renderResponseLogs(requireArray(incident.response_logs, 'Incident response log is malformed.'));
     renderAssignments(requireArray(incident.assignments, 'Incident assignments are malformed.'));

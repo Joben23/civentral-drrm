@@ -64,7 +64,7 @@
 .incident-code-badge[data-code="VERIFIED"], .incident-code-badge[data-code="RESOLVED"] { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
 .incident-code-badge[data-code="ASSIGNED"], .incident-code-badge[data-code="RESPONDING"], .incident-code-badge[data-code="HIGH"] { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
 .incident-code-badge[data-code="CRITICAL"], .incident-code-badge[data-code="REJECTED"] { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
-.incident-code-badge[data-code="CLOSED"] { border-color: #cbd5e1; background: #f1f5f9; color: #475569; }
+.incident-code-badge[data-code="CLOSED"], .incident-code-badge[data-code="UNASSESSED"] { border-color: #cbd5e1; background: #f1f5f9; color: #475569; }
 
 .incident-modal { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .incident-modal[hidden] { display: none !important; }

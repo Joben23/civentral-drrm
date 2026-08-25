@@ -126,6 +126,7 @@ include '../../includes/sidebar.php';
             </select>
             <select class="incident-filter-select" aria-label="Filter by severity" data-filter-severity>
               <option value="">All severities</option>
+              <option value="UNASSESSED">Unassessed</option>
               <option value="LOW">Low</option>
               <option value="MODERATE">Moderate</option>
               <option value="HIGH">High</option>
@@ -192,6 +193,7 @@ include '../../includes/sidebar.php';
             'coordinates' => 'Coordinates', 'assignment' => 'Current Assignment',
             'verification' => 'Verification', 'resolved_at' => 'Resolved At',
             'closed_at' => 'Closed At', 'reporter_type' => 'Reporter Type',
+            'reporter_reference' => 'Reporter Reference',
         ];
         foreach ($detailFields as $key => $label):
         ?>

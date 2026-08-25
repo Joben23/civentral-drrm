@@ -28,7 +28,7 @@ final class DrrmIncidentReadService
     ];
 
     /** @var list<string> */
-    public const SEVERITIES = ['LOW', 'MODERATE', 'HIGH', 'CRITICAL'];
+    public const SEVERITIES = ['UNASSESSED', 'LOW', 'MODERATE', 'HIGH', 'CRITICAL'];
 
     public function __construct(private readonly DrrmDataStoreInterface $store)
     {
@@ -127,7 +127,7 @@ final class DrrmIncidentReadService
         $records = $this->recordList($this->store->get('drrm_incidents', [
             'select' => implode(',', [
                 'id', 'incident_number', 'title', 'description', 'status', 'reported_at',
-                'reporter_type', 'barangay_id', 'location_description', 'latitude', 'longitude',
+                'reporter_type', 'reporter_reference', 'barangay_id', 'location_description', 'latitude', 'longitude',
                 'source', 'verification_status', 'verified_at', 'verified_by_reference',
                 'assigned_department_reference', 'assigned_user_reference', 'resolved_at',
                 'closed_at', 'created_at', 'updated_at',
@@ -179,7 +179,12 @@ final class DrrmIncidentReadService
 
         $typeCodes = array_column($types, 'code');
         $severityCodes = array_column($severities, 'code');
-        if ($typeCodes !== self::INCIDENT_TYPES || $severityCodes !== self::SEVERITIES) {
+        $phase8aSeverities = array_values(array_filter(
+            self::SEVERITIES,
+            static fn (string $code): bool => $code !== 'UNASSESSED'
+        ));
+        if ($typeCodes !== self::INCIDENT_TYPES
+            || ($severityCodes !== self::SEVERITIES && $severityCodes !== $phase8aSeverities)) {
             throw new RuntimeException('The controlled incident lookup catalog is unavailable.');
         }
 
@@ -244,6 +249,7 @@ final class DrrmIncidentReadService
         $normalized += [
             'description' => (string) $record['description'],
             'reporter_type' => (string) $record['reporter_type'],
+            'reporter_reference' => $this->nullableString($record['reporter_reference'] ?? null),
             'source' => (string) $record['source'],
             'verification_status' => (string) $record['verification_status'],
             'latitude' => $record['latitude'] === null ? null : (float) $record['latitude'],
