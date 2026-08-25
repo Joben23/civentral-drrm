@@ -94,6 +94,7 @@
 .incident-form-field { display: grid; gap: .4rem; }
 .incident-form-field > span { color: #475569; font-size: .6rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
 .incident-form-field input, .incident-form-field select, .incident-form-field textarea { width: 100%; padding: .7rem .75rem; resize: vertical; }
+.incident-readonly-field { display: flex; align-items: center; min-height: 2.8rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: #f8fafc; padding: .7rem .8rem; color: #334155; font-size: .7rem; font-weight: 800; }
 .incident-primary-button, .incident-secondary-button, .incident-action-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border-radius: .75rem; padding: .65rem .9rem; font-size: .65rem; font-weight: 900; }
 .incident-primary-button { background: #0f172a; color: #fff; }
 .incident-primary-button:disabled { cursor: not-allowed; opacity: .55; }

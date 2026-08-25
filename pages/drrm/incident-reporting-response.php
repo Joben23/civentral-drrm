@@ -250,23 +250,27 @@ include '../../includes/sidebar.php';
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-assignment-fields hidden>
           <label class="incident-form-field">
-            <span>Department Reference</span>
-            <input type="text" maxlength="200" autocomplete="off" placeholder="e.g. DEPARTMENT:12" data-assignment-department>
+            <span>Department</span>
+            <select data-assignment-department-select>
+              <option value="">Select department</option>
+            </select>
           </label>
           <label class="incident-form-field">
-            <span>User Reference</span>
-            <input type="text" maxlength="200" autocomplete="off" placeholder="e.g. USER:34" data-assignment-user>
+            <span>Responder / Employee (Optional)</span>
+            <select data-assignment-user-select disabled>
+              <option value="">Select responder</option>
+            </select>
           </label>
-          <p class="sm:col-span-2 text-[9px] font-medium text-slate-400">Enter at least one stable identifier from the MySQL-owned CIVENTRAL employee/department system. No identity records are copied to Supabase.</p>
+          <div class="sm:col-span-2 space-y-2">
+            <p class="incident-inline-status" data-assignment-loader-status hidden></p>
+            <p class="text-[9px] font-medium text-slate-400">Only active CIVENTRAL employee and department records are used for assignment reference resolution. No names, emails, phone numbers, or complete user records are copied to Supabase.</p>
+          </div>
         </div>
 
-        <label class="incident-form-field" data-response-type-field hidden>
+        <div class="incident-form-field" data-response-type-field hidden>
           <span>Activity Type</span>
-          <select data-response-action-type>
-            <option value="DISPATCH_NOTE">Dispatch Note</option>
-            <option value="RESPONSE_UPDATE">Response Update</option>
-          </select>
-        </label>
+          <div class="incident-readonly-field" data-response-action-readonly>Dispatch Note</div>
+        </div>
 
         <label class="incident-form-field">
           <span data-action-note-label>Operational Note</span>

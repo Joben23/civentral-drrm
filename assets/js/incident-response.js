@@ -14,7 +14,14 @@
     pendingAction: null,
     mutationInFlight: false,
     toastTimer: null,
-    searchTimer: null
+    searchTimer: null,
+    assignmentReferences: {
+      departments: [],
+      users: [],
+      loaded: false,
+      loading: false,
+      failed: false
+    }
   };
 
   const actionDefinitions = Object.freeze({
@@ -96,6 +103,72 @@
   function requireArray(value, message) {
     if (!Array.isArray(value)) throw new Error(message);
     return value;
+  }
+
+  function normalizeStatus(value) {
+    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  }
+
+  function fetchReferenceList(url) {
+    return window.fetch(url, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' }
+    }).then(async (response) => {
+      let payload;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        throw new Error('Assignment reference data is unavailable.');
+      }
+      if (!response.ok) {
+        throw new Error('Assignment reference data is unavailable.');
+      }
+      if (Array.isArray(payload)) return payload;
+      if (payload && typeof payload === 'object' && Array.isArray(payload.data)) return payload.data;
+      if (payload && typeof payload === 'object' && payload.status === 'success' && Array.isArray(payload.data)) return payload.data;
+      return [];
+    });
+  }
+
+  function toSafeInteger(value) {
+    const number = Number(value);
+    return Number.isInteger(number) ? number : null;
+  }
+
+  function departmentDisplayLabel(row) {
+    if (!row || typeof row !== 'object') return 'Unassigned department';
+    const code = typeof row.department_code === 'string' && row.department_code.trim() !== '' ? row.department_code.trim() : 'N/A';
+    const name = typeof row.department_name === 'string' && row.department_name.trim() !== '' ? row.department_name.trim() : 'Department';
+    return `${code} — ${name}`;
+  }
+
+  function employeeDisplayLabel(row) {
+    if (!row || typeof row !== 'object') return 'Employee';
+    const fullName = typeof row.full_name === 'string' && row.full_name.trim() !== '' ? row.full_name.trim() : 'Employee';
+    const position = row.positions && row.positions.position && typeof row.positions.position.name === 'string'
+      ? row.positions.position.name.trim()
+      : '';
+    if (!position) return fullName;
+    return `${fullName} — ${position}`;
+  }
+
+  function resolveDepartmentName(reference) {
+    if (typeof reference !== 'string' || reference.trim() === '') return 'Unassigned';
+    const match = /^DEPARTMENT:(\d+)$/i.exec(reference.trim());
+    if (!match) return reference;
+    const id = Number(match[1]);
+    const row = state.assignmentReferences.departments.find((item) => Number(item.department_id) === id);
+    return row ? departmentDisplayLabel(row) : reference;
+  }
+
+  function resolveUserName(reference) {
+    if (typeof reference !== 'string' || reference.trim() === '') return 'Unassigned';
+    const match = /^USER:(\d+)$/i.exec(reference.trim());
+    if (!match) return reference;
+    const id = Number(match[1]);
+    const row = state.assignmentReferences.users.find((item) => Number(item.user_id) === id);
+    return row ? employeeDisplayLabel(row) : reference;
   }
 
   async function fetchJson(url, options = {}) {
@@ -185,10 +258,12 @@
   }
 
   function assignmentText(incident) {
-    const user = nullableText(incident.assigned_user_reference, '');
-    const department = nullableText(incident.assigned_department_reference, '');
-    if (user && department) return `${user} / ${department}`;
-    return user || department || 'Unassigned';
+    const userReference = nullableText(incident.assigned_user_reference, '');
+    const departmentReference = nullableText(incident.assigned_department_reference, '');
+    const userDisplay = userReference ? resolveUserName(userReference) : '';
+    const departmentDisplay = departmentReference ? resolveDepartmentName(departmentReference) : '';
+    if (userDisplay && departmentDisplay) return `${departmentDisplay} / ${userDisplay}`;
+    return userDisplay || departmentDisplay || 'Unassigned';
   }
 
   function locationText(incident) {
@@ -364,7 +439,9 @@
       card.className = 'incident-assignment-card';
       const target = document.createElement('strong');
       target.className = 'block text-slate-700 dark:text-slate-200';
-      target.textContent = [record.user_reference, record.department_reference].filter(Boolean).join(' / ');
+      const userDisplay = record.user_reference ? resolveUserName(record.user_reference) : '';
+      const departmentDisplay = record.department_reference ? resolveDepartmentName(record.department_reference) : '';
+      target.textContent = [departmentDisplay, userDisplay].filter(Boolean).join(' / ');
       const metadata = document.createElement('span');
       metadata.className = 'mt-1 block text-[9px] text-slate-400';
       metadata.textContent = `${formatDateTime(record.assigned_at)} • ${nullableText(record.assigned_by_reference)}`;
@@ -466,6 +543,133 @@
     setModalVisible(query('[data-incident-details-modal]'), false);
   }
 
+  function setAssignmentReferenceStatus(message, tone = 'error') {
+    const element = query('[data-assignment-loader-status]');
+    if (!element) return;
+    element.hidden = false;
+    element.dataset.tone = tone;
+    element.textContent = message;
+  }
+
+  function syncAssignmentSubmitState() {
+    const submitButton = query('[data-submit-incident-action]');
+    if (!submitButton || !state.pendingAction || state.pendingAction.code !== 'ASSIGN') return;
+    const departmentSelect = query('[data-assignment-department-select]');
+    const hasNoDepartments = !departmentSelect || departmentSelect.disabled || departmentSelect.options.length <= 1;
+    if (state.assignmentReferences.failed || hasNoDepartments) {
+      submitButton.disabled = true;
+      return;
+    }
+    submitButton.disabled = false;
+  }
+
+  function populateDepartmentSelect() {
+    const select = query('[data-assignment-department-select]');
+    if (!select) return;
+    const activeDepartments = state.assignmentReferences.departments.filter((item) => normalizeStatus(item.status) === 'active');
+    select.innerHTML = '<option value="">Select department</option>';
+    activeDepartments.forEach((item) => {
+      const option = document.createElement('option');
+      const departmentId = toSafeInteger(item.department_id);
+      option.value = departmentId === null ? '' : String(departmentId);
+      option.textContent = departmentDisplayLabel(item);
+      select.appendChild(option);
+    });
+    if (activeDepartments.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No active departments available';
+      option.disabled = true;
+      select.appendChild(option);
+    }
+    select.disabled = activeDepartments.length === 0;
+    select.value = '';
+    syncAssignmentSubmitState();
+  }
+
+  function updateResponderSelect() {
+    const departmentSelect = query('[data-assignment-department-select]');
+    const responderSelect = query('[data-assignment-user-select]');
+    if (!departmentSelect || !responderSelect) return;
+    const selectedDepartmentId = toSafeInteger(departmentSelect.value);
+    responderSelect.innerHTML = '<option value="">Select responder</option>';
+    if (selectedDepartmentId === null) {
+      responderSelect.disabled = true;
+      return;
+    }
+    const activeUsers = state.assignmentReferences.users.filter((item) => {
+      const departmentMatch = item && item.positions && item.positions.departments && item.positions.departments.department_id;
+      return normalizeStatus(item.status) === 'active' && Number(departmentMatch) === selectedDepartmentId;
+    });
+    activeUsers.forEach((item) => {
+      const option = document.createElement('option');
+      const userId = toSafeInteger(item.user_id);
+      option.value = userId === null ? '' : String(userId);
+      option.textContent = employeeDisplayLabel(item);
+      responderSelect.appendChild(option);
+    });
+    responderSelect.disabled = activeUsers.length === 0;
+    if (responderSelect.value && !activeUsers.some((item) => String(item.user_id) === responderSelect.value)) {
+      responderSelect.value = '';
+    }
+    syncAssignmentSubmitState();
+  }
+
+  async function loadAssignmentReferences(force = false) {
+    if (!force && state.assignmentReferences.loaded) {
+      populateDepartmentSelect();
+      updateResponderSelect();
+      return state.assignmentReferences;
+    }
+    if (state.assignmentReferences.loading) {
+      return state.assignmentReferences;
+    }
+
+    const loader = query('[data-assignment-loader-status]');
+    const submitButton = query('[data-submit-incident-action]');
+    if (loader) {
+      loader.hidden = false;
+      loader.dataset.tone = 'neutral';
+      loader.textContent = 'Loading assignment options...';
+    }
+    if (submitButton) submitButton.disabled = true;
+    state.assignmentReferences.loading = true;
+    state.assignmentReferences.failed = false;
+
+    try {
+      const [departmentPayload, userPayload] = await Promise.all([
+        fetchReferenceList('../../api/employee/departments.php'),
+        fetchReferenceList('../../api/employee/users.php')
+      ]);
+      state.assignmentReferences = {
+        departments: Array.isArray(departmentPayload) ? departmentPayload : [],
+        users: Array.isArray(userPayload) ? userPayload : [],
+        loaded: true,
+        loading: false,
+        failed: false
+      };
+      populateDepartmentSelect();
+      updateResponderSelect();
+      if (loader) loader.hidden = true;
+      syncAssignmentSubmitState();
+      return state.assignmentReferences;
+    } catch (error) {
+      state.assignmentReferences = {
+        departments: [],
+        users: [],
+        loaded: false,
+        loading: false,
+        failed: true
+      };
+      populateDepartmentSelect();
+      updateResponderSelect();
+      const message = 'Assignment reference data could not be loaded. Department and responder options are unavailable.';
+      setAssignmentReferenceStatus(message, 'error');
+      if (submitButton) submitButton.disabled = true;
+      return state.assignmentReferences;
+    }
+  }
+
   function openAction(actionCode) {
     const definition = actionDefinitions[actionCode];
     if (!definition || !state.selectedIncident || capabilities[definition.capability] !== true) return;
@@ -478,7 +682,7 @@
     const note = query('[data-action-note]');
     const assignmentFields = query('[data-assignment-fields]');
     const responseTypeField = query('[data-response-type-field]');
-    const responseType = query('[data-response-action-type]');
+    const responseType = query('[data-response-action-readonly]');
     const status = query('[data-action-status]');
     if (title) title.textContent = definition.label;
     if (description) description.textContent = definition.description;
@@ -490,10 +694,15 @@
     if (assignmentFields) assignmentFields.hidden = actionCode !== 'ASSIGN';
     if (responseTypeField) responseTypeField.hidden = definition.kind !== 'response';
     if (responseType) {
-      responseType.value = actionCode === 'DISPATCH_NOTE' ? 'DISPATCH_NOTE' : 'RESPONSE_UPDATE';
-      responseType.disabled = true;
+      responseType.textContent = actionCode === 'DISPATCH_NOTE' ? 'Dispatch Note' : 'Response Update';
     }
     if (status) status.hidden = true;
+    if (actionCode === 'ASSIGN') {
+      void loadAssignmentReferences();
+      const responderSelect = query('[data-assignment-user-select]');
+      if (responderSelect) responderSelect.disabled = true;
+      syncAssignmentSubmitState();
+    }
     setModalVisible(query('[data-incident-action-modal]'), true);
     window.setTimeout(() => note?.focus(), 20);
   }
@@ -527,14 +736,27 @@
 
     const { code, definition } = state.pendingAction;
     const note = query('[data-action-note]')?.value.trim() || '';
-    const department = query('[data-assignment-department]')?.value.trim() || '';
-    const user = query('[data-assignment-user]')?.value.trim() || '';
-    if (code === 'ASSIGN' && department === '' && user === '') {
-      setActionStatus('Enter a department or user reference.');
+    const departmentSelect = query('[data-assignment-department-select]');
+    const userSelect = query('[data-assignment-user-select]');
+    const departmentId = departmentSelect ? toSafeInteger(departmentSelect.value) : null;
+    const userId = userSelect ? toSafeInteger(userSelect.value) : null;
+    const departmentReference = departmentId !== null ? `DEPARTMENT:${departmentId}` : null;
+    const userReference = userId !== null ? `USER:${userId}` : null;
+
+    if (code === 'ASSIGN' && departmentReference === null && userReference === null) {
+      setActionStatus('Select a department or responder for this assignment.');
+      return;
+    }
+    if (code === 'ASSIGN' && departmentReference === null && userReference !== null) {
+      setActionStatus('Choose a department before assigning a responder.');
       return;
     }
     if ((definition.kind === 'response' || ['RESOLVE', 'REJECT'].includes(code)) && note === '') {
       setActionStatus('This action requires a plain-text note.');
+      return;
+    }
+    if (code === 'ASSIGN' && state.assignmentReferences.failed) {
+      setActionStatus('Assignment reference data is unavailable. Please reload the incident screen and try again.');
       return;
     }
 
@@ -544,8 +766,8 @@
           incident_id: state.selectedIncident.id,
           action: code,
           notes: note === '' ? null : note,
-          assigned_department_reference: code === 'ASSIGN' && department !== '' ? department : null,
-          assigned_user_reference: code === 'ASSIGN' && user !== '' ? user : null
+          assigned_department_reference: code === 'ASSIGN' ? departmentReference : null,
+          assigned_user_reference: code === 'ASSIGN' ? userReference : null
         };
     const endpoint = definition.kind === 'response' ? config.responseEndpoint : config.statusEndpoint;
     const submit = query('[data-submit-incident-action]');
@@ -601,6 +823,13 @@
     query('[data-detail-actions]')?.addEventListener('click', (event) => {
       const button = event.target.closest('[data-incident-action]');
       if (button) openAction(button.dataset.incidentAction);
+    });
+    query('[data-assignment-department-select]')?.addEventListener('change', updateResponderSelect);
+    query('[data-assignment-user-select]')?.addEventListener('change', () => {
+      const responder = query('[data-assignment-user-select]');
+      if (responder && responder.value !== '' && query('[data-assignment-department-select]')?.value === '') {
+        responder.value = '';
+      }
     });
     query('[data-incident-action-form]')?.addEventListener('submit', (event) => { void submitAction(event); });
     document.addEventListener('keydown', (event) => {
