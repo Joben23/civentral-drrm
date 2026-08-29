@@ -5,6 +5,7 @@ namespace App\Repositories;
 class PermissionRepository
 {
     private $db;
+    private bool $resolved = false;
 
     public function __construct($db)
     {
@@ -13,6 +14,11 @@ class PermissionRepository
 
     public function getPermissionsByRoleId($roleId)
     {
+        $db = $this->database();
+        if ($db === null) {
+            return [];
+        }
+
         $sql = "
             SELECT 
                 a.action_name,
@@ -23,6 +29,16 @@ class PermissionRepository
             JOIN resources r ON p.resource_id = r.resource_id
             WHERE rp.role_id = :role_id
         ";
-        return $this->db->query($sql, ['role_id' => $roleId]);
+        return $db->query($sql, ['role_id' => $roleId]);
+    }
+
+    private function database()
+    {
+        if (!$this->resolved && is_callable($this->db)) {
+            $this->db = ($this->db)();
+        }
+        $this->resolved = true;
+
+        return $this->db;
     }
 }

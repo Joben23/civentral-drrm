@@ -3,9 +3,10 @@ session_start();
 
 // Record logout time in login_history & delete active session from user_sessions
 if (isset($_SESSION['login_id']) || isset($_SESSION['session_id'])) {
-    require_once __DIR__ . '/../config/database.php';
     try {
-        if (isset($db)) {
+        require_once __DIR__ . '/../config/database.php';
+        $db = legacyDatabaseIfEnabled();
+        if ($db !== null) {
             if (isset($_SESSION['login_id'])) {
                 $db->update('login_history', ['logout_time' => date('Y-m-d H:i:s')], ['login_id' => $_SESSION['login_id']]);
             }

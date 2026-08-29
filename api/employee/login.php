@@ -32,9 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/mailer.php';
-
 // Response Helper
 function respond(array $payload, int $statusCode = 200): void {
     http_response_code($statusCode);
@@ -80,6 +77,21 @@ $result = proxyRequest($remoteUrl, 'POST', [
     'employeeId' => $employeeIdOrEmail,
     'password' => $password
 ]);
+
+if (is_array($result['body'] ?? null)
+    && ($result['body']['status'] ?? null) === 'success') {
+    $authenticatedUser = is_array($result['body']['user'] ?? null)
+        ? $result['body']['user']
+        : [];
+
+    if (!hydrateRemoteEmployeeSession($apiBaseUrl, $authenticatedUser)) {
+        clearRemoteEmployeeAuthentication();
+        respond([
+            'status' => 'error',
+            'message' => 'Authentication succeeded, but the server could not establish a verified local session.'
+        ], 502);
+    }
+}
 
 respond($result['body'], $result['code']);
 ?>

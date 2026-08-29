@@ -8,11 +8,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Load Database Config
+// The legacy MySQL fallback is loaded only if a remote profile is absent and
+// an explicit server-side opt-in enables it.
 $configPath = __DIR__ . '/../config/database.php';
-if (file_exists($configPath)) {
+$legacyDatabaseProvider = static function () use ($configPath) {
+    if (!is_file($configPath)) {
+        return null;
+    }
+
     require_once $configPath;
-}
+    return legacyDatabaseIfEnabled();
+};
 
 // Load Repositories
 require_once __DIR__ . '/Repositories/UserRepository.php';
@@ -32,13 +38,14 @@ $authService = new \App\Services\AuthService();
 
 // Support dynamic basePath if defined before requiring bootstrap.php
 $currentBasePath = $basePath ?? '../';
+$authService->requireAuth($currentBasePath);
+
 $sessionTimeout = new \App\Middleware\SessionTimeout(1800, $currentBasePath);
 $sessionTimeout->handle();
 
-// Initialize Repositories
-// Note: $db is expected to be initialized by config/database.php
-$userRepo = new \App\Repositories\UserRepository($db ?? null);
-$permRepo = new \App\Repositories\PermissionRepository($db ?? null);
+// Repositories resolve the provider only if a legacy query is actually made.
+$userRepo = new \App\Repositories\UserRepository($legacyDatabaseProvider);
+$permRepo = new \App\Repositories\PermissionRepository($legacyDatabaseProvider);
 
 // Initialize Services
 $userService = new \App\Services\UserService($userRepo);

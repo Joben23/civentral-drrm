@@ -32,24 +32,24 @@ include '../../includes/sidebar.php';
       <!-- Profile Photo Avatar container -->
       <div class="relative w-32 h-32 mx-auto">
         <div class="w-full h-full rounded-full bg-brand-light border-2 border-brand-border flex items-center justify-center text-brand-dark font-black text-3xl select-none group cursor-pointer overflow-hidden relative">
-          <span id="profileAvatarInitials">JS</span>
+          <span id="profileAvatarInitials">--</span>
           <img id="profileAvatarImg" src="" alt="Profile Photo" class="hidden w-full h-full object-cover">
           <!-- Subtle Hover Overlay -->
           <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300">
             <span>View Photo</span>
           </div>
         </div>
-        <!-- Active status dot -->
-        <span id="profileStatusDot" class="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center" title="Account Status: Active"></span>
+        <!-- Account status is populated from the external employee profile. -->
+        <span id="profileStatusDot" class="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-slate-300 border-4 border-white flex items-center justify-center" title="Account status unavailable"></span>
       </div>
 
       <!-- User Main Info details -->
       <div class="space-y-1.5">
         <h3 id="profileNameHeading" class="text-lg font-black text-slate-900 tracking-tight">Loading Profile...</h3>
         <div class="flex items-center justify-center gap-1.5">
-          <span id="profileRoleHeading" class="bg-slate-900 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wide border border-slate-950">Superadmin</span>
+          <span id="profileRoleHeading" class="bg-slate-900 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wide border border-slate-950">Loading...</span>
           <span class="text-slate-300">|</span>
-          <span id="profileDepartmentHeading" class="text-[11px] font-bold text-slate-400">Caloocan Central IT</span>
+          <span id="profileDepartmentHeading" class="text-[11px] font-bold text-slate-400">Loading...</span>
         </div>
       </div>
 
@@ -67,7 +67,7 @@ include '../../includes/sidebar.php';
         <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Logins</span>
         <div class="flex items-center gap-2 text-xs font-extrabold text-slate-800">
           <i class="fa-solid fa-right-to-bracket text-emerald-600 text-xs"></i>
-          <span id="profileTotalLogins">1 Successful Login</span>
+          <span id="profileTotalLogins">Loading...</span>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ include '../../includes/sidebar.php';
             <!-- Account Status -->
             <div class="bg-slate-50 border border-slate-200/40 rounded-xl p-3.5 space-y-1">
               <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Account Status badge</span>
-              <span id="profileStatusBadge" class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-100 inline-flex items-center gap-1"><i class="fa-solid fa-circle text-[6px] animate-pulse"></i> Active</span>
+              <span id="profileStatusBadge" class="bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] font-black border border-slate-200 inline-flex items-center gap-1">Loading...</span>
             </div>
           </div>
         </div>

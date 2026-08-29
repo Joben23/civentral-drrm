@@ -22,16 +22,114 @@ if (!function_exists('loadEnv')) {
 
 loadEnv(__DIR__ . '/../.env');
 
+class LegacyDatabaseConfigurationException extends \RuntimeException {}
+
+/**
+ * Explicit configuration gate for the legacy CIVENTRAL MySQL fallback.
+ *
+ * The normal DRRM runtime uses remote CIVENTRAL identity APIs and Supabase.
+ * Merely including this file must never open a database connection.
+ */
+final class LegacyDatabaseConfig
+{
+    private const ENABLED_VARIABLE = 'CIVENTRAL_LEGACY_DB_ENABLED';
+
+    public static function isEnabled(): bool
+    {
+        $value = self::environmentValue(self::ENABLED_VARIABLE);
+        if ($value === false || trim($value) === '') {
+            return false;
+        }
+
+        return match (strtolower(trim($value))) {
+            '1', 'true', 'yes', 'on' => true,
+            '0', 'false', 'no', 'off' => false,
+            default => throw new LegacyDatabaseConfigurationException(
+                self::ENABLED_VARIABLE . ' must be a valid boolean value.'
+            ),
+        };
+    }
+
+    /**
+     * @return array{host: string, port: int, database: string, user: string, password: string}
+     */
+    public static function connectionParameters(): array
+    {
+        if (!self::isEnabled()) {
+            throw new LegacyDatabaseConfigurationException(
+                'The legacy CIVENTRAL database fallback is disabled.'
+            );
+        }
+
+        $host = self::requiredValue('DB_HOST');
+        $portValue = self::requiredValue('DB_PORT');
+        $database = self::requiredValue('DB_NAME');
+        $user = self::requiredValue('DB_USER');
+        $password = self::requiredValue('DB_PASSWORD', true);
+
+        $port = filter_var($portValue, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => 65535],
+        ]);
+        if ($port === false) {
+            throw new LegacyDatabaseConfigurationException(
+                'DB_PORT must be an integer between 1 and 65535.'
+            );
+        }
+
+        foreach (['DB_HOST' => $host, 'DB_NAME' => $database] as $name => $value) {
+            if (preg_match('/[;\x00-\x1F\x7F]/', $value) === 1) {
+                throw new LegacyDatabaseConfigurationException(
+                    $name . ' contains unsupported characters.'
+                );
+            }
+        }
+
+        return [
+            'host' => $host,
+            'port' => $port,
+            'database' => $database,
+            'user' => $user,
+            'password' => $password,
+        ];
+    }
+
+    private static function requiredValue(string $name, bool $preserveWhitespace = false): string
+    {
+        $value = self::environmentValue($name);
+        if ($value === false || trim($value) === '') {
+            throw new LegacyDatabaseConfigurationException(
+                $name . ' is required when the legacy database fallback is enabled.'
+            );
+        }
+
+        return $preserveWhitespace ? $value : trim($value);
+    }
+
+    private static function environmentValue(string $name): string|false
+    {
+        $value = getenv($name);
+        if ($value === false && array_key_exists($name, $_ENV)) {
+            $value = (string) $_ENV[$name];
+        }
+        if ($value === false && array_key_exists($name, $_SERVER)) {
+            $value = (string) $_SERVER[$name];
+        }
+
+        return is_string($value) ? $value : false;
+    }
+}
+
 class Database {
     private static $instance = null;
     private $pdo;
 
     public function __construct() {
-        $host = getenv('DB_HOST') ?: 'localhost';
-        $port = getenv('DB_PORT') ?: '3306';
-        $db   = getenv('DB_NAME') ?: '';
-        $user = getenv('DB_USER') ?: 'root';
-        $pass = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '';
+        $configuration = LegacyDatabaseConfig::connectionParameters();
+        $host = $configuration['host'];
+        $port = $configuration['port'];
+        $db = $configuration['database'];
+        $user = $configuration['user'];
+        $pass = $configuration['password'];
         $charset = 'utf8mb4';
 
         $dsn = "mysql:host={$host};port={$port};dbname={$db};charset={$charset}";
@@ -43,16 +141,8 @@ class Database {
 
         try {
             $this->pdo = new PDO($dsn, $user, $pass, $options);
-        } catch (\PDOException $e) {
-            // Attempt to connect without dbname to create DB if needed
-            try {
-                $dsnNoDb = "mysql:host={$host};port={$port};charset={$charset}";
-                $pdoTmp = new PDO($dsnNoDb, $user, $pass, $options);
-                $pdoTmp->exec("CREATE DATABASE IF NOT EXISTS `{$db}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-                $this->pdo = new PDO($dsn, $user, $pass, $options);
-            } catch (\PDOException $e2) {
-                throw new \PDOException("MySQL Connection Error: " . $e2->getMessage(), (int)$e2->getCode());
-            }
+        } catch (\PDOException) {
+            throw new \PDOException('Legacy CIVENTRAL database connection failed.');
         }
     }
 
@@ -169,6 +259,14 @@ class Database {
 
 class DatabaseDB extends Database {}
 
-// Global instance $db for easy inclusion across api & pages
-$db = Database::getInstance();
+/**
+ * Return the legacy database only when the server explicitly enables it.
+ * Disabled means no PDO constructor is called.
+ */
+function legacyDatabaseIfEnabled(): ?Database
+{
+    return LegacyDatabaseConfig::isEnabled()
+        ? Database::getInstance()
+        : null;
+}
 ?>

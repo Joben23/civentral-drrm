@@ -98,22 +98,10 @@ function togglePasswordVisibility() {
           }
         }
       } catch (err) {
-        // Fallback for direct offline / static testing
-        const validIds = ['SADM-2026-001', 'EMP-1111-ADMIN-2026', 'ADMIN', 'SUPERADMIN@CIVENTRAL.GOV.PH'];
-        if (validIds.includes(id.toUpperCase()) && pass === '1234') {
-          showStatusAlert('success', 'Login successful! Redirecting to dashboard...');
-          if (submitBtn) {
-            submitBtn.innerHTML = '<span class="inline-flex items-center justify-center gap-2"><img src="assets/images/spinner.svg" class="h-4 w-4 inline" alt="loading"> Entering Dashboard...</span>';
-          }
-          setTimeout(() => {
-            window.location.href = 'pages/dashboard.php';
-          }, 1200);
-        } else {
-          showStatusAlert('error', 'Login failed. Invalid credentials or network error.');
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-          }
+        showStatusAlert('error', 'Login failed. Invalid credentials or network error.');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
         }
       }
     }

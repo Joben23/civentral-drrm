@@ -46,7 +46,7 @@ include '../../includes/sidebar.php';
                title="Click to change photo">
             <img
               id="avatarPreview"
-              src="https://ui-avatars.com/api/?name=Joshua+Suruiz&background=EEF5FF&color=176B87&bold=true&size=128&font-size=0.42"
+              src="https://ui-avatars.com/api/?name=User&background=EEF5FF&color=176B87&bold=true&size=128&font-size=0.42"
               alt="Profile Avatar"
               class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg ring-2 ring-brand-border transition-all duration-300 group-hover:ring-brand-medium"
             >
@@ -104,9 +104,8 @@ include '../../includes/sidebar.php';
           <div class="border-t border-slate-100"></div>
           <div class="flex items-center justify-between text-xs">
             <span class="text-slate-400 font-semibold">Account Status</span>
-            <span id="summaryStatus" class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200/80 font-black px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider">
-              <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Active
+            <span id="summaryStatus" class="inline-flex items-center gap-1 text-slate-600 bg-slate-50 border border-slate-200 font-black px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider">
+              Loading...
             </span>
           </div>
           <div class="border-t border-slate-100"></div>
@@ -153,7 +152,7 @@ include '../../includes/sidebar.php';
             </div>
             <div class="relative">
               <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300"><i class="fa-solid fa-user-tie text-sm"></i></span>
-              <input type="text" id="fieldFullName" value="Joshua Suruiz" readonly disabled
+              <input type="text" id="fieldFullName" value="" placeholder="Loading..." readonly disabled
                 class="pl-10 pr-10 py-3 border border-slate-200 bg-slate-50/70 rounded-xl text-xs w-full font-bold text-slate-400 cursor-not-allowed select-none">
               <span class="absolute right-3.5 top-1/2 -translate-y-1/2"><i class="fa-solid fa-lock text-slate-300 text-xs"></i></span>
             </div>

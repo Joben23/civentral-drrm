@@ -17,6 +17,12 @@ class HeaderService
 
     public function buildHeaderUser()
     {
+        // Never retain a permission map from an earlier or incomplete identity
+        // resolution. The remote server must rebuild it for this session.
+        $_SESSION['user_granted_actions'] = [];
+        $_SESSION['user_granted_resources'] = [];
+        $_SESSION['user_permissions_map'] = [];
+
         $headerUser = [
             'full_name' => 'System User',
             'initials' => 'SU',
@@ -54,14 +60,12 @@ class HeaderService
             $headerUser['role_prefix'] = $user['role_prefix'] ?? 'STF';
             $headerUser['is_global_access'] = filter_var($user['is_global_access'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-            $roleNameLower = strtolower($headerUser['role']);
-            $rolePrefixUpper = strtoupper($headerUser['role_prefix']);
-
-            if (!empty($user['is_superadmin']) || $rolePrefixUpper === 'SA' || $rolePrefixUpper === 'SADM' || $roleNameLower === 'super administrator' || $roleNameLower === 'superadmin') {
-                $headerUser['is_superadmin'] = true;
-            } else {
-                $headerUser['is_superadmin'] = false;
-            }
+            // Only the explicit server-derived profile field can confer this
+            // status. Role names and prefixes are display metadata, not proof.
+            $headerUser['is_superadmin'] = filter_var(
+                $user['is_superadmin'] ?? false,
+                FILTER_VALIDATE_BOOLEAN
+            );
 
             // Permissions: Query LGU REST API on every load for instant panel changes
             if (!empty($user['role_id'])) {

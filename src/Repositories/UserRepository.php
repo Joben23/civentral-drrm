@@ -5,6 +5,7 @@ namespace App\Repositories;
 class UserRepository
 {
     private $db;
+    private bool $resolved = false;
 
     public function __construct($db)
     {
@@ -13,6 +14,11 @@ class UserRepository
 
     public function getUserWithRelations($userId, $employeeId = null)
     {
+        $db = $this->database();
+        if ($db === null) {
+            return null;
+        }
+
         $sql = "
             SELECT 
                 u.*,
@@ -34,7 +40,17 @@ class UserRepository
             $params['id'] = $employeeId;
         }
 
-        $results = $this->db->query($sql, $params);
+        $results = $db->query($sql, $params);
         return !empty($results) ? $results[0] : null;
+    }
+
+    private function database()
+    {
+        if (!$this->resolved && is_callable($this->db)) {
+            $this->db = ($this->db)();
+        }
+        $this->resolved = true;
+
+        return $this->db;
     }
 }

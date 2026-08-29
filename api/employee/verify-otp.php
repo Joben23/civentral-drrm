@@ -32,8 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once __DIR__ . '/../../config/database.php';
-
 // Response Helper
 function respond(array $payload, int $statusCode = 200): void {
     http_response_code($statusCode);
@@ -70,19 +68,16 @@ $result = proxyRequest($remoteUrl, 'POST', [
 ]);
 
 if (isset($result['body']['status']) && $result['body']['status'] === 'success') {
-    $user = $result['body']['user'] ?? [];
-    $_SESSION['user_id'] = $user['user_id'] ?? null;
-    $_SESSION['employee_id'] = $user['employee_id'] ?? null;
-    $_SESSION['email'] = $user['email'] ?? ($user['employee_id'] ?? null);
-    $_SESSION['first_name'] = $user['first_name'] ?? null;
-    $_SESSION['last_name'] = $user['last_name'] ?? null;
-    $_SESSION['role_id'] = $user['role_id'] ?? null;
+    $authenticatedUser = is_array($result['body']['user'] ?? null)
+        ? $result['body']['user']
+        : [];
 
-    // Fetch full profile details from get-profile.php
-    $profileUrl = rtrim($apiBaseUrl, '/') . '/get-profile.php';
-    $profileResult = proxyRequest($profileUrl, 'GET', null);
-    if (isset($profileResult['body']['status']) && $profileResult['body']['status'] === 'success') {
-        $_SESSION['current_user_details'] = $profileResult['body']['data'];
+    if (!hydrateRemoteEmployeeSession($apiBaseUrl, $authenticatedUser)) {
+        clearRemoteEmployeeAuthentication();
+        respond([
+            'status' => 'error',
+            'message' => 'Verification succeeded, but the server could not establish a verified local session.'
+        ], 502);
     }
 }
 

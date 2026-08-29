@@ -23,7 +23,7 @@ function populateProfileUI() {
   if (sName) sName.innerText = userProfile.full_name || '';
 
   const sRole = document.getElementById('sidebarRole');
-  if (sRole) sRole.innerText = userProfile.role_name || 'Staff';
+  if (sRole) sRole.innerText = userProfile.role_name || 'Not assigned';
 
   // Account summary
   const sumEmpId = document.getElementById('summaryEmpId');
@@ -35,8 +35,11 @@ function populateProfileUI() {
   const sumDept = document.getElementById('summaryDept');
   if (sumDept) sumDept.innerText = userProfile.department_name || '';
 
+  const sumStatus = document.getElementById('summaryStatus');
+  if (sumStatus) sumStatus.innerText = userProfile.status || 'Not available';
+
   const sumMemberSince = document.getElementById('summaryMemberSince');
-  if (sumMemberSince) sumMemberSince.innerText = userProfile.created_date || 'Jan 2026';
+  if (sumMemberSince) sumMemberSince.innerText = userProfile.created_date || 'Not available';
 
   // Editable input fields
   const fName = document.getElementById('fieldFullName');
