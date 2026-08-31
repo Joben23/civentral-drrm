@@ -18,12 +18,16 @@ $draftBarangayPreviewEnabled = AppEnvironment::allowsLocalDevelopmentRequest(
     $_SERVER
 );
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
+$operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
 $hazardMapJsRelativePath = 'assets/js/drrm/hazard-evacuation-map.js';
 $hazardMapCssFile = __DIR__ . '/../../' . $hazardMapCssRelativePath;
+$operationalMapDataFile = __DIR__ . '/../../' . $operationalMapDataRelativePath;
 $hazardMapJsFile = __DIR__ . '/../../' . $hazardMapJsRelativePath;
 $hazardMapCssVersion = filemtime($hazardMapCssFile);
+$operationalMapDataVersion = filemtime($operationalMapDataFile);
 $hazardMapJsVersion = filemtime($hazardMapJsFile);
 $hazardMapCssUrl = $basePath . $hazardMapCssRelativePath . '?v=' . rawurlencode((string) $hazardMapCssVersion);
+$operationalMapDataUrl = $basePath . $operationalMapDataRelativePath . '?v=' . rawurlencode((string) $operationalMapDataVersion);
 $hazardMapJsUrl = $basePath . $hazardMapJsRelativePath . '?v=' . rawurlencode((string) $hazardMapJsVersion);
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
@@ -115,8 +119,40 @@ include '../../includes/sidebar.php';
 <?php if ($draftBarangayPreviewEnabled): ?>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
 <?php endif; ?>
+<script src='<?php echo htmlspecialchars($operationalMapDataUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
 <script>
   window.CiventralDrrmMapConfig = Object.freeze({
+    dataMode: <?php echo json_encode(
+        $draftBarangayPreviewEnabled ? 'development-preview' : 'operational',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
+    operationalData: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'false' : 'true'; ?>,
+      barangaysEndpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/barangays.php',
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      hazardsEndpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/hazard-zones.php',
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      faultsEndpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/fault-features.php',
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      evacuationCentersEndpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/evacuation-centers.php',
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      evacuationRoutesEndpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/evacuation-routes.php',
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      lookupsEndpoint: <?php echo json_encode(
+          $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/lookups.php',
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
     draftBarangayPreview: Object.freeze({
       enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,
       endpoint: <?php echo json_encode(
@@ -464,32 +500,49 @@ include '../../includes/sidebar.php';
 
   async function loadValidatedBarangayMapping() {
     const preview = runtimeConfig.draftBarangayPreview;
-    if (!preview || preview.enabled !== true || typeof preview.endpoint !== 'string') return false;
+    const operational = runtimeConfig.operationalData;
+    const usePreview = runtimeConfig.dataMode === 'development-preview'
+      && preview && preview.enabled === true && typeof preview.endpoint === 'string';
+    const endpoint = usePreview
+      ? preview.endpoint
+      : (runtimeConfig.dataMode === 'operational'
+        && operational && operational.enabled === true
+        && typeof operational.barangaysEndpoint === 'string'
+        ? operational.barangaysEndpoint
+        : null);
+    if (!endpoint) return false;
     try {
-      const response = await window.fetch(preview.endpoint, {
+      const response = await window.fetch(endpoint, {
         method: 'GET',
         credentials: 'same-origin',
         cache: 'no-store',
         headers: { Accept: 'application/geo+json, application/json' }
       });
       if (!response.ok) throw new Error('Barangay mapping request failed.');
-      const collection = await response.json();
-      if (!collection || collection.type !== 'FeatureCollection'
-        || !Array.isArray(collection.features) || collection.features.length !== 187) {
+      const payload = await response.json();
+      const records = usePreview
+        ? (payload && payload.type === 'FeatureCollection' && Array.isArray(payload.features)
+          ? payload.features.map(function (feature) { return feature && feature.properties; })
+          : null)
+        : (payload && payload.success === true && Array.isArray(payload.data) ? payload.data : null);
+      if (!records || (usePreview && records.length !== 187)) {
         throw new Error('Barangay mapping response was invalid.');
       }
       const mapping = new Map();
-      collection.features.forEach(function (feature) {
-        const properties = feature && feature.properties;
-        if (!properties || typeof properties.name !== 'string'
-          || typeof properties.barangay_code !== 'string'
-          || !/^\d{10}$/.test(properties.barangay_code)
-          || /^Barangay 176(?:-[A-F])?$/i.test(properties.name.trim())) {
-          throw new Error('Barangay mapping feature was invalid.');
+      records.forEach(function (record) {
+        if (!record || typeof record.name !== 'string'
+          || typeof record.barangay_code !== 'string'
+          || !/^\d{10}$/.test(record.barangay_code)
+          || (usePreview && /^Barangay 176(?:-[A-F])?$/i.test(record.name.trim()))
+          || (!usePreview && Object.prototype.hasOwnProperty.call(record, 'record_status')
+            && record.record_status !== 'ACTIVE')) {
+          throw new Error('Barangay mapping record was invalid.');
         }
-        mapping.set(normalizeBarangayName(properties.name), properties.barangay_code);
+        mapping.set(normalizeBarangayName(record.name), record.barangay_code);
       });
-      if (mapping.size !== 187) throw new Error('Barangay mapping was incomplete.');
+      if (mapping.size !== records.length || (usePreview && mapping.size !== 187)) {
+        throw new Error('Barangay mapping was incomplete.');
+      }
       state.barangaysByName = mapping;
       syncSelectedBarangay();
       return true;

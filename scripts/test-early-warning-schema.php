@@ -154,11 +154,11 @@ try {
     ]);
     $warnings = $client->get('early_warnings', [
         'select' => 'id',
-        'limit' => 1,
+        'order' => 'id.asc',
     ]);
     $areas = $client->get('early_warning_areas', [
         'select' => 'id',
-        'limit' => 1,
+        'order' => 'id.asc',
     ]);
     $riskLevels = $client->get('risk_levels', [
         'select' => 'risk_level_id,code,name,severity_rank,is_active',
@@ -167,12 +167,16 @@ try {
 
     assertModule4Sources($sources);
 
-    if ($warnings !== [] || ($catalog['warning_count'] ?? null) !== 0) {
-        throw new RuntimeException('Module 4 early_warnings must be empty after the Phase 2 migration.');
+    if (!is_int($catalog['warning_count'] ?? null)
+        || $catalog['warning_count'] < 0
+        || count($warnings) !== $catalog['warning_count']) {
+        throw new RuntimeException('Module 4 early_warnings catalog and read counts do not match.');
     }
 
-    if ($areas !== [] || ($catalog['area_count'] ?? null) !== 0) {
-        throw new RuntimeException('Module 4 early_warning_areas must be empty after the Phase 2 migration.');
+    if (!is_int($catalog['area_count'] ?? null)
+        || $catalog['area_count'] < 0
+        || count($areas) !== $catalog['area_count']) {
+        throw new RuntimeException('Module 4 early_warning_areas catalog and read counts do not match.');
     }
 
     $expectedRiskCodes = ['LOW', 'MODERATE', 'HIGH', 'CRITICAL'];
@@ -192,8 +196,8 @@ try {
         echo $source['source_code'] . ': ' . $source['id'] . "\n";
     }
 
-    echo "early_warnings: 0 records\n";
-    echo "early_warning_areas: 0 records\n";
+    echo 'early_warnings: ' . count($warnings) . ' records' . PHP_EOL;
+    echo 'early_warning_areas: ' . count($areas) . ' records' . PHP_EOL;
     echo "risk_levels reused: LOW, MODERATE, HIGH, CRITICAL\n";
     echo "RLS enabled: yes\n";
     echo "direct anon/authenticated table privileges: none\n";

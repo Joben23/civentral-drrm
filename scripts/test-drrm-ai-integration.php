@@ -152,10 +152,37 @@ try {
     assertAiIntegration('MissingBaseUrlRejected', $missingBaseRejected, true);
 
     $testKey = 'test-only-internal-key-32-characters';
-    putenv('CIVENTRAL_AI_BASE_URL=http://127.0.0.1:8098');
     putenv('CIVENTRAL_AI_INTERNAL_KEY=' . $testKey);
     putenv('CIVENTRAL_AI_CONNECT_TIMEOUT_MS=900');
     putenv('CIVENTRAL_AI_REQUEST_TIMEOUT_MS=2500');
+
+    putenv('CIVENTRAL_AI_BASE_URL=http://flood-risk-ai:8098');
+    $dockerConfig = AiServiceConfig::fromEnvironment(null);
+    assertAiIntegration('TrustedDockerHostAndPortAccepted', $dockerConfig->baseUrl(), 'http://flood-risk-ai:8098');
+
+    putenv('CIVENTRAL_AI_BASE_URL=http://flood-risk-ai:8099');
+    $dockerWrongPortRejected = false;
+    try {
+        AiServiceConfig::fromEnvironment(null);
+    } catch (RuntimeException) {
+        $dockerWrongPortRejected = true;
+    }
+    assertAiIntegration('TrustedDockerWrongPortRejected', $dockerWrongPortRejected, true);
+
+    putenv('CIVENTRAL_AI_BASE_URL=http://arbitrary-internal-host:8098');
+    $arbitraryHttpRejected = false;
+    try {
+        AiServiceConfig::fromEnvironment(null);
+    } catch (RuntimeException) {
+        $arbitraryHttpRejected = true;
+    }
+    assertAiIntegration('ArbitraryHttpHostnameRejected', $arbitraryHttpRejected, true);
+
+    putenv('CIVENTRAL_AI_BASE_URL=https://ai.example.com');
+    $httpsConfig = AiServiceConfig::fromEnvironment(null);
+    assertAiIntegration('PublicHttpsPolicyPreserved', $httpsConfig->baseUrl(), 'https://ai.example.com');
+
+    putenv('CIVENTRAL_AI_BASE_URL=http://127.0.0.1:8098');
     $config = AiServiceConfig::fromEnvironment(null);
 
     $unreachableTransport = new TestAiTransport(static function (): DrrmAiHttpResponse {

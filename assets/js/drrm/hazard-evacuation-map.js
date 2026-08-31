@@ -37,6 +37,8 @@
     resizeObserver: null,
     resizeFrame: null,
     draftPreviewLoaded: false,
+    barangayDataStatus: 'NOT_LOADED',
+    operationalBarangayCollection: null,
     draftPreviewFeatureCount: 0,
     draftPreviewBounds: null,
     draftPreviewLayer: null,
@@ -60,6 +62,8 @@
     landslidePreviewClassCounts: null,
     landslideLoadPromise: null,
     landslideFetchCount: 0,
+    operationalHazardCollections: null,
+    operationalHazardLoadPromise: null,
     selectedLandslideLayer: null,
     faultPreviewLoaded: false,
     faultPreviewFeatureCount: 0,
@@ -67,6 +71,7 @@
     faultLoadPromise: null,
     faultFetchCount: 0,
     faultInformationActive: false,
+    selectedFaultLayer: null,
     evacuationCenterPreviewLoaded: false,
     evacuationCenterPreviewFeatureCount: 0,
     evacuationCenterPreviewLayer: null,
@@ -74,6 +79,9 @@
     evacuationCenterLoadPromise: null,
     evacuationCenterFetchCount: 0,
     selectedEvacuationCenterLayer: null,
+    operationalRouteStatus: 'NOT_LOADED',
+    operationalRouteFeatureCount: 0,
+    operationalRouteFetchCount: 0,
     cityBaseLayer: null,
     cityBoundaryLayer: null,
     cityBoundaryFeatureCollection: null,
@@ -151,8 +159,59 @@
     if (message) message.classList.remove('hidden');
   }
 
-  function getDraftPreviewConfig() {
+  function getOperationalDataConfig() {
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.operationalData;
+    if (!runtimeConfig || runtimeConfig.dataMode !== 'operational'
+      || !config || config.enabled !== true) {
+      return null;
+    }
+    return config;
+  }
+
+  function isOperationalMode() {
+    return Boolean(getOperationalDataConfig());
+  }
+
+  function initializeOperationalShell() {
+    if (!isOperationalMode()) return;
+    const baselineNotice = document.getElementById('polygonMapNotice');
+    const message = baselineNotice ? baselineNotice.querySelector('p') : null;
+    if (message) message.textContent = 'Caloocan polygon view. Loading server-filtered operational map records.';
+    setStatus('barangaySearchStatus', 'Loading operational barangay data...');
+    setStatus('hazardLayerStatus', 'Operational layers load on demand.');
+    setStatus('floodForecastConnectionStatus', 'Unavailable');
+    setStatus('mappedFloodSusceptibilityContent', 'Published mapped flood susceptibility loads from the operational hazard layer.');
+  }
+
+  function getOperationalAdapter() {
+    const adapter = window.CiventralDrrmOperationalData;
+    return adapter && typeof adapter === 'object' ? adapter : null;
+  }
+
+  function operationalEndpoint(key) {
+    const config = getOperationalDataConfig();
+    return config && typeof config[key] === 'string' && config[key] !== ''
+      ? config[key]
+      : null;
+  }
+
+  async function fetchOperationalJson(endpoint, label) {
+    const response = await window.fetch(endpoint, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' }
+    });
+    if (!response.ok) throw new Error(label + ' request failed.');
+    return response.json();
+  }
+
+  function getDraftPreviewConfig() {
+    const operational = operationalEndpoint('barangaysEndpoint');
+    if (operational) return Object.freeze({ endpoint: operational, operational: true });
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.draftBarangayPreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -174,7 +233,10 @@
   }
 
   function getFloodPreviewConfig() {
+    const operational = operationalEndpoint('hazardsEndpoint');
+    if (operational) return Object.freeze({ endpoint: operational, operational: true });
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.draftFloodPreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -185,7 +247,10 @@
   }
 
   function getLandslidePreviewConfig() {
+    const operational = operationalEndpoint('hazardsEndpoint');
+    if (operational) return Object.freeze({ endpoint: operational, operational: true });
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.draftLandslidePreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -196,7 +261,10 @@
   }
 
   function getEvacuationCenterPreviewConfig() {
+    const operational = operationalEndpoint('evacuationCentersEndpoint');
+    if (operational) return Object.freeze({ endpoint: operational, operational: true });
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.draftEvacuationCenterPreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -207,7 +275,10 @@
   }
 
   function getFaultInformationPreviewConfig() {
+    const operational = operationalEndpoint('faultsEndpoint');
+    if (operational) return Object.freeze({ endpoint: operational, operational: true });
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.draftFaultInformationPreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -219,6 +290,7 @@
 
   function getEvacuationRoutePreviewConfig() {
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.developmentEvacuationRoute;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -228,8 +300,14 @@
     return previewConfig;
   }
 
+  function getOperationalEvacuationRouteConfig() {
+    const endpoint = operationalEndpoint('evacuationRoutesEndpoint');
+    return endpoint ? Object.freeze({ endpoint: endpoint, operational: true }) : null;
+  }
+
   function getFloodForecastPreviewConfig() {
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
     const previewConfig = runtimeConfig && runtimeConfig.developmentFloodForecast;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -369,6 +447,27 @@
     };
   }
 
+  function operationalFaultStyle() {
+    return {
+      color: isDarkMode() ? '#fda4af' : '#be123c',
+      weight: 3,
+      opacity: 0.95,
+      dashArray: '7 4',
+      lineCap: 'round',
+      lineJoin: 'round'
+    };
+  }
+
+  function approvedRouteStyle() {
+    return {
+      color: isDarkMode() ? '#5eead4' : '#0f766e',
+      weight: 5,
+      opacity: 0.95,
+      lineCap: 'round',
+      lineJoin: 'round'
+    };
+  }
+
   function refreshThematicStyles() {
     if (state.cityBaseLayer) state.cityBaseLayer.setStyle(cityBaseStyle());
     if (state.cityBoundaryLayer) state.cityBoundaryLayer.setStyle(cityBoundaryStyle());
@@ -382,7 +481,9 @@
     if (state.selectedLandslideLayer) {
       state.selectedLandslideLayer.setStyle(landslideFeatureSelectedStyle(state.selectedLandslideLayer.feature));
     }
-    if (state.routeGeometryLayer) state.routeGeometryLayer.setStyle(developmentRouteStyle());
+    if (state.routeGeometryLayer) {
+      state.routeGeometryLayer.setStyle(isOperationalMode() ? approvedRouteStyle() : developmentRouteStyle());
+    }
   }
 
   function createCityContextPanes() {
@@ -650,6 +751,7 @@
       setStatus('operationalMapSubtitle', 'Inspecting 187 validated draft barangay boundaries; the current city layer is incomplete.');
     }
     setStatus('barangaySearchStatus', '187 validated draft barangays available for search.');
+    state.barangayDataStatus = 'LOADED';
   }
 
   function setDraftPreviewUiError() {
@@ -662,6 +764,55 @@
         message.textContent = 'Development Preview: Draft barangay boundaries could not be loaded.';
       }
     }
+    state.barangayDataStatus = 'ERROR';
+  }
+
+  function setOperationalBarangayUi(status, count) {
+    const baselineNotice = document.getElementById('polygonMapNotice');
+    const previewNotice = document.getElementById('draftBarangayPreviewNotice');
+    const statusBadge = document.getElementById('mapDataStatusBadge');
+    if (previewNotice) previewNotice.classList.add('hidden');
+    if (baselineNotice) baselineNotice.classList.remove('hidden');
+
+    state.barangayDataStatus = status;
+    if (status === 'ERROR') {
+      if (statusBadge) statusBadge.title = 'The operational barangay endpoint could not be reached.';
+      setStatus('mapDataStatusText', 'Map Data Status: Operational Endpoint Unavailable');
+      setStatus('barangaySearchStatus', 'Barangay operational data could not be loaded.');
+      return;
+    }
+
+    if (statusBadge) statusBadge.title = 'Only server-filtered operational map records are displayed.';
+    setStatus('mapDataStatusText', 'Map Data Status: Operational');
+    if (status === 'EMPTY') {
+      setStatus('barangaySearchStatus', 'Barangay operational data is not yet published.');
+      if (baselineNotice) {
+        const message = baselineNotice.querySelector('p');
+        if (message) message.textContent = 'The operational barangay endpoint is available, but no ACTIVE barangay boundaries are currently published.';
+      }
+      return;
+    }
+
+    setStatus('barangaySearchStatus', count + (count === 1
+      ? ' published barangay available for search.'
+      : ' published barangays available for search.'));
+    if (baselineNotice) {
+      const message = baselineNotice.querySelector('p');
+      if (message) message.textContent = 'Operational view: only server-filtered ACTIVE, PUBLISHED, or APPROVED records are displayed.';
+    }
+  }
+
+  function barangayAvailabilityMessage() {
+    if (isOperationalMode()) {
+      if (state.barangayDataStatus === 'ERROR') return 'Barangay operational data could not be loaded.';
+      if (state.barangayDataStatus === 'EMPTY') return 'Barangay operational data is not yet published.';
+      return state.searchableBarangays.length + (state.searchableBarangays.length === 1
+        ? ' published barangay available for search.'
+        : ' published barangays available for search.');
+    }
+    return state.draftPreviewLoaded
+      ? '187 validated draft barangays available for search.'
+      : 'Validated draft barangays are not available in this environment.';
   }
 
   function scheduleMapResize() {
@@ -748,13 +899,13 @@
 
     if (!state.draftPreviewLoaded || !state.searchableBarangays.length) {
       hideBarangaySuggestions();
-      setStatus('barangaySearchStatus', 'Validated draft barangays are not available in this environment.');
+      setStatus('barangaySearchStatus', barangayAvailabilityMessage());
       return [];
     }
 
     if (!query) {
       hideBarangaySuggestions();
-      setStatus('barangaySearchStatus', '187 validated draft barangays available for search.');
+      setStatus('barangaySearchStatus', barangayAvailabilityMessage());
       return [];
     }
 
@@ -769,7 +920,9 @@
 
     if (!visibleMatches.length) {
       hideBarangaySuggestions();
-      setStatus('barangaySearchStatus', 'No validated draft barangay matches that search.');
+      setStatus('barangaySearchStatus', isOperationalMode()
+        ? 'No published barangay matches that search.'
+        : 'No validated draft barangay matches that search.');
       return [];
     }
 
@@ -919,6 +1072,9 @@
   }
 
   function developmentLayerStatus() {
+    if (isOperationalMode()) {
+      return 'Operational layers load on demand and display only published server-filtered records.';
+    }
     const floodAvailable = Boolean(getFloodPreviewConfig());
     const landslideAvailable = Boolean(getLandslidePreviewConfig());
     const faultAvailable = Boolean(getFaultInformationPreviewConfig());
@@ -997,7 +1153,9 @@
       showLandslideLocationDetails(state.selectedLandslideLayer.feature.properties);
     } else if (state.selectedEvacuationCenterLayer && state.selectedEvacuationCenterLayer.feature) {
       showEvacuationCenterLocationDetails(state.selectedEvacuationCenterLayer.feature.properties);
-    } else if (state.faultInformationActive && state.faultPreviewResponse) {
+    } else if (state.selectedFaultLayer && state.selectedFaultLayer.feature) {
+      showOperationalFaultDetails(state.selectedFaultLayer.feature.properties);
+    } else if (state.faultInformationActive && state.faultPreviewResponse && state.faultPreviewResponse.summary) {
       showFaultInformationDetails(state.faultPreviewResponse.summary);
     } else if (state.selectedBarangayRecord) {
       showDraftLocationDetails(state.selectedBarangayRecord.properties);
@@ -1043,6 +1201,31 @@
     return payload;
   }
 
+  async function loadOperationalHazardCollections() {
+    if (state.operationalHazardCollections) return state.operationalHazardCollections;
+    if (state.operationalHazardLoadPromise) return state.operationalHazardLoadPromise;
+    const hazardsEndpoint = operationalEndpoint('hazardsEndpoint');
+    const lookupsEndpoint = operationalEndpoint('lookupsEndpoint');
+    const adapter = getOperationalAdapter();
+    if (!hazardsEndpoint || !lookupsEndpoint || !adapter || typeof adapter.mapHazards !== 'function') {
+      throw new Error('Operational hazard configuration is unavailable.');
+    }
+
+    state.operationalHazardLoadPromise = (async function () {
+      try {
+        const payloads = await Promise.all([
+          fetchOperationalJson(hazardsEndpoint, 'Hazard zones'),
+          fetchOperationalJson(lookupsEndpoint, 'DRRM lookups')
+        ]);
+        state.operationalHazardCollections = adapter.mapHazards(payloads[0], payloads[1]);
+        return state.operationalHazardCollections;
+      } finally {
+        state.operationalHazardLoadPromise = null;
+      }
+    })();
+    return state.operationalHazardLoadPromise;
+  }
+
   async function loadDraftFloodPreview() {
     if (state.floodPreviewLoaded) return true;
     if (state.floodLoadPromise) return state.floodLoadPromise;
@@ -1053,16 +1236,24 @@
     state.floodLoadPromise = (async function () {
       try {
         state.floodFetchCount += 1;
-        const response = await window.fetch(previewConfig.endpoint, {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-          headers: { Accept: 'application/geo+json, application/json' }
-        });
-
-        if (!response.ok) throw new Error('Flood preview request failed.');
-
-        const featureCollection = assertDraftFloodFeatureCollection(await response.json());
+        let featureCollection;
+        if (previewConfig.operational === true) {
+          featureCollection = (await loadOperationalHazardCollections()).flood;
+          const counts = { LF: 0, MF: 0, HF: 0, VHF: 0 };
+          featureCollection.features.forEach(function (feature) {
+            counts[feature.properties.mgb_code] += 1;
+          });
+          state.floodPreviewClassCounts = Object.freeze(counts);
+        } else {
+          const response = await window.fetch(previewConfig.endpoint, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/geo+json, application/json' }
+          });
+          if (!response.ok) throw new Error('Flood preview request failed.');
+          featureCollection = assertDraftFloodFeatureCollection(await response.json());
+        }
         const previewLayer = L.geoJSON(featureCollection, {
           pane: 'hazardPolygonPane',
           style: floodFeatureStyle,
@@ -1151,6 +1342,14 @@
       return;
     }
 
+    if (isOperationalMode() && state.floodPreviewFeatureCount === 0) {
+      control.checked = false;
+      state.map.removeLayer(layerGroup);
+      updateHazardLegend();
+      setStatus('hazardLayerStatus', 'Flood hazard operational data is not yet published.');
+      return;
+    }
+
     if (control.checked) {
       layerGroup.addTo(state.map);
       updateHazardLegend();
@@ -1213,7 +1412,9 @@
       showFloodLocationDetails(state.selectedFloodLayer.feature.properties);
     } else if (state.selectedEvacuationCenterLayer && state.selectedEvacuationCenterLayer.feature) {
       showEvacuationCenterLocationDetails(state.selectedEvacuationCenterLayer.feature.properties);
-    } else if (state.faultInformationActive && state.faultPreviewResponse) {
+    } else if (state.selectedFaultLayer && state.selectedFaultLayer.feature) {
+      showOperationalFaultDetails(state.selectedFaultLayer.feature.properties);
+    } else if (state.faultInformationActive && state.faultPreviewResponse && state.faultPreviewResponse.summary) {
       showFaultInformationDetails(state.faultPreviewResponse.summary);
     } else if (state.selectedBarangayRecord) {
       showDraftLocationDetails(state.selectedBarangayRecord.properties);
@@ -1269,16 +1470,24 @@
     state.landslideLoadPromise = (async function () {
       try {
         state.landslideFetchCount += 1;
-        const response = await window.fetch(previewConfig.endpoint, {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-          headers: { Accept: 'application/geo+json, application/json' }
-        });
-
-        if (!response.ok) throw new Error('Landslide preview request failed.');
-
-        const featureCollection = assertDraftLandslideFeatureCollection(await response.json());
+        let featureCollection;
+        if (previewConfig.operational === true) {
+          featureCollection = (await loadOperationalHazardCollections()).landslide;
+          const counts = { LL: 0, ML: 0, HL: 0, VHL: 0 };
+          featureCollection.features.forEach(function (feature) {
+            counts[feature.properties.mgb_code] += 1;
+          });
+          state.landslidePreviewClassCounts = Object.freeze(counts);
+        } else {
+          const response = await window.fetch(previewConfig.endpoint, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/geo+json, application/json' }
+          });
+          if (!response.ok) throw new Error('Landslide preview request failed.');
+          featureCollection = assertDraftLandslideFeatureCollection(await response.json());
+        }
         const previewLayer = L.geoJSON(featureCollection, {
           pane: 'hazardPolygonPane',
           style: landslideFeatureStyle,
@@ -1367,6 +1576,14 @@
       return;
     }
 
+    if (isOperationalMode() && state.landslidePreviewFeatureCount === 0) {
+      control.checked = false;
+      state.map.removeLayer(layerGroup);
+      updateHazardLegend();
+      setStatus('hazardLayerStatus', 'Landslide hazard operational data is not yet published.');
+      return;
+    }
+
     if (control.checked) {
       layerGroup.addTo(state.map);
       updateHazardLegend();
@@ -1450,7 +1667,36 @@
     details.replaceChildren(title, crossing, nearest, distance, source, advisory, riskCaveat);
   }
 
+  function showOperationalFaultDetails(properties) {
+    const details = document.getElementById('locationDetailsContent');
+    if (!details || !properties) return;
+    const title = document.createElement('strong');
+    const classification = document.createElement('div');
+    const source = document.createElement('div');
+    const caveat = document.createElement('p');
+    title.textContent = properties.fault_name;
+    classification.textContent = 'Feature class: ' + properties.feature_class;
+    source.textContent = 'Source: ' + properties.source_agency;
+    caveat.className = 'civ-map-helper mt-1';
+    caveat.textContent = 'Published fault information is contextual and does not indicate an absence of earthquake risk.';
+    details.replaceChildren(title, classification, source, caveat);
+  }
+
+  function selectOperationalFault(layer, properties) {
+    if (!layer || !properties) return false;
+    if (state.selectedFaultLayer && state.selectedFaultLayer !== layer) {
+      state.selectedFaultLayer.setStyle(operationalFaultStyle());
+    }
+    state.selectedFaultLayer = layer;
+    layer.setStyle(Object.assign({}, operationalFaultStyle(), { weight: 5, opacity: 1 }));
+    if (typeof layer.bringToFront === 'function') layer.bringToFront();
+    showOperationalFaultDetails(properties);
+    return true;
+  }
+
   function restoreLocationDetailsAfterFault() {
+    if (state.selectedFaultLayer) state.selectedFaultLayer.setStyle(operationalFaultStyle());
+    state.selectedFaultLayer = null;
     if (state.selectedEvacuationCenterLayer && state.selectedEvacuationCenterLayer.feature) {
       showEvacuationCenterLocationDetails(state.selectedEvacuationCenterLayer.feature.properties);
     } else if (state.selectedFloodLayer && state.selectedFloodLayer.feature) {
@@ -1481,13 +1727,29 @@
         if (!response.ok) throw new Error('Fault-information preview request failed.');
 
         const body = await response.json();
-        const preview = assertDraftFaultPreview(body && body.success === true ? body.data : null);
+        const adapter = getOperationalAdapter();
+        const faultCollection = previewConfig.operational === true
+          ? (adapter && typeof adapter.mapFaults === 'function' ? adapter.mapFaults(body) : null)
+          : null;
+        const preview = previewConfig.operational === true
+          ? (faultCollection ? { summary: null, faults: faultCollection } : null)
+          : assertDraftFaultPreview(body && body.success === true ? body.data : null);
+        if (!preview) throw new Error('Operational fault adapter is unavailable.');
 
-        // Information-only is deliberate: the nearest official trace lies
-        // outside Caloocan and rendering it would expand or distort the
-        // polygon-first operational viewport. Geometry remains available in
-        // the controlled response for later contextual-map work.
         state.layerGroups.earthquakeFaults.clearLayers();
+        if (previewConfig.operational === true) {
+          L.geoJSON(preview.faults, {
+            pane: 'operationalLinePane',
+            style: operationalFaultStyle,
+            onEachFeature: function (feature, layer) {
+              layer.bindTooltip(feature.properties.fault_name, { direction: 'top', sticky: true, opacity: 0.96 });
+              layer.on('click', function (event) {
+                if (delegateFeatureClickToMapPointSelection(event)) return;
+                selectOperationalFault(layer, feature.properties);
+              });
+            }
+          }).addTo(state.layerGroups.earthquakeFaults);
+        }
         state.faultPreviewResponse = preview;
         state.faultPreviewFeatureCount = preview.faults.features.length;
         state.faultPreviewLoaded = true;
@@ -1535,10 +1797,24 @@
       return;
     }
 
+    if (isOperationalMode() && state.faultPreviewFeatureCount === 0) {
+      control.checked = false;
+      state.faultInformationActive = false;
+      state.map.removeLayer(layerGroup);
+      setStatus('hazardLayerStatus', 'Fault operational data is not yet published.');
+      return;
+    }
+
     if (control.checked) {
       state.faultInformationActive = true;
-      showFaultInformationDetails(state.faultPreviewResponse.summary);
-      setStatus('hazardLayerStatus', developmentLayerStatus());
+      if (isOperationalMode()) {
+        layerGroup.addTo(state.map);
+        setStatus('hazardLayerStatus', state.faultPreviewFeatureCount + ' published fault feature'
+          + (state.faultPreviewFeatureCount === 1 ? ' is' : 's are') + ' displayed.');
+      } else {
+        showFaultInformationDetails(state.faultPreviewResponse.summary);
+        setStatus('hazardLayerStatus', developmentLayerStatus());
+      }
     }
   }
 
@@ -1600,20 +1876,36 @@
     const content = document.createElement('div');
     const heading = document.createElement('strong');
     const name = document.createElement('div');
-    const barangay = document.createElement('div');
     const status = document.createElement('div');
     const location = document.createElement('div');
     const source = document.createElement('div');
-    const barangayNumber = properties.barangay_name.replace(/^Barangay\s+/i, '');
 
     heading.textContent = 'Evacuation Center';
     name.textContent = properties.name;
-    barangay.textContent = 'Barangay: ' + barangayNumber;
     status.textContent = 'Status: ' + properties.display_status;
-    location.textContent = 'Location: Pending LGU verification';
+    location.textContent = properties.address
+      ? 'Address: ' + properties.address
+      : 'Location: ' + properties.location_verification_status;
     source.textContent = 'Source: ' + properties.source_agency;
     if (includeHeading) content.appendChild(heading);
-    content.append(name, barangay, status, location, source);
+    content.appendChild(name);
+    if (properties.barangay_name) {
+      const barangay = document.createElement('div');
+      barangay.textContent = 'Barangay: ' + properties.barangay_name.replace(/^Barangay\s+/i, '');
+      content.appendChild(barangay);
+    }
+    content.append(status, location);
+    if (Number.isFinite(properties.capacity)) {
+      const capacity = document.createElement('div');
+      capacity.textContent = 'Capacity: ' + properties.capacity.toLocaleString('en-PH');
+      content.appendChild(capacity);
+    }
+    if (properties.contact_phone) {
+      const contact = document.createElement('div');
+      contact.textContent = 'Contact: ' + properties.contact_phone;
+      content.appendChild(contact);
+    }
+    content.appendChild(source);
     return content;
   }
 
@@ -1645,7 +1937,9 @@
 
     if (state.selectedFloodLayer) {
       showFloodLocationDetails(state.selectedFloodLayer.feature.properties);
-    } else if (state.faultInformationActive && state.faultPreviewResponse) {
+    } else if (state.selectedFaultLayer && state.selectedFaultLayer.feature) {
+      showOperationalFaultDetails(state.selectedFaultLayer.feature.properties);
+    } else if (state.faultInformationActive && state.faultPreviewResponse && state.faultPreviewResponse.summary) {
       showFaultInformationDetails(state.faultPreviewResponse.summary);
     } else if (state.selectedBarangayRecord) {
       showDraftLocationDetails(state.selectedBarangayRecord.properties);
@@ -1670,9 +1964,15 @@
           cache: 'no-store',
           headers: { Accept: 'application/geo+json, application/json' }
         });
-        if (!response.ok) throw new Error('Evacuation-center preview request failed.');
-
-        const featureCollection = assertDraftEvacuationCenterFeatureCollection(await response.json());
+        if (!response.ok) throw new Error('Evacuation-center data request failed.');
+        const payload = await response.json();
+        const adapter = getOperationalAdapter();
+        const featureCollection = previewConfig.operational === true
+          ? (adapter && typeof adapter.mapEvacuationCenters === 'function'
+            ? adapter.mapEvacuationCenters(payload, state.operationalBarangayCollection)
+            : null)
+          : assertDraftEvacuationCenterFeatureCollection(payload);
+        if (!featureCollection) throw new Error('Operational evacuation-center adapter is unavailable.');
         const previewLayer = L.geoJSON(featureCollection, {
           pane: 'markerPane',
           pointToLayer: function (feature, latlng) {
@@ -1733,6 +2033,13 @@
       control.checked = false;
       state.map.removeLayer(layerGroup);
       setStatus('hazardLayerStatus', 'Evacuation-center data could not be loaded.');
+      return;
+    }
+
+    if (isOperationalMode() && state.evacuationCenterPreviewFeatureCount === 0) {
+      control.checked = false;
+      state.map.removeLayer(layerGroup);
+      setStatus('hazardLayerStatus', 'No published evacuation centers are currently available.');
       return;
     }
 
@@ -2363,7 +2670,131 @@
     }
   }
 
+  function createApprovedRouteContent(properties) {
+    const content = document.createElement('div');
+    const title = document.createElement('strong');
+    const origin = document.createElement('div');
+    const destination = document.createElement('div');
+    const distance = document.createElement('div');
+    title.textContent = properties.route_name;
+    origin.textContent = 'From: ' + properties.origin_name;
+    destination.textContent = 'To: ' + properties.destination_name;
+    distance.textContent = 'Published distance: ' + formatRouteDistance(properties.distance_meters);
+    content.append(title, origin, destination, distance);
+    if (properties.safety_notes) {
+      const notes = document.createElement('p');
+      notes.className = 'civ-map-helper mt-1';
+      notes.textContent = properties.safety_notes;
+      content.appendChild(notes);
+    }
+    return content;
+  }
+
+  async function loadOperationalEvacuationRoutes() {
+    const config = getOperationalEvacuationRouteConfig();
+    const adapter = getOperationalAdapter();
+    const routeGroup = state.layerGroups ? state.layerGroups.evacuationRoutes : null;
+    if (!config || !adapter || typeof adapter.mapEvacuationRoutes !== 'function' || !routeGroup) return false;
+
+    state.operationalRouteStatus = 'LOADING';
+    state.operationalRouteFetchCount += 1;
+    try {
+      const payload = await fetchOperationalJson(config.endpoint, 'Approved evacuation routes');
+      const collection = adapter.mapEvacuationRoutes(payload, state.evacuationCenterFeatureCollection);
+      routeGroup.clearLayers();
+      state.routeGeometryLayer = L.geoJSON(collection, {
+        pane: 'operationalLinePane',
+        style: approvedRouteStyle,
+        onEachFeature: function (feature, layer) {
+          layer.bindTooltip(feature.properties.route_name, { direction: 'top', sticky: true, opacity: 0.96 });
+          layer.bindPopup(createApprovedRouteContent(feature.properties));
+          layer.on('click', function () {
+            const details = document.getElementById('locationDetailsContent');
+            if (details) details.replaceChildren(createApprovedRouteContent(feature.properties));
+          });
+        }
+      }).addTo(routeGroup);
+      state.operationalRouteFeatureCount = collection.features.length;
+      state.operationalRouteStatus = collection.features.length === 0 ? 'EMPTY' : 'LOADED';
+      state.routeGeometryRendered = collection.features.length > 0;
+      return true;
+    } catch (error) {
+      routeGroup.clearLayers();
+      state.routeGeometryLayer = null;
+      state.operationalRouteFeatureCount = 0;
+      state.operationalRouteStatus = 'ERROR';
+      state.routeGeometryRendered = false;
+      return false;
+    }
+  }
+
+  async function initializeOperationalEvacuationRoutes() {
+    const setOriginButton = document.getElementById('setRouteOriginButton');
+    const clearOriginButton = document.getElementById('clearRouteOriginButton');
+    const centerSelect = document.getElementById('routeCenterSelect');
+    const findButton = document.getElementById('findSafeRouteButton');
+    const startInput = document.getElementById('routeStartInput');
+    const routePanel = document.getElementById('evacuationRoutePanel');
+    if (!setOriginButton || !centerSelect || !findButton || !state.map) return false;
+
+    setOriginButton.disabled = true;
+    if (clearOriginButton) clearOriginButton.hidden = true;
+    centerSelect.disabled = true;
+    findButton.disabled = true;
+    if (startInput) startInput.value = 'Stored approved routes only';
+    setStatus('routeOriginStatus', 'Operational mode displays stored approved routes; route generation is unavailable.');
+    centerSelect.replaceChildren(new Option('Loading approved routes...', ''));
+
+    const centerHelper = centerSelect.parentElement
+      ? centerSelect.parentElement.querySelector('p.civ-map-helper')
+      : null;
+    if (centerHelper) centerHelper.textContent = 'Only stored APPROVED routes returned by the operational API are shown.';
+    const disclaimer = routePanel
+      ? routePanel.querySelector('.space-y-3 > p.civ-map-helper')
+      : null;
+    if (disclaimer) {
+      disclaimer.textContent = 'Published routes remain subject to current road, hazard, and official emergency instructions.';
+    }
+
+    // Center names improve route labels, but a center endpoint failure must not
+    // cause approved route geometry to be fabricated or replaced.
+    await loadDraftEvacuationCenterPreview();
+    const loaded = await loadOperationalEvacuationRoutes();
+    const connectionStatus = document.getElementById('preparednessConnectionStatus');
+    if (connectionStatus) {
+      const icon = document.createElement('i');
+      icon.className = loaded ? 'fa-solid fa-route' : 'fa-solid fa-plug-circle-xmark';
+      icon.setAttribute('aria-hidden', 'true');
+      connectionStatus.replaceChildren(icon, document.createTextNode(
+        loaded ? ' Operational Data' : ' Route Data Unavailable'
+      ));
+    }
+
+    if (!loaded) {
+      centerSelect.replaceChildren(new Option('Approved routes unavailable', ''));
+      setStatus('routeRequestStatus', 'Approved evacuation routes could not be loaded.');
+      return false;
+    }
+    if (state.operationalRouteFeatureCount === 0) {
+      centerSelect.replaceChildren(new Option('No approved routes published', ''));
+      setStatus('routeRequestStatus', 'No approved evacuation routes are currently published.');
+      return true;
+    }
+
+    centerSelect.replaceChildren(new Option(
+      state.operationalRouteFeatureCount + (state.operationalRouteFeatureCount === 1
+        ? ' approved route displayed'
+        : ' approved routes displayed'),
+      ''
+    ));
+    setStatus('routeRequestStatus', state.operationalRouteFeatureCount + (state.operationalRouteFeatureCount === 1
+      ? ' approved evacuation route is displayed on the map.'
+      : ' approved evacuation routes are displayed on the map.'));
+    return true;
+  }
+
   async function initializeEvacuationRouteTool() {
+    if (getOperationalEvacuationRouteConfig()) return initializeOperationalEvacuationRoutes();
     const config = getEvacuationRoutePreviewConfig();
     const setOriginButton = document.getElementById('setRouteOriginButton');
     const clearOriginButton = document.getElementById('clearRouteOriginButton');
@@ -3061,7 +3492,7 @@
 
     name.textContent = properties.name;
     code.textContent = 'PSGC code: ' + properties.barangay_code;
-    status.textContent = 'Draft boundary preview';
+    status.textContent = properties.display_status || 'Draft boundary preview';
     content.append(name, code, status);
 
     return content;
@@ -3077,7 +3508,7 @@
 
     name.textContent = properties.name;
     code.textContent = 'PSGC code: ' + properties.barangay_code;
-    status.textContent = 'Draft boundary preview';
+    status.textContent = properties.display_status || 'Draft boundary preview';
     details.replaceChildren(name, code, status);
   }
 
@@ -3136,9 +3567,7 @@
     showDefaultLocationDetails();
     setStatus(
       'barangaySearchStatus',
-      state.draftPreviewLoaded
-        ? '187 validated draft barangays available for search.'
-        : 'Barangay records are not yet connected.'
+      barangayAvailabilityMessage()
     );
   }
 
@@ -3185,11 +3614,16 @@
         headers: { Accept: 'application/geo+json, application/json' }
       });
 
-      if (!response.ok) {
-        throw new Error('Draft preview request failed.');
-      }
-
-      const featureCollection = assertDraftFeatureCollection(await response.json());
+      if (!response.ok) throw new Error('Barangay data request failed.');
+      const payload = await response.json();
+      const adapter = getOperationalAdapter();
+      const featureCollection = previewConfig.operational === true
+        ? (adapter && typeof adapter.mapBarangays === 'function'
+          ? adapter.mapBarangays(payload)
+          : null)
+        : assertDraftFeatureCollection(payload);
+      if (!featureCollection) throw new Error('Operational barangay adapter is unavailable.');
+      state.operationalBarangayCollection = previewConfig.operational === true ? featureCollection : null;
       state.searchableBarangays = [];
       clearDraftBarangaySelection();
       const previewLayer = L.geoJSON(featureCollection, {
@@ -3238,34 +3672,60 @@
       const uniqueNames = new Set(state.searchableBarangays.map(function (record) {
         return record.normalizedName;
       }));
-      if (state.searchableBarangays.length !== 187 || uniqueNames.size !== 187) {
-        throw new Error('Draft barangay search index is incomplete or contains duplicate names.');
+      if (uniqueNames.size !== state.searchableBarangays.length
+        || (previewConfig.operational !== true && state.searchableBarangays.length !== 187)) {
+        throw new Error('Barangay search index is incomplete or contains duplicate names.');
       }
 
       state.layerGroups.barangays.clearLayers();
       previewLayer.addTo(state.layerGroups.barangays);
 
       const bounds = previewLayer.getBounds();
-      if (!bounds.isValid()) {
-        throw new Error('Draft preview bounds are invalid.');
+      if (featureCollection.features.length > 0 && !bounds.isValid()) {
+        throw new Error('Barangay layer bounds are invalid.');
       }
 
-      state.draftPreviewBounds = bounds;
+      state.draftPreviewBounds = bounds.isValid() ? bounds : null;
       state.draftPreviewLayer = previewLayer;
       state.draftPreviewLoaded = true;
       state.draftPreviewFeatureCount = featureCollection.features.length;
-      setDraftPreviewUiLoaded();
+      if (previewConfig.operational === true) {
+        setOperationalBarangayUi(
+          featureCollection.features.length === 0 ? 'EMPTY' : 'LOADED',
+          featureCollection.features.length
+        );
+      } else {
+        setDraftPreviewUiLoaded();
+      }
       return true;
     } catch (error) {
-      setDraftPreviewUiError();
+      state.layerGroups.barangays.clearLayers();
+      state.searchableBarangays = [];
+      state.operationalBarangayCollection = null;
+      state.draftPreviewLayer = null;
+      state.draftPreviewBounds = null;
+      state.draftPreviewLoaded = false;
+      state.draftPreviewFeatureCount = 0;
+      if (previewConfig.operational === true) {
+        setOperationalBarangayUi('ERROR', 0);
+      } else {
+        setDraftPreviewUiError();
+      }
       return false;
     }
   }
 
   async function initializeMapContext() {
+    const operationalRouteInitialization = getOperationalEvacuationRouteConfig()
+      ? initializeEvacuationRouteTool()
+      : null;
     await loadCaloocanCityContext();
     await loadDraftBarangayPreview();
-    await initializeEvacuationRouteTool();
+    if (operationalRouteInitialization) {
+      await operationalRouteInitialization;
+    } else {
+      await initializeEvacuationRouteTool();
+    }
     await initializeFloodForecastTool();
   }
 
@@ -3342,6 +3802,7 @@
     return Object.freeze({
       mapInitialized: Boolean(state.map),
       mode: 'POLYGON_ONLY',
+      dataMode: isOperationalMode() ? 'OPERATIONAL' : 'DEVELOPMENT_PREVIEW',
       tileLayerCount: tileLayerCount,
       tileImageCount: container ? container.querySelectorAll('.leaflet-tile-pane img').length : 0,
       osmAttributionPresent: Boolean(
@@ -3352,6 +3813,7 @@
       cityGeometryType: state.cityGeometryType,
       cityComponentCount: state.cityComponentCount,
       draftBarangayCount: state.draftPreviewFeatureCount,
+      barangayDataStatus: state.barangayDataStatus,
       searchableBarangayCount: state.searchableBarangays.length,
       selectedBarangayName: state.selectedBarangayRecord
         ? state.selectedBarangayRecord.properties.name
@@ -3377,7 +3839,9 @@
       faultInformationActive: state.faultInformationActive,
       faultPreviewFeatureCount: state.faultPreviewFeatureCount,
       faultFetchCount: state.faultFetchCount,
-      faultDisplayMode: state.faultPreviewResponse ? state.faultPreviewResponse.summary.display_mode : null,
+      faultDisplayMode: state.faultPreviewResponse && state.faultPreviewResponse.summary
+        ? state.faultPreviewResponse.summary.display_mode
+        : (isOperationalMode() ? 'OPERATIONAL_GEOMETRY' : null),
       faultGeometryRendered: Boolean(
         state.layerGroups && state.layerGroups.earthquakeFaults.getLayers().length
       ),
@@ -3415,6 +3879,9 @@
       routeFloodExposure: state.routeFloodExposure,
       routeLandslideExposure: state.routeLandslideExposure,
       routeGeometryRendered: state.routeGeometryRendered,
+      operationalRouteStatus: state.operationalRouteStatus,
+      operationalRouteFeatureCount: state.operationalRouteFeatureCount,
+      operationalRouteFetchCount: state.operationalRouteFetchCount,
       routeSampleIntervalMeters: CONFIG.routeSampleIntervalMeters,
       forecastLocationSelected: Boolean(state.forecastLocation),
       forecastLocationSelectionMode: state.forecastLocationSelectionActive,
@@ -3464,6 +3931,7 @@
 
     bindPreparednessTabs();
     bindPreparednessActionDelegation();
+    initializeOperationalShell();
 
     if (typeof window.L === 'undefined') {
       showMapUnavailable();

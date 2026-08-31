@@ -56,7 +56,7 @@
         </form>
         <div class="mt-2 flex items-start justify-between gap-2">
           <p id="barangaySearchStatus" class="civ-map-helper" role="status" aria-live="polite">
-            Barangay records are not yet connected.
+            <?php echo !empty($draftBarangayPreviewEnabled) ? 'Barangay records are not yet connected.' : 'Loading operational barangay data...'; ?>
           </p>
           <button id="clearBarangaySelectionButton" type="button" class="civ-clear-barangay-selection" hidden>
             Clear selection
@@ -105,7 +105,7 @@
         </div>
 
         <p id="hazardLayerStatus" class="civ-map-empty-state mt-3" role="status" aria-live="polite">
-          Hazard datasets are not yet connected.
+          <?php echo !empty($draftBarangayPreviewEnabled) ? 'Hazard datasets are not yet connected.' : 'Operational layers load on demand.'; ?>
         </p>
       </section>
 
@@ -149,7 +149,7 @@
 
       <div id="polygonMapNotice" class="civ-map-data-notice">
         <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-        <p><strong>Caloocan polygon view.</strong> The city boundary defines the operational canvas; connected development layers remain explicitly labeled as previews.</p>
+        <p><strong>Caloocan polygon view.</strong> <?php echo !empty($draftBarangayPreviewEnabled) ? 'The city boundary defines the operational canvas; connected development layers remain explicitly labeled as previews.' : 'Loading server-filtered operational map records.'; ?></p>
       </div>
       <div id="draftBarangayPreviewNotice" class="civ-map-data-notice hidden" role="status" aria-live="polite">
         <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
@@ -174,7 +174,7 @@
             <span class="civ-map-card-icon"><i class="fa-solid fa-kit-medical" aria-hidden="true"></i></span>
             <h2 id="preparednessToolsTitle">Preparedness Tools</h2>
           </div>
-          <span id="preparednessConnectionStatus" class="civ-tool-connection-status"><i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> Not Connected</span>
+          <span id="preparednessConnectionStatus" class="civ-tool-connection-status"><i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> <?php echo !empty($draftBarangayPreviewEnabled) ? 'Not Connected' : 'Loading Operational Data'; ?></span>
         </div>
 
         <div class="civ-preparedness-tabs mt-3" role="tablist" aria-label="Preparedness tools">
@@ -222,9 +222,9 @@
             <div>
               <label for="routeCenterSelect" class="civ-map-label">Evacuation Center</label>
               <select id="routeCenterSelect" class="civ-map-input mt-1.5 w-full px-3 py-2.5 text-xs" disabled>
-                <option value="">Loading development centers...</option>
+                <option value=""><?php echo !empty($draftBarangayPreviewEnabled) ? 'Loading development centers...' : 'Loading approved routes...'; ?></option>
               </select>
-              <p class="civ-map-helper mt-1.5">Development-preview locations are pending LGU verification.</p>
+              <p class="civ-map-helper mt-1.5"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development-preview locations are pending LGU verification.' : 'Only stored approved routes returned by the operational API are shown.'; ?></p>
             </div>
             <button id="findSafeRouteButton" type="button" class="civ-route-button w-full" disabled>
               <i class="fa-solid fa-route" aria-hidden="true"></i>
@@ -235,14 +235,14 @@
               <button id="clearRouteButton" type="button" class="civ-route-text-button" hidden>Clear route</button>
             </div>
             <div id="routeResultContent" class="civ-route-result" aria-live="polite" hidden></div>
-            <p class="civ-map-helper">Development decision support only. Any recommended route is pending LGU verification; road and hazard conditions may change during an actual emergency.</p>
+            <p class="civ-map-helper"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development decision support only. Any recommended route is pending LGU verification; road and hazard conditions may change during an actual emergency.' : 'Published routes remain subject to current road, hazard, and official emergency instructions.'; ?></p>
           </div>
         </div>
 
         <div id="floodForecastPanel" class="civ-preparedness-panel" role="tabpanel" aria-labelledby="floodForecastTab" hidden>
           <div class="flex items-center justify-between gap-2">
             <h3 id="floodForecastTitle" class="text-[11px] font-black text-slate-700 dark:text-slate-200">Flood Risk Check</h3>
-            <span id="floodForecastConnectionStatus" class="civ-model-status">Development Preview</span>
+            <span id="floodForecastConnectionStatus" class="civ-model-status"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development Preview' : 'Unavailable'; ?></span>
           </div>
 
           <div class="mt-3 space-y-3">
@@ -291,7 +291,7 @@
             <section class="civ-forecast-section" aria-labelledby="mappedFloodSusceptibilityTitle">
               <h4 id="mappedFloodSusceptibilityTitle" class="civ-forecast-section-title">Mapped Flood Susceptibility</h4>
               <div id="mappedFloodSusceptibilityContent" class="civ-forecast-content mt-2" aria-live="polite">
-                DENR-MGB mapped flood susceptibility is currently available.
+                <?php echo !empty($draftBarangayPreviewEnabled) ? 'DENR-MGB mapped flood susceptibility is currently available.' : 'Published mapped flood susceptibility loads from the operational hazard layer.'; ?>
               </div>
             </section>
 

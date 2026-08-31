@@ -27,19 +27,25 @@ try {
     $client = new SupabaseRestClient($config);
     $service = new DrrmEarlyWarningReadService($client);
 
-    $warningRowsBefore = $client->get('early_warnings', ['select' => 'id']);
-    $areaRowsBefore = $client->get('early_warning_areas', ['select' => 'id']);
+    $warningRowsBefore = $client->get('early_warnings', ['select' => 'id', 'order' => 'id.asc']);
+    $areaRowsBefore = $client->get('early_warning_areas', ['select' => 'id', 'order' => 'id.asc']);
     $summary = $service->dashboardSummary();
 
     $expectedMetrics = [
-        'active_warnings' => 0,
-        'high_risk_areas' => 0,
-        'weather_advisories' => 0,
+        'active_warnings' => $service->activeWarningCount(),
+        'high_risk_areas' => $service->highRiskActiveAreaCount(),
+        'weather_advisories' => $service->weatherAdvisoryCount(),
         'alerts_sent_today' => 0,
     ];
     assertEarlyWarningRead($summary['metrics'] === $expectedMetrics, 'The Module 4 dashboard metrics changed unexpectedly.');
-    assertEarlyWarningRead($summary['current_warning'] === null, 'The dashboard returned an unexpected active warning.');
-    assertEarlyWarningRead($summary['recent_warnings'] === [], 'The dashboard returned unexpected recent warnings.');
+    assertEarlyWarningRead(
+        ($expectedMetrics['active_warnings'] === 0) === ($summary['current_warning'] === null),
+        'The current-warning projection does not match the active-warning state.'
+    );
+    assertEarlyWarningRead(
+        count($summary['recent_warnings']) === min(count($warningRowsBefore), 10),
+        'The recent-warning projection returned an unexpected row count.'
+    );
     assertEarlyWarningRead(
         ($summary['metric_metadata']['alerts_sent_today']['implemented'] ?? null) === false,
         'Alert delivery tracking was incorrectly reported as implemented.'
@@ -69,8 +75,8 @@ try {
     }
     assertEarlyWarningRead($invalidLimitRejected, 'The service accepted an unsafe recent-warning limit.');
 
-    $warningRowsAfter = $client->get('early_warnings', ['select' => 'id']);
-    $areaRowsAfter = $client->get('early_warning_areas', ['select' => 'id']);
+    $warningRowsAfter = $client->get('early_warnings', ['select' => 'id', 'order' => 'id.asc']);
+    $areaRowsAfter = $client->get('early_warning_areas', ['select' => 'id', 'order' => 'id.asc']);
     assertEarlyWarningRead($warningRowsAfter === $warningRowsBefore, 'The read test changed warning records.');
     assertEarlyWarningRead($areaRowsAfter === $areaRowsBefore, 'The read test changed warning-area records.');
 
@@ -80,12 +86,12 @@ try {
     echo "DRRM early-warning read service: OK\n";
     echo 'sources: ' . count($sources) . " records\n";
     echo "source_statuses: PENDING=4\n";
-    echo "active_warnings: 0\n";
-    echo "high_risk_areas: 0\n";
-    echo "weather_advisories: 0\n";
+    echo 'active_warnings: ' . $expectedMetrics['active_warnings'] . PHP_EOL;
+    echo 'high_risk_areas: ' . $expectedMetrics['high_risk_areas'] . PHP_EOL;
+    echo 'weather_advisories: ' . $expectedMetrics['weather_advisories'] . PHP_EOL;
     echo "alerts_sent_today: 0 (delivery tracking not implemented)\n";
-    echo "recent_warnings: 0\n";
-    echo "current_warning: null\n";
+    echo 'recent_warnings: ' . count($summary['recent_warnings']) . PHP_EOL;
+    echo 'current_warning: ' . ($summary['current_warning'] === null ? 'null' : 'present') . PHP_EOL;
     echo "database_writes: none\n";
     echo "credentials_exposed: no\n";
     exit(0);

@@ -21,6 +21,8 @@ final class AiServiceConfig
     private const INTERNAL_KEY_VARIABLE = 'CIVENTRAL_AI_INTERNAL_KEY';
     private const CONNECT_TIMEOUT_VARIABLE = 'CIVENTRAL_AI_CONNECT_TIMEOUT_MS';
     private const REQUEST_TIMEOUT_VARIABLE = 'CIVENTRAL_AI_REQUEST_TIMEOUT_MS';
+    private const TRUSTED_DOCKER_HTTP_HOST = 'flood-risk-ai';
+    private const TRUSTED_DOCKER_HTTP_PORT = 8098;
 
     private function __construct(
         private readonly string $baseUrl,
@@ -117,9 +119,18 @@ final class AiServiceConfig
 
         $scheme = strtolower((string) $parts['scheme']);
         $host = strtolower(trim((string) $parts['host'], '[]'));
-        if ($scheme === 'http' && !self::isLocalOrPrivateHost($host)) {
+        $port = isset($parts['port']) ? (int) $parts['port'] : null;
+        if ($scheme === 'http'
+            && !self::isLocalOrPrivateHost($host)
+            && !self::isTrustedDockerHttpTarget($host, $port)) {
             throw new RuntimeException('An HTTP AI service URL must target a local or private host.');
         }
+    }
+
+    private static function isTrustedDockerHttpTarget(string $host, ?int $port): bool
+    {
+        return $host === self::TRUSTED_DOCKER_HTTP_HOST
+            && $port === self::TRUSTED_DOCKER_HTTP_PORT;
     }
 
     private static function isLocalOrPrivateHost(string $host): bool
