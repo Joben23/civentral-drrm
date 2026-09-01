@@ -98,35 +98,28 @@ assertModule1Loader('EndpointFailuresRemainDistinctFromEmpty', array_reduce([
 ], static fn (bool $found, string $message): bool => $found && str_contains($map, $message), true));
 
 assertModule1Loader('ServerReadServiceFiltersWorkflowStates',
-    substr_count($readService, 'eq.ACTIVE') === 3
+    substr_count(
+        $readService,
+        chr(39) . 'record_status' . chr(39) . ' => ' . chr(39) . 'eq.ACTIVE' . chr(39)
+    ) >= 3
+    && str_contains(
+        $readService,
+        chr(39) . 'review_status' . chr(39) . ' => ' . chr(39) . 'eq.PUBLISHED' . chr(39)
+    )
+    && str_contains($readService, 'dataset_sources')
     && str_contains($readService, 'eq.PUBLISHED')
     && str_contains($readService, 'neq.INACTIVE')
-    && str_contains($readService, 'eq.APPROVED'));
+    && str_contains($readService, 'eq.APPROVED')
+    && str_contains($readService, 'verified_by_civentral_user_id')
+    && str_contains($readService, 'last_reviewed_at'));
 assertModule1Loader('FrontendAdapterFailsClosedOnWorkflowFields',
     str_contains($adapter, 'An unpublished operational record was rejected.')
     && str_contains($adapter, 'An inactive operational record was rejected.')
     && str_contains($adapter, 'An unapproved operational route was rejected.'));
 assertModule1Loader('RouteDistanceUsesPublishedMeters',
     str_contains($adapter, 'distance_meters: distanceMeters')
+    && str_contains($adapter, 'distanceMeters <= 0')
     && str_contains($map, 'formatRouteDistance(properties.distance_meters)'));
-
-function module1EnvValue(string $path, string $name): ?string
-{
-    $lines = file($path, FILE_IGNORE_NEW_LINES);
-    if ($lines === false) return null;
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) continue;
-        [$candidate, $value] = array_map('trim', explode('=', $line, 2));
-        if ($candidate !== $name) continue;
-        if (strlen($value) >= 2 && (($value[0] === chr(39) && $value[strlen($value) - 1] === chr(39))
-            || ($value[0] === chr(34) && $value[strlen($value) - 1] === chr(34)))) {
-            $value = substr($value, 1, -1);
-        }
-        return $value;
-    }
-    return null;
-}
 
 $browserBundle = implode(PHP_EOL, [$page, $map, $adapter, $markup]);
 $secretNames = ['SUPABASE_SECRET_KEY', 'CIVENTRAL_AI_INTERNAL_KEY'];
@@ -135,14 +128,13 @@ assertModule1Loader('BrowserBundleContainsNoSecretVariableNames', array_reduce(
     static fn (bool $absent, string $name): bool => $absent && !str_contains($browserBundle, $name),
     true
 ));
-$secretValuesAbsent = true;
-foreach ($secretNames as $secretName) {
-    $value = module1EnvValue($root . '/.env', $secretName);
-    if (is_string($value) && strlen($value) >= 8 && str_contains($browserBundle, $value)) {
-        $secretValuesAbsent = false;
-    }
-}
-assertModule1Loader('BrowserBundleContainsNoConfiguredSecretValues', $secretValuesAbsent);
+assertModule1Loader(
+    'BrowserBundleContainsNoCredentialLiterals',
+    preg_match(
+        '/(?:eyJ[A-Za-z0-9_-]{40,}|sb_(?:secret|publishable)_[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{40,})/',
+        $browserBundle
+    ) !== 1
+);
 
 if ($failures !== []) {
     fwrite(STDERR, 'Module 1 loader test failures: ' . implode(', ', $failures) . PHP_EOL);

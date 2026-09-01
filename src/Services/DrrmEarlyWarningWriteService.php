@@ -9,6 +9,8 @@ use DateTimeZone;
 use RuntimeException;
 use Throwable;
 
+require_once __DIR__ . '/DrrmBarangayCatalogService.php';
+
 final class DrrmEarlyWarningValidationException extends RuntimeException
 {
 }
@@ -26,8 +28,8 @@ final class DrrmEarlyWarningWriteException extends RuntimeException
  */
 final class DrrmEarlyWarningWriteService
 {
-    public const BARANGAY_DATASET_VERSION_ID = 'b386cd54-2288-423f-9b92-2092333333c1';
-    public const EXPECTED_BARANGAY_COUNT = 187;
+    public const BARANGAY_DATASET_VERSION_ID = DrrmBarangayCatalogService::LEGACY_DRAFT_DATASET_VERSION_ID;
+    public const EXPECTED_BARANGAY_COUNT = DrrmBarangayCatalogService::LEGACY_DRAFT_COUNT;
 
     /** @var list<string> */
     public const HAZARD_TYPES = [
@@ -149,47 +151,15 @@ final class DrrmEarlyWarningWriteService
     /** @return list<array{barangay_id: string, barangay_code: string, name: string}> */
     public function availableBarangays(): array
     {
-        $records = $this->client->get('barangays', [
-            'select' => 'barangay_id,barangay_code,name,boundary_dataset_version_id,record_status',
-            'boundary_dataset_version_id' => 'eq.' . self::BARANGAY_DATASET_VERSION_ID,
-            'record_status' => 'eq.INACTIVE',
-            'order' => 'barangay_code.asc',
-            'limit' => self::EXPECTED_BARANGAY_COUNT + 1,
-        ]);
-
-        if (count($records) !== self::EXPECTED_BARANGAY_COUNT) {
-            throw new DrrmEarlyWarningWriteException('The validated barangay catalog is unavailable.');
+        try {
+            return (new DrrmBarangayCatalogService($this->client))->availableBarangays();
+        } catch (Throwable $exception) {
+            throw new DrrmEarlyWarningWriteException(
+                'The validated barangay catalog is unavailable.',
+                0,
+                $exception
+            );
         }
-
-        $result = [];
-        $seenIds = [];
-        $seenNames = [];
-
-        foreach ($records as $record) {
-            if (!is_array($record)) {
-                throw new DrrmEarlyWarningWriteException('The validated barangay catalog is malformed.');
-            }
-
-            $id = (string) ($record['barangay_id'] ?? '');
-            $code = (string) ($record['barangay_code'] ?? '');
-            $name = trim((string) ($record['name'] ?? ''));
-
-            if (!$this->isUuid($id) || preg_match('/^\d{10}$/', $code) !== 1
-                || preg_match('/^Barangay (?:[1-9]|[1-9]\d|1\d\d)$/', $name) !== 1
-                || $name === 'Barangay 176' || isset($seenIds[$id]) || isset($seenNames[$name])) {
-                throw new DrrmEarlyWarningWriteException('The validated barangay catalog is malformed.');
-            }
-
-            $seenIds[$id] = true;
-            $seenNames[$name] = true;
-            $result[] = [
-                'barangay_id' => $id,
-                'barangay_code' => $code,
-                'name' => $name,
-            ];
-        }
-
-        return $result;
     }
 
     /** @param array<string, mixed> $input @return array<string, mixed> */
@@ -445,7 +415,7 @@ final class DrrmEarlyWarningWriteService
             throw new DrrmEarlyWarningValidationException('Select at least one validated barangay.');
         }
 
-        if (count($barangayIds) > self::EXPECTED_BARANGAY_COUNT) {
+        if (count($barangayIds) > DrrmBarangayCatalogService::CURRENT_OPERATIONAL_COUNT) {
             throw new DrrmEarlyWarningValidationException('Too many barangays were selected.');
         }
 
@@ -461,13 +431,16 @@ final class DrrmEarlyWarningWriteService
             throw new DrrmEarlyWarningValidationException('Duplicate barangay selections are not allowed.');
         }
 
-        $records = $this->client->get('barangays', [
-            'select' => 'barangay_id,name,boundary_dataset_version_id,record_status',
-            'barangay_id' => 'in.(' . implode(',', array_keys($uniqueIds)) . ')',
-            'boundary_dataset_version_id' => 'eq.' . self::BARANGAY_DATASET_VERSION_ID,
-            'record_status' => 'eq.INACTIVE',
-            'order' => 'name.asc',
-        ]);
+        try {
+            $records = (new DrrmBarangayCatalogService($this->client))
+                ->writeEligibleBarangaysById(array_keys($uniqueIds));
+        } catch (Throwable $exception) {
+            throw new DrrmEarlyWarningWriteException(
+                'The validated barangay catalog is unavailable.',
+                0,
+                $exception
+            );
+        }
 
         if (count($records) !== count($uniqueIds)) {
             throw new DrrmEarlyWarningValidationException('One or more selected barangays are invalid.');
@@ -481,7 +454,7 @@ final class DrrmEarlyWarningWriteService
             $id = (string) ($record['barangay_id'] ?? '');
             $name = trim((string) ($record['name'] ?? ''));
             if (!isset($uniqueIds[$id]) || $name === 'Barangay 176'
-                || preg_match('/^Barangay (?:[1-9]|[1-9]\d|1\d\d)$/', $name) !== 1) {
+                || preg_match('/^Barangay (?:[1-9]|[1-9]\d|1\d\d)(?:-[A-F])?$/', $name) !== 1) {
                 throw new DrrmEarlyWarningValidationException('One or more selected barangays are invalid.');
             }
             $areas[] = [

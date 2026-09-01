@@ -278,7 +278,7 @@
       assertPublishedWorkflow(record, 'route');
       const destinationId = requiredString(record.destination_center_id, 'Route destination reference');
       const distanceMeters = Number(record.distance_meters);
-      if (!Number.isFinite(distanceMeters) || distanceMeters < 0) {
+      if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) {
         throw new Error('Published route distance is invalid.');
       }
       if (record.origin_location !== null && record.origin_location !== undefined) {

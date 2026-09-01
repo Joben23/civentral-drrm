@@ -9,6 +9,8 @@ use DateTimeZone;
 use RuntimeException;
 use Throwable;
 
+require_once __DIR__ . '/DrrmBarangayCatalogService.php';
+
 /**
  * Public-safe, read-only projection of human-activated CIVENTRAL warnings.
  *
@@ -19,7 +21,7 @@ use Throwable;
 final class DrrmCitizenWarningReadService
 {
     public const CITY_NAME = 'Caloocan City';
-    public const BARANGAY_DATASET_VERSION_ID = 'b386cd54-2288-423f-9b92-2092333333c1';
+    public const BARANGAY_DATASET_VERSION_ID = DrrmBarangayCatalogService::LEGACY_DRAFT_DATASET_VERSION_ID;
 
     private const MAX_ACTIVE_WARNINGS = 100;
     private const AREA_QUERY_WARNING_CHUNK_SIZE = 5;
@@ -223,21 +225,14 @@ final class DrrmCitizenWarningReadService
 
         $barangays = [];
         foreach (array_chunk(array_keys($ids), self::BARANGAY_QUERY_CHUNK_SIZE) as $chunk) {
-            $rows = $this->records($this->client->get('barangays', [
-                'select' => 'barangay_id,name,boundary_dataset_version_id,record_status',
-                'barangay_id' => 'in.(' . implode(',', $chunk) . ')',
-                'boundary_dataset_version_id' => 'eq.' . self::BARANGAY_DATASET_VERSION_ID,
-                'record_status' => 'eq.INACTIVE',
-                'limit' => count($chunk) + 1,
-            ]));
+            $rows = (new DrrmBarangayCatalogService($this->client))
+                ->historicalBarangaysById($chunk);
 
             foreach ($rows as $row) {
                 $id = (string) ($row['barangay_id'] ?? '');
                 $name = trim((string) ($row['name'] ?? ''));
 
-                if ($this->isUuid($id) && isset($ids[$id]) && $this->isValidatedBarangayName($name)
-                    && ($row['boundary_dataset_version_id'] ?? null) === self::BARANGAY_DATASET_VERSION_ID
-                    && ($row['record_status'] ?? null) === 'INACTIVE') {
+                if ($this->isUuid($id) && isset($ids[$id]) && $this->isValidatedBarangayName($name)) {
                     $barangays[$id] = $name;
                 }
             }
@@ -420,7 +415,7 @@ final class DrrmCitizenWarningReadService
 
     private function isValidatedBarangayName(string $name): bool
     {
-        return preg_match('/^Barangay (?:[1-9]|[1-9]\d|1\d\d)$/', $name) === 1
+        return preg_match('/^Barangay (?:[1-9]|[1-9]\d|1\d\d)(?:-[A-F])?$/', $name) === 1
             && $name !== 'Barangay 176';
     }
 

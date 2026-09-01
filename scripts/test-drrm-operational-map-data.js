@@ -198,6 +198,22 @@ check('UnapprovedRouteFailsClosed', function () {
   }, /unapproved operational route/);
 });
 
+[null, 0, -1].forEach(function (invalidDistance) {
+  check('NonPositiveOrNullRouteDistanceFailsClosed_' + String(invalidDistance), function () {
+    assert.throws(function () {
+      adapter.mapEvacuationRoutes({
+        success: true,
+        data: [{
+          route_name: 'Invalid Distance Route',
+          destination_center_id: '22222222-2222-4222-8222-222222222222',
+          route_geometry: line,
+          distance_meters: invalidDistance
+        }]
+      }, centers);
+    }, /Published route distance is invalid/);
+  });
+});
+
 check('FaultGeometryMapsToOperationalLines', function () {
   const faults = adapter.mapFaults({
     success: true,

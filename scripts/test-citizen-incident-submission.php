@@ -22,13 +22,58 @@ final class CitizenIncidentTestStore implements DrrmDataStoreInterface
     public function __construct(public string $mode = 'success') {}
     public function get(string $resource, array $query = []): array
     {
-        if ($resource !== 'barangays') { throw new RuntimeException('Unexpected test resource.'); }
-        return ($query['barangay_id'] ?? null) === 'eq.aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' ? [[
-            'barangay_id' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-            'name' => 'Barangay 1',
-            'boundary_dataset_version_id' => DrrmCitizenIncidentSubmissionService::BARANGAY_DATASET_VERSION_ID,
-            'record_status' => 'INACTIVE',
-        ]] : [];
+        if ($resource === 'dataset_versions') {
+            return [];
+        }
+        if ($resource !== 'barangays') {
+            throw new RuntimeException('Unexpected test resource.');
+        }
+
+        $rows = [];
+        for ($number = 1; $number <= 188; $number++) {
+            if ($number === 176) {
+                continue;
+            }
+            $rows[] = [
+                'barangay_id' => $number === 1
+                    ? 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+                    : sprintf('%08x-1000-4000-8000-%012x', $number, $number),
+                'barangay_code' => sprintf('13801%05d', $number),
+                'name' => 'Barangay ' . $number,
+                'boundary_geometry' => ['type' => 'MultiPolygon', 'coordinates' => []],
+                'boundary_dataset_version_id' => DrrmCitizenIncidentSubmissionService::BARANGAY_DATASET_VERSION_ID,
+                'record_status' => 'INACTIVE',
+            ];
+        }
+
+        foreach ($query as $field => $filter) {
+            if (in_array($field, ['select', 'order', 'limit'], true) || !is_string($filter)) {
+                continue;
+            }
+            $rows = array_values(array_filter(
+                $rows,
+                static function (array $row) use ($field, $filter): bool {
+                    if ($filter === 'not.is.null') {
+                        return ($row[$field] ?? null) !== null;
+                    }
+                    if (str_starts_with($filter, 'eq.')) {
+                        return (string) ($row[$field] ?? '') === substr($filter, 3);
+                    }
+                    if (str_starts_with($filter, 'in.(') && str_ends_with($filter, ')')) {
+                        return in_array(
+                            (string) ($row[$field] ?? ''),
+                            explode(',', substr($filter, 4, -1)),
+                            true
+                        );
+                    }
+                    return false;
+                }
+            ));
+        }
+        if (isset($query['limit']) && is_int($query['limit'])) {
+            $rows = array_slice($rows, 0, $query['limit']);
+        }
+        return $rows;
     }
     public function post(string $resource, array $payload, array $query = []): array
     {
@@ -117,6 +162,7 @@ cie('DataFailureFailsClosed', new DrrmCitizenIncidentSubmissionService(new Citiz
 
 $migration = file_get_contents(__DIR__ . '/../supabase/migrations/20260825000100_module3_citizen_submission_foundation.sql');
 $phase8a = file_get_contents(__DIR__ . '/../supabase/migrations/20260824000100_module3_incident_reporting_foundation.sql');
+$governance = file_get_contents(__DIR__ . '/../supabase/migrations/20260901000100_module1_gis_publication_governance.sql');
 cia('CitizenMigrationTransactionBounded', is_string($migration) && str_contains($migration, 'begin;') && str_ends_with(rtrim($migration), 'commit;'));
 cia('SourceForcedByDatabase', is_string($migration) && str_contains($migration, "'CITIZEN_MOBILE'"));
 cia('UnassessedSeverityForcedByDatabase', is_string($migration) && str_contains($migration, "code = 'UNASSESSED'"));
@@ -126,6 +172,12 @@ cia('InitialHistoryProvidedByPhase8ATrigger', is_string($phase8a) && str_contain
 cia('NoAutomaticAssignmentOrResponseInsert', is_string($migration) && !str_contains($migration, 'insert into public.drrm_incident_assignments') && !str_contains($migration, 'insert into public.drrm_incident_response_logs'));
 cia('NoWarningAutomation', is_string($migration) && !str_contains($migration, 'insert into public.early_warnings'));
 cia('NoTensorFlowCoupling', is_string($migration) && stripos($migration, 'tensorflow') === false && !str_contains($migration, 'ml/flood-risk/data'));
+cia('PublicationAwareBarangayCompatibilityPresent',
+    is_string($governance)
+    && str_contains($governance, 'public.is_drrm_barangay_write_eligible')
+    && str_contains($governance, 'public.is_drrm_barangay_historical_reference_eligible')
+    && str_contains($governance, 'create or replace function public.submit_drrm_citizen_incident')
+);
 
 if ($failures !== []) { fwrite(STDERR, 'Failures: ' . implode(', ', $failures) . PHP_EOL); exit(1); }
 echo "CitizenIncidentSubmissionFoundation=PASS\n";

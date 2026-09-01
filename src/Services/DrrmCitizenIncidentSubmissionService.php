@@ -10,6 +10,7 @@ use RuntimeException;
 use Throwable;
 
 require_once __DIR__ . '/DrrmDataStoreInterface.php';
+require_once __DIR__ . '/DrrmBarangayCatalogService.php';
 require_once __DIR__ . '/CitizenSessionIdentityVerifier.php';
 require_once __DIR__ . '/DrrmCaloocanBoundaryService.php';
 
@@ -27,7 +28,7 @@ final class DrrmCitizenIncidentSubmissionException extends RuntimeException
 /** Strict citizen-input boundary; lifecycle, source, severity, and identity remain server-owned. */
 final class DrrmCitizenIncidentSubmissionService
 {
-    public const BARANGAY_DATASET_VERSION_ID = 'b386cd54-2288-423f-9b92-2092333333c1';
+    public const BARANGAY_DATASET_VERSION_ID = DrrmBarangayCatalogService::LEGACY_DRAFT_DATASET_VERSION_ID;
 
     /** @var list<string> */
     public const INCIDENT_TYPES = [
@@ -152,21 +153,14 @@ final class DrrmCitizenIncidentSubmissionService
     private function validateBarangay(string $barangayId): void
     {
         try {
-            $records = $this->store->get('barangays', [
-                'select' => 'barangay_id,name,boundary_dataset_version_id,record_status',
-                'barangay_id' => 'eq.' . $barangayId,
-                'boundary_dataset_version_id' => 'eq.' . self::BARANGAY_DATASET_VERSION_ID,
-                'record_status' => 'eq.INACTIVE',
-                'limit' => 2,
-            ]);
+            $records = (new DrrmBarangayCatalogService($this->store))
+                ->writeEligibleBarangaysById([$barangayId]);
         } catch (Throwable) {
             throw $this->error('INCIDENT_SERVICE_UNAVAILABLE', 'Barangay validation is temporarily unavailable.', 503);
         }
 
         if (count($records) !== 1 || !is_array($records[0]) || array_is_list($records[0])
             || ($records[0]['barangay_id'] ?? null) !== $barangayId
-            || ($records[0]['boundary_dataset_version_id'] ?? null) !== self::BARANGAY_DATASET_VERSION_ID
-            || ($records[0]['record_status'] ?? null) !== 'INACTIVE'
             || !is_string($records[0]['name'] ?? null)
             || trim($records[0]['name']) === '' || $records[0]['name'] === 'Barangay 176') {
             throw $this->error('INVALID_BARANGAY', 'The barangay is not in the validated Caloocan catalog.', 400);
