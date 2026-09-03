@@ -15,10 +15,11 @@ require_once $root . '/config/app_environment.php';
 $page = file_get_contents($root . '/pages/drrm/hazard-evacuation-map.php');
 $map = file_get_contents($root . '/assets/js/drrm/hazard-evacuation-map.js');
 $adapter = file_get_contents($root . '/assets/js/drrm/operational-map-data.js');
+$mgbReference = file_get_contents($root . '/assets/js/drrm/mgb-live-reference.js');
 $markup = file_get_contents($root . '/includes/dashboard/hazard-evacuation-map.php');
 $readService = file_get_contents($root . '/src/Services/DrrmMapReadService.php');
 
-foreach ([$page, $map, $adapter, $markup, $readService] as $source) {
+foreach ([$page, $map, $adapter, $mgbReference, $markup, $readService] as $source) {
     if (!is_string($source)) {
         fwrite(STDERR, 'A Module 1 loader contract source could not be read.' . PHP_EOL);
         exit(1);
@@ -79,6 +80,13 @@ assertModule1Loader('OperationalRouteDoesNotUseDevelopmentOsrm',
     str_contains($map, 'getOperationalEvacuationRouteConfig')
     && str_contains($map, 'initializeOperationalEvacuationRoutes')
     && !str_contains($adapter, '/api/drrm/dev/'));
+assertModule1Loader('MgbReferenceModuleLoadsBeforeMapRuntime',
+    str_contains($page, 'assets/js/drrm/mgb-live-reference.js')
+    && strpos($page, '$mgbLiveReferenceUrl') < strpos($page, '$hazardMapJsUrl'));
+assertModule1Loader('MgbReferenceIsOperationalEnvironmentOnly',
+    str_contains($page, "mgbLiveReference: Object.freeze")
+    && str_contains($page, "enabled: <?php echo \$draftBarangayPreviewEnabled ? 'false' : 'true'; ?>")
+    && str_contains($map, "runtimeConfig.dataMode !== 'operational'"));
 
 assertModule1Loader('TruthfulOperationalEmptyStatesPresent', array_reduce([
     'Barangay operational data is not yet published.',
@@ -121,7 +129,7 @@ assertModule1Loader('RouteDistanceUsesPublishedMeters',
     && str_contains($adapter, 'distanceMeters <= 0')
     && str_contains($map, 'formatRouteDistance(properties.distance_meters)'));
 
-$browserBundle = implode(PHP_EOL, [$page, $map, $adapter, $markup]);
+$browserBundle = implode(PHP_EOL, [$page, $map, $adapter, $mgbReference, $markup]);
 $secretNames = ['SUPABASE_SECRET_KEY', 'CIVENTRAL_AI_INTERNAL_KEY'];
 assertModule1Loader('BrowserBundleContainsNoSecretVariableNames', array_reduce(
     $secretNames,

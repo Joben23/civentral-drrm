@@ -19,15 +19,19 @@ $draftBarangayPreviewEnabled = AppEnvironment::allowsLocalDevelopmentRequest(
 );
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
 $operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
+$mgbLiveReferenceRelativePath = 'assets/js/drrm/mgb-live-reference.js';
 $hazardMapJsRelativePath = 'assets/js/drrm/hazard-evacuation-map.js';
 $hazardMapCssFile = __DIR__ . '/../../' . $hazardMapCssRelativePath;
 $operationalMapDataFile = __DIR__ . '/../../' . $operationalMapDataRelativePath;
+$mgbLiveReferenceFile = __DIR__ . '/../../' . $mgbLiveReferenceRelativePath;
 $hazardMapJsFile = __DIR__ . '/../../' . $hazardMapJsRelativePath;
 $hazardMapCssVersion = filemtime($hazardMapCssFile);
 $operationalMapDataVersion = filemtime($operationalMapDataFile);
+$mgbLiveReferenceVersion = filemtime($mgbLiveReferenceFile);
 $hazardMapJsVersion = filemtime($hazardMapJsFile);
 $hazardMapCssUrl = $basePath . $hazardMapCssRelativePath . '?v=' . rawurlencode((string) $hazardMapCssVersion);
 $operationalMapDataUrl = $basePath . $operationalMapDataRelativePath . '?v=' . rawurlencode((string) $operationalMapDataVersion);
+$mgbLiveReferenceUrl = $basePath . $mgbLiveReferenceRelativePath . '?v=' . rawurlencode((string) $mgbLiveReferenceVersion);
 $hazardMapJsUrl = $basePath . $hazardMapJsRelativePath . '?v=' . rawurlencode((string) $hazardMapJsVersion);
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
@@ -120,6 +124,7 @@ include '../../includes/sidebar.php';
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
 <?php endif; ?>
 <script src='<?php echo htmlspecialchars($operationalMapDataUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
+<script src='<?php echo htmlspecialchars($mgbLiveReferenceUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
 <script>
   window.CiventralDrrmMapConfig = Object.freeze({
     dataMode: <?php echo json_encode(
@@ -152,6 +157,9 @@ include '../../includes/sidebar.php';
           $draftBarangayPreviewEnabled ? null : $basePath . 'api/drrm/lookups.php',
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
+    }),
+    mgbLiveReference: Object.freeze({
+      enabled: <?php echo $draftBarangayPreviewEnabled ? 'false' : 'true'; ?>
     }),
     draftBarangayPreview: Object.freeze({
       enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,

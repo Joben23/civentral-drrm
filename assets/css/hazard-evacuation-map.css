@@ -266,6 +266,34 @@
   background: rgba(238, 245, 255, 0.6);
 }
 
+.civ-hazard-map-module .civ-layer-label-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.civ-hazard-map-module .civ-layer-source-mode {
+  color: #94a3b8;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="CIVENTRAL_OPERATIONAL"] {
+  color: #047857;
+}
+
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_LIVE_REFERENCE"] {
+  color: #1d4ed8;
+}
+
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_REFERENCE_UNAVAILABLE"] {
+  color: #b45309;
+}
+
 .civ-hazard-map-module .civ-layer-symbol {
   display: inline-flex;
   width: 1.6rem;
@@ -288,6 +316,64 @@
   flex: 0 0 auto;
   cursor: pointer;
   accent-color: var(--civ-map-brand-dark);
+}
+
+.civ-hazard-map-module .civ-layer-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-notice {
+  border: 1px solid #bfdbfe;
+  border-radius: 0.75rem;
+  background: #eff6ff;
+  padding: 0.7rem;
+  color: #475569;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-notice[hidden] {
+  display: none;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-notice p + p,
+.civ-hazard-map-module .civ-mgb-reference-links,
+.civ-hazard-map-module .civ-mgb-reference-links + p {
+  margin-top: 0.35rem;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  color: #1e3a8a;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-badge {
+  border-radius: 9999px;
+  background: #1d4ed8;
+  padding: 0.2rem 0.45rem;
+  color: #fff;
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.65rem;
+}
+
+.civ-hazard-map-module .civ-mgb-reference-links a {
+  color: #1d4ed8;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .civ-hazard-map-module .civ-risk-item {
@@ -316,6 +402,31 @@
   height: 0.55rem;
   border-radius: 9999px;
   box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
+}
+
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-flood"] .civ-risk-low { background: #e3d1ff; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-flood"] .civ-risk-moderate { background: #b045ff; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-flood"] .civ-risk-high { background: #5900ff; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-flood"] .civ-risk-critical { background: #002673; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-landslide"] .civ-risk-low { background: #ffff00; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-landslide"] .civ-risk-moderate { background: #008000; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-landslide"] .civ-risk-high { background: #ff0000; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-landslide"] .civ-risk-critical { background: #902400; }
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-mixed"] .civ-risk-low {
+  background: linear-gradient(135deg, #e3d1ff 0 48%, #ffff00 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-mixed"] .civ-risk-moderate {
+  background: linear-gradient(135deg, #b045ff 0 48%, #008000 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-mixed"] .civ-risk-high {
+  background: linear-gradient(135deg, #5900ff 0 48%, #ff0000 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="mgb-mixed"] .civ-risk-critical {
+  background: linear-gradient(135deg, #002673 0 48%, #902400 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="source-mixed"] .civ-risk-dot {
+  border: 1px solid #64748b;
+  background: repeating-linear-gradient(135deg, #cbd5e1 0 2px, #f8fafc 2px 4px);
 }
 
 .civ-hazard-map-module .civ-risk-low { background: #16a34a; }
@@ -927,6 +1038,29 @@
 .dark .civ-hazard-map-module .civ-layer-option:hover {
   border-color: rgba(134, 182, 246, 0.5);
   background: #1e293b;
+}
+
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="CIVENTRAL_OPERATIONAL"] {
+  color: #6ee7b7;
+}
+
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_LIVE_REFERENCE"] {
+  color: #93c5fd;
+}
+
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_REFERENCE_UNAVAILABLE"] {
+  color: #fcd34d;
+}
+
+.dark .civ-hazard-map-module .civ-mgb-reference-notice {
+  border-color: #1e3a8a;
+  background: rgba(30, 58, 138, 0.22);
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-mgb-reference-heading,
+.dark .civ-hazard-map-module .civ-mgb-reference-links a {
+  color: #93c5fd;
 }
 
 .dark .civ-hazard-map-module .civ-map-label,

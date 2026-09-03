@@ -6,7 +6,8 @@
     center: [14.706, 121.02],
     initialZoom: 11.5,
     maximumSearchSuggestions: 8,
-    routeSampleIntervalMeters: 50
+    routeSampleIntervalMeters: 50,
+    mgbReferenceLoadTimeoutMilliseconds: 12000
   });
 
   const DEFAULT_LOCATION_DETAILS = 'Select a barangay, hazard area, or evacuation center from the map to view information.';
@@ -64,6 +65,11 @@
     landslideFetchCount: 0,
     operationalHazardCollections: null,
     operationalHazardLoadPromise: null,
+    hazardSourceModes: { flood: 'NOT_ACTIVE', landslide: 'NOT_ACTIVE' },
+    mgbReferenceTileLayers: { flood: null, landslide: null },
+    mgbReferenceRequestIds: { flood: 0, landslide: 0 },
+    mgbReferenceTileLoadCounts: { flood: 0, landslide: 0 },
+    mgbReferenceTileErrorCounts: { flood: 0, landslide: 0 },
     selectedLandslideLayer: null,
     faultPreviewLoaded: false,
     faultPreviewFeatureCount: 0,
@@ -141,6 +147,8 @@
       barangays: L.layerGroup(),
       floodHazards: L.layerGroup(),
       landslideHazards: L.layerGroup(),
+      mgbFloodReference: L.layerGroup(),
+      mgbLandslideReference: L.layerGroup(),
       earthquakeFaults: L.layerGroup(),
       evacuationCenters: L.layerGroup(),
       evacuationRoutes: L.layerGroup(),
@@ -187,6 +195,26 @@
   function getOperationalAdapter() {
     const adapter = window.CiventralDrrmOperationalData;
     return adapter && typeof adapter === 'object' ? adapter : null;
+  }
+
+  function getMgbReferenceApi() {
+    const api = window.CiventralMgbLiveReference;
+    return api && typeof api === 'object' ? api : null;
+  }
+
+  function getMgbLiveReferenceConfig() {
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.mgbLiveReference;
+    const api = getMgbReferenceApi();
+    if (
+      !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
+      !config || config.enabled !== true || !api ||
+      typeof api.serviceFor !== 'function' ||
+      typeof api.selectOperationalOrReference !== 'function'
+    ) {
+      return null;
+    }
+    return Object.freeze({ enabled: true, api: api });
   }
 
   function operationalEndpoint(key) {
@@ -490,6 +518,7 @@
     const panes = [
       ['cityBasePane', 300, false],
       ['barangayPane', 320, true],
+      ['mgbReferencePane', 340, false],
       ['hazardPolygonPane', 350, true],
       ['cityOutlinePane', 390, false],
       ['operationalLinePane', 420, true]
@@ -1038,34 +1067,92 @@
     const legendItems = document.getElementById('riskLegendItems');
     const highestLabel = document.getElementById('highestRiskLegendLabel');
     const helper = document.getElementById('riskLegendHelper');
-    const floodActive = Boolean(
+    const floodOperationalActive = Boolean(
       state.map && state.layerGroups && state.map.hasLayer(state.layerGroups.floodHazards)
     );
-    const landslideActive = Boolean(
+    const landslideOperationalActive = Boolean(
       state.map && state.layerGroups && state.map.hasLayer(state.layerGroups.landslideHazards)
     );
+    const floodReferenceActive = Boolean(
+      state.map && state.layerGroups &&
+      state.map.hasLayer(state.layerGroups.mgbFloodReference) &&
+      state.hazardSourceModes.flood === 'MGB_LIVE_REFERENCE'
+    );
+    const landslideReferenceActive = Boolean(
+      state.map && state.layerGroups &&
+      state.map.hasLayer(state.layerGroups.mgbLandslideReference) &&
+      state.hazardSourceModes.landslide === 'MGB_LIVE_REFERENCE'
+    );
+    const floodDevelopmentActive = floodOperationalActive &&
+      state.hazardSourceModes.flood === 'DEVELOPMENT_PREVIEW';
+    const landslideDevelopmentActive = landslideOperationalActive &&
+      state.hazardSourceModes.landslide === 'DEVELOPMENT_PREVIEW';
+    const floodActive = floodOperationalActive || floodReferenceActive;
+    const landslideActive = landslideOperationalActive || landslideReferenceActive;
     const sourceLayerActive = floodActive || landslideActive;
     let contextLabel = 'Project risk classifications';
     let ariaLabel = 'Project risk classifications';
     let helperLabel = 'Legend only. No risk level has been assigned to any location.';
 
-    if (floodActive && landslideActive) {
-      contextLabel = 'Flood + Landslide Susceptibility \u2014 DENR-MGB';
+    if (floodActive && landslideActive && floodReferenceActive && landslideReferenceActive) {
+      contextLabel = 'MGB LIVE REFERENCE DATA \u2014 FLOOD + LANDSLIDE';
       ariaLabel = 'Combined DENR-MGB flood and landslide susceptibility classifications';
-      helperLabel = 'Official MGB terminology. Solid polygon outlines indicate flood; dashed outlines indicate landslide.';
-    } else if (floodActive) {
-      contextLabel = 'Flood Susceptibility \u2014 DENR-MGB';
+      helperLabel = 'Official MGB terminology and source-rendered symbology. The landslide service also renders "Debris flow path/Possible accumulation zone" where present.';
+    } else if (floodActive && landslideActive && (floodReferenceActive || landslideReferenceActive)) {
+      contextLabel = 'FLOOD + LANDSLIDE \u2014 EXPLICIT MIXED SOURCES';
+      ariaLabel = 'Flood and landslide susceptibility classifications with separate source modes';
+      helperLabel = 'Each hazard keeps its separately labeled CIVENTRAL operational or MGB live-reference source mode.';
+      if (landslideReferenceActive) {
+        helperLabel += ' The landslide service also renders "Debris flow path/Possible accumulation zone" where present.';
+      }
+    } else if (floodReferenceActive) {
+      contextLabel = 'MGB LIVE REFERENCE DATA \u2014 FLOOD';
       ariaLabel = 'DENR-MGB flood susceptibility classifications';
-      helperLabel = 'Official MGB source terminology. Colors identify the visible flood susceptibility classes.';
-    } else if (landslideActive) {
-      contextLabel = 'Landslide Susceptibility \u2014 DENR-MGB';
+      helperLabel = 'Official MGB source terminology and source-rendered flood symbology.';
+    } else if (landslideReferenceActive) {
+      contextLabel = 'MGB LIVE REFERENCE DATA \u2014 LANDSLIDE';
       ariaLabel = 'DENR-MGB landslide susceptibility classifications';
-      helperLabel = 'Official MGB source terminology. Dashed polygon outlines distinguish landslide susceptibility.';
+      helperLabel = 'Official MGB source terminology and source-rendered landslide symbology, including "Debris flow path/Possible accumulation zone" where present.';
+    } else if (floodActive && landslideActive && (floodDevelopmentActive || landslideDevelopmentActive)) {
+      contextLabel = 'LOCAL DEVELOPMENT PREVIEW \u2014 FLOOD + LANDSLIDE';
+      ariaLabel = 'Local development-preview flood and landslide susceptibility classifications';
+      helperLabel = 'Draft preview geometry remains local-development-only and is not published operational data.';
+    } else if (floodDevelopmentActive) {
+      contextLabel = 'LOCAL DEVELOPMENT PREVIEW \u2014 FLOOD';
+      ariaLabel = 'Local development-preview flood susceptibility classifications';
+      helperLabel = 'Draft preview geometry remains local-development-only and is not published operational data.';
+    } else if (landslideDevelopmentActive) {
+      contextLabel = 'LOCAL DEVELOPMENT PREVIEW \u2014 LANDSLIDE';
+      ariaLabel = 'Local development-preview landslide susceptibility classifications';
+      helperLabel = 'Draft preview geometry remains local-development-only and is not published operational data.';
+    } else if (floodActive && landslideActive) {
+      contextLabel = 'CIVENTRAL OPERATIONAL DATA \u2014 FLOOD + LANDSLIDE';
+      ariaLabel = 'CIVENTRAL operational flood and landslide susceptibility classifications';
+      helperLabel = 'Published CIVENTRAL geometry with MGB source terminology; the two hazard geometries remain separate.';
+    } else if (floodActive) {
+      contextLabel = 'CIVENTRAL OPERATIONAL DATA \u2014 FLOOD';
+      ariaLabel = 'CIVENTRAL operational flood susceptibility classifications';
+      helperLabel = 'Published CIVENTRAL geometry with MGB source terminology.';
+    } else if (landslideActive) {
+      contextLabel = 'CIVENTRAL OPERATIONAL DATA \u2014 LANDSLIDE';
+      ariaLabel = 'CIVENTRAL operational landslide susceptibility classifications';
+      helperLabel = 'Published CIVENTRAL geometry with MGB source terminology.';
     }
 
     if (context) context.textContent = contextLabel;
     if (legendItems) {
       legendItems.setAttribute('aria-label', ariaLabel);
+      if (floodReferenceActive && landslideReferenceActive) {
+        legendItems.dataset.palette = 'mgb-mixed';
+      } else if (floodActive && landslideActive && (floodReferenceActive || landslideReferenceActive)) {
+        legendItems.dataset.palette = 'source-mixed';
+      } else if (floodReferenceActive) {
+        legendItems.dataset.palette = 'mgb-flood';
+      } else if (landslideReferenceActive) {
+        legendItems.dataset.palette = 'mgb-landslide';
+      } else {
+        delete legendItems.dataset.palette;
+      }
     }
     if (highestLabel) highestLabel.textContent = sourceLayerActive ? 'Very High' : 'Critical';
     if (helper) helper.textContent = helperLabel;
@@ -1073,7 +1160,20 @@
 
   function developmentLayerStatus() {
     if (isOperationalMode()) {
-      return 'Operational layers load on demand and display only published server-filtered records.';
+      const activeSources = [];
+      if (state.hazardSourceModes.flood === 'CIVENTRAL_OPERATIONAL') {
+        activeSources.push('Flood: CIVENTRAL operational data.');
+      } else if (state.hazardSourceModes.flood === 'MGB_LIVE_REFERENCE') {
+        activeSources.push('Flood: live MGB reference data.');
+      }
+      if (state.hazardSourceModes.landslide === 'CIVENTRAL_OPERATIONAL') {
+        activeSources.push('Landslide: CIVENTRAL operational data.');
+      } else if (state.hazardSourceModes.landslide === 'MGB_LIVE_REFERENCE') {
+        activeSources.push('Landslide: live MGB reference data.');
+      }
+      return activeSources.length > 0
+        ? activeSources.join(' ')
+        : 'Operational layers load on demand and display only published server-filtered records.';
     }
     const floodAvailable = Boolean(getFloodPreviewConfig());
     const landslideAvailable = Boolean(getLandslidePreviewConfig());
@@ -1096,6 +1196,190 @@
 
     return connected.join(', ') + ' connected in development preview. '
       + missing.join(', ') + ' not yet connected.';
+  }
+
+  function hazardControl(hazard) {
+    const layerKey = hazard === 'flood' ? 'floodHazards' : 'landslideHazards';
+    return document.querySelector('[data-map-layer="' + layerKey + '"]');
+  }
+
+  function mgbReferenceGroup(hazard) {
+    if (!state.layerGroups) return null;
+    return hazard === 'flood'
+      ? state.layerGroups.mgbFloodReference
+      : state.layerGroups.mgbLandslideReference;
+  }
+
+  function setHazardSourceMode(hazard, mode) {
+    if (!['flood', 'landslide'].includes(hazard)) return;
+    state.hazardSourceModes[hazard] = mode;
+    const element = document.getElementById(hazard + 'HazardSourceMode');
+    if (!element) return;
+    const labels = {
+      NOT_ACTIVE: 'Source mode: not active',
+      LOADING: 'Checking operational/reference source',
+      CIVENTRAL_OPERATIONAL: 'CIVENTRAL OPERATIONAL DATA',
+      DEVELOPMENT_PREVIEW: 'LOCAL DEVELOPMENT PREVIEW',
+      MGB_LIVE_REFERENCE: 'MGB LIVE REFERENCE DATA',
+      MGB_REFERENCE_UNAVAILABLE: 'MGB REFERENCE UNAVAILABLE'
+    };
+    element.textContent = labels[mode] || labels.NOT_ACTIVE;
+    element.dataset.mode = mode;
+  }
+
+  function liveReferenceIsActive(hazard) {
+    const group = mgbReferenceGroup(hazard);
+    return Boolean(
+      state.map && group && state.map.hasLayer(group) &&
+      state.hazardSourceModes[hazard] === 'MGB_LIVE_REFERENCE'
+    );
+  }
+
+  function renderMgbLiveReferenceNotice() {
+    const notice = document.getElementById('mgbLiveReferenceNotice');
+    if (!notice) return;
+    const floodActive = liveReferenceIsActive('flood');
+    const landslideActive = liveReferenceIsActive('landslide');
+    const referenceApi = getMgbReferenceApi();
+    const activeLayers = [];
+    if (floodActive) {
+      activeLayers.push(referenceApi ? referenceApi.serviceFor('flood').label : 'MGB Live Flood Susceptibility');
+    }
+    if (landslideActive) {
+      activeLayers.push(referenceApi
+        ? referenceApi.serviceFor('landslide').label
+        : 'MGB Live Rain-induced Landslide Susceptibility');
+    }
+    notice.hidden = activeLayers.length === 0;
+
+    const activeLabel = document.getElementById('mgbLiveReferenceActiveLayers');
+    const floodLink = document.getElementById('mgbFloodReferenceLink');
+    const landslideLink = document.getElementById('mgbLandslideReferenceLink');
+    const landslideNote = document.getElementById('mgbLandslideReferenceNote');
+    if (activeLabel) activeLabel.textContent = activeLayers.join(' + ');
+    if (floodLink) floodLink.hidden = !floodActive;
+    if (landslideLink) landslideLink.hidden = !landslideActive;
+    if (landslideNote) landslideNote.hidden = !landslideActive;
+  }
+
+  function renderHazardSourceUi() {
+    renderMgbLiveReferenceNotice();
+    updateHazardLegend();
+  }
+
+  function removeMgbReferenceLayer(hazard, resetMode) {
+    const group = mgbReferenceGroup(hazard);
+    const tileLayer = state.mgbReferenceTileLayers[hazard];
+    state.mgbReferenceRequestIds[hazard] += 1;
+    if (tileLayer && typeof tileLayer.off === 'function') tileLayer.off();
+    if (group) {
+      group.clearLayers();
+      if (state.map) state.map.removeLayer(group);
+    }
+    state.mgbReferenceTileLayers[hazard] = null;
+    if (resetMode !== false) setHazardSourceMode(hazard, 'NOT_ACTIVE');
+  }
+
+  function failMgbReferenceLayer(hazard, control, message) {
+    control = control || hazardControl(hazard);
+    removeMgbReferenceLayer(hazard, false);
+    if (control) {
+      control.checked = false;
+      control.disabled = true;
+    }
+    setHazardSourceMode(hazard, 'MGB_REFERENCE_UNAVAILABLE');
+    renderHazardSourceUi();
+    setStatus('hazardLayerStatus', message || 'Official MGB reference layer is temporarily unavailable.');
+    if (hazard === 'flood') {
+      state.mappedFloodSusceptibility = 'UNAVAILABLE';
+      setStatus('mappedFloodSusceptibilityContent', 'The live MGB flood reference is temporarily unavailable.');
+    }
+  }
+
+  async function activateMgbReferenceLayer(hazard, control) {
+    const referenceConfig = getMgbLiveReferenceConfig();
+    const group = mgbReferenceGroup(hazard);
+    if (!referenceConfig || !group || !state.map || !control || !control.checked) return false;
+
+    let descriptor;
+    try {
+      descriptor = referenceConfig.api.serviceFor(hazard);
+    } catch (error) {
+      failMgbReferenceLayer(hazard, control, 'Official MGB reference layer is temporarily unavailable.');
+      return false;
+    }
+
+    removeMgbReferenceLayer(hazard, false);
+    const requestId = ++state.mgbReferenceRequestIds[hazard];
+    state.mgbReferenceTileLoadCounts[hazard] = 0;
+    state.mgbReferenceTileErrorCounts[hazard] = 0;
+    setHazardSourceMode(hazard, 'LOADING');
+    renderHazardSourceUi();
+
+    const tileOptions = {
+      pane: 'mgbReferencePane',
+      tileSize: 256,
+      minNativeZoom: descriptor.nativeZoomRange.minimum,
+      maxNativeZoom: descriptor.nativeZoomRange.maximum,
+      noWrap: true,
+      updateWhenIdle: true,
+      keepBuffer: 1,
+      attribution: descriptor.attribution
+    };
+    if (state.cityBoundaryBounds) tileOptions.bounds = state.cityBoundaryBounds;
+
+    const tileLayer = L.tileLayer(descriptor.tileUrlTemplate, tileOptions);
+    state.mgbReferenceTileLayers[hazard] = tileLayer;
+    tileLayer.addTo(group);
+    group.addTo(state.map);
+
+    return new Promise(function (resolve) {
+      let activationSettled = false;
+      const timeoutId = window.setTimeout(function () {
+        if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) {
+          if (!activationSettled) {
+            activationSettled = true;
+            resolve(false);
+          }
+          return;
+        }
+        failMgbReferenceLayer(hazard, control, referenceConfig.api.UNAVAILABLE_MESSAGE);
+        if (!activationSettled) {
+          activationSettled = true;
+          resolve(false);
+        }
+      }, CONFIG.mgbReferenceLoadTimeoutMilliseconds);
+
+      tileLayer.on('tileload', function () {
+        if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) return;
+        state.mgbReferenceTileLoadCounts[hazard] += 1;
+        if (activationSettled) return;
+        activationSettled = true;
+        window.clearTimeout(timeoutId);
+        setHazardSourceMode(hazard, referenceConfig.api.SOURCE_MODES.MGB_REFERENCE);
+        renderHazardSourceUi();
+        setStatus('hazardLayerStatus', developmentLayerStatus());
+        if (hazard === 'flood') {
+          state.mappedFloodSusceptibility = null;
+          setStatus(
+            'mappedFloodSusceptibilityContent',
+            'The live MGB reference is display-only; CIVENTRAL does not receive feature geometry for point assessment.'
+          );
+        }
+        resolve(true);
+      });
+
+      tileLayer.on('tileerror', function () {
+        if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) return;
+        state.mgbReferenceTileErrorCounts[hazard] += 1;
+        window.clearTimeout(timeoutId);
+        failMgbReferenceLayer(hazard, control, referenceConfig.api.UNAVAILABLE_MESSAGE);
+        if (!activationSettled) {
+          activationSettled = true;
+          resolve(false);
+        }
+      });
+    });
   }
 
   function createFloodTooltip(properties) {
@@ -1318,41 +1602,58 @@
 
     if (!control.checked) {
       state.map.removeLayer(layerGroup);
+      removeMgbReferenceLayer('flood');
       clearFloodSelection();
-      updateHazardLegend();
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', developmentLayerStatus());
       return;
     }
 
     if (!getFloodPreviewConfig()) {
       control.checked = false;
-      updateHazardLegend();
+      setHazardSourceMode('flood', 'NOT_ACTIVE');
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', 'Flood hazard data is not available in this environment.');
       return;
     }
 
-    setStatus('hazardLayerStatus', 'Loading DENR-MGB flood susceptibility...');
+    setHazardSourceMode('flood', 'LOADING');
+    renderHazardSourceUi();
+    setStatus('hazardLayerStatus', 'Checking for CIVENTRAL operational flood data...');
     const loaded = await loadDraftFloodPreview();
 
     if (!loaded) {
       control.checked = false;
       state.map.removeLayer(layerGroup);
-      updateHazardLegend();
+      removeMgbReferenceLayer('flood');
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', 'Flood hazard data could not be loaded.');
       return;
     }
 
     if (isOperationalMode() && state.floodPreviewFeatureCount === 0) {
-      control.checked = false;
       state.map.removeLayer(layerGroup);
-      updateHazardLegend();
+      const liveReference = getMgbLiveReferenceConfig();
+      const sourceMode = liveReference
+        ? liveReference.api.selectOperationalOrReference(0, true)
+        : 'MGB_REFERENCE_UNAVAILABLE';
+      if (liveReference && sourceMode === liveReference.api.SOURCE_MODES.MGB_REFERENCE) {
+        setStatus('hazardLayerStatus', 'Loading official MGB flood reference layer...');
+        await activateMgbReferenceLayer('flood', control);
+        return;
+      }
+      control.checked = false;
+      setHazardSourceMode('flood', 'NOT_ACTIVE');
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', 'Flood hazard operational data is not yet published.');
       return;
     }
 
     if (control.checked) {
+      removeMgbReferenceLayer('flood', false);
+      setHazardSourceMode('flood', isOperationalMode() ? 'CIVENTRAL_OPERATIONAL' : 'DEVELOPMENT_PREVIEW');
       layerGroup.addTo(state.map);
-      updateHazardLegend();
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', developmentLayerStatus());
     }
   }
@@ -1552,41 +1853,58 @@
 
     if (!control.checked) {
       state.map.removeLayer(layerGroup);
+      removeMgbReferenceLayer('landslide');
       clearLandslideSelection();
-      updateHazardLegend();
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', developmentLayerStatus());
       return;
     }
 
     if (!getLandslidePreviewConfig()) {
       control.checked = false;
-      updateHazardLegend();
+      setHazardSourceMode('landslide', 'NOT_ACTIVE');
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', 'Landslide hazard data is not available in this environment.');
       return;
     }
 
-    setStatus('hazardLayerStatus', 'Loading DENR-MGB landslide susceptibility...');
+    setHazardSourceMode('landslide', 'LOADING');
+    renderHazardSourceUi();
+    setStatus('hazardLayerStatus', 'Checking for CIVENTRAL operational landslide data...');
     const loaded = await loadDraftLandslidePreview();
 
     if (!loaded) {
       control.checked = false;
       state.map.removeLayer(layerGroup);
-      updateHazardLegend();
+      removeMgbReferenceLayer('landslide');
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', 'Landslide hazard data could not be loaded.');
       return;
     }
 
     if (isOperationalMode() && state.landslidePreviewFeatureCount === 0) {
-      control.checked = false;
       state.map.removeLayer(layerGroup);
-      updateHazardLegend();
+      const liveReference = getMgbLiveReferenceConfig();
+      const sourceMode = liveReference
+        ? liveReference.api.selectOperationalOrReference(0, true)
+        : 'MGB_REFERENCE_UNAVAILABLE';
+      if (liveReference && sourceMode === liveReference.api.SOURCE_MODES.MGB_REFERENCE) {
+        setStatus('hazardLayerStatus', 'Loading official MGB rain-induced landslide reference layer...');
+        await activateMgbReferenceLayer('landslide', control);
+        return;
+      }
+      control.checked = false;
+      setHazardSourceMode('landslide', 'NOT_ACTIVE');
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', 'Landslide hazard operational data is not yet published.');
       return;
     }
 
     if (control.checked) {
+      removeMgbReferenceLayer('landslide', false);
+      setHazardSourceMode('landslide', isOperationalMode() ? 'CIVENTRAL_OPERATIONAL' : 'DEVELOPMENT_PREVIEW');
       layerGroup.addTo(state.map);
-      updateHazardLegend();
+      renderHazardSourceUi();
       setStatus('hazardLayerStatus', developmentLayerStatus());
     }
   }
@@ -3348,7 +3666,9 @@
   function bindLayerControls() {
     const controls = document.querySelectorAll('[data-map-layer]');
 
-    updateHazardLegend();
+    setHazardSourceMode('flood', 'NOT_ACTIVE');
+    setHazardSourceMode('landslide', 'NOT_ACTIVE');
+    renderHazardSourceUi();
     setStatus('hazardLayerStatus', developmentLayerStatus());
 
     controls.forEach(function (control) {
@@ -3826,6 +4146,10 @@
       floodPreviewFeatureCount: state.floodPreviewFeatureCount,
       floodPreviewClassCounts: state.floodPreviewClassCounts,
       floodFetchCount: state.floodFetchCount,
+      floodSourceMode: state.hazardSourceModes.flood,
+      floodMgbReferenceActive: liveReferenceIsActive('flood'),
+      floodMgbTileLoadCount: state.mgbReferenceTileLoadCounts.flood,
+      floodMgbTileErrorCount: state.mgbReferenceTileErrorCounts.flood,
       landslidePreviewAvailable: Boolean(getLandslidePreviewConfig()),
       landslidePreviewLoaded: state.landslidePreviewLoaded,
       landslidePreviewActive: Boolean(
@@ -3834,6 +4158,10 @@
       landslidePreviewFeatureCount: state.landslidePreviewFeatureCount,
       landslidePreviewClassCounts: state.landslidePreviewClassCounts,
       landslideFetchCount: state.landslideFetchCount,
+      landslideSourceMode: state.hazardSourceModes.landslide,
+      landslideMgbReferenceActive: liveReferenceIsActive('landslide'),
+      landslideMgbTileLoadCount: state.mgbReferenceTileLoadCounts.landslide,
+      landslideMgbTileErrorCount: state.mgbReferenceTileErrorCounts.landslide,
       faultPreviewAvailable: Boolean(getFaultInformationPreviewConfig()),
       faultPreviewLoaded: state.faultPreviewLoaded,
       faultInformationActive: state.faultInformationActive,
@@ -3913,6 +4241,7 @@
       paneZIndexes: Object.freeze({
         cityBase: paneZIndex('cityBasePane'),
         barangay: paneZIndex('barangayPane'),
+        mgbReference: paneZIndex('mgbReferencePane'),
         hazardPolygon: paneZIndex('hazardPolygonPane'),
         cityOutline: paneZIndex('cityOutlinePane'),
         operationalLine: paneZIndex('operationalLinePane'),

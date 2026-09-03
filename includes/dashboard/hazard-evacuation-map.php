@@ -74,17 +74,23 @@
           <label class="civ-layer-option">
             <span class="flex min-w-0 items-center gap-2.5">
               <span class="civ-layer-symbol civ-layer-symbol-flood"><i class="fa-solid fa-water" aria-hidden="true"></i></span>
-              <span>Flood-Prone Areas</span>
+              <span class="civ-layer-label-stack">
+                <span>Flood-Prone Areas</span>
+                <span id="floodHazardSourceMode" class="civ-layer-source-mode">Source mode: not active</span>
+              </span>
             </span>
-            <input type="checkbox" data-map-layer="floodHazards" class="civ-layer-checkbox" aria-describedby="hazardLayerStatus">
+            <input type="checkbox" data-map-layer="floodHazards" class="civ-layer-checkbox" aria-describedby="floodHazardSourceMode hazardLayerStatus mgbLiveReferenceNotice">
           </label>
 
           <label class="civ-layer-option">
             <span class="flex min-w-0 items-center gap-2.5">
               <span class="civ-layer-symbol civ-layer-symbol-landslide"><i class="fa-solid fa-mountain" aria-hidden="true"></i></span>
-              <span>Landslide-Prone Areas</span>
+              <span class="civ-layer-label-stack">
+                <span>Landslide-Prone Areas</span>
+                <span id="landslideHazardSourceMode" class="civ-layer-source-mode">Source mode: not active</span>
+              </span>
             </span>
-            <input type="checkbox" data-map-layer="landslideHazards" class="civ-layer-checkbox" aria-describedby="hazardLayerStatus">
+            <input type="checkbox" data-map-layer="landslideHazards" class="civ-layer-checkbox" aria-describedby="landslideHazardSourceMode hazardLayerStatus mgbLiveReferenceNotice">
           </label>
 
           <label class="civ-layer-option">
@@ -107,6 +113,20 @@
         <p id="hazardLayerStatus" class="civ-map-empty-state mt-3" role="status" aria-live="polite">
           <?php echo !empty($draftBarangayPreviewEnabled) ? 'Hazard datasets are not yet connected.' : 'Operational layers load on demand.'; ?>
         </p>
+        <div id="mgbLiveReferenceNotice" class="civ-mgb-reference-notice mt-3" role="status" aria-live="polite" hidden>
+          <div class="civ-mgb-reference-heading">
+            <span class="civ-mgb-reference-badge">LIVE MGB REFERENCE</span>
+            <strong id="mgbLiveReferenceActiveLayers">Official susceptibility layer</strong>
+          </div>
+          <p>Displayed directly from the official DENR-MGB public map service. This layer is not stored or republished by CIVENTRAL.</p>
+          <p><strong>Source:</strong> Department of Environment and Natural Resources - Mines and Geosciences Bureau (DENR-MGB)</p>
+          <div class="civ-mgb-reference-links" aria-label="Official DENR-MGB service links">
+            <a id="mgbFloodReferenceLink" href="https://controlmap.mgb.gov.ph/arcgis/rest/services/GeospatialDataInventory_Public/GDI_Detailed_Flood_Susceptibility_Public/MapServer" target="_blank" rel="noopener noreferrer" hidden>Flood MapServer</a>
+            <a id="mgbLandslideReferenceLink" href="https://controlmap.mgb.gov.ph/arcgis/rest/services/GeospatialDataInventory_Public/GDI_Detailed_Rain_induced_Landslide_Susceptibility_Public/MapServer" target="_blank" rel="noopener noreferrer" hidden>Landslide MapServer</a>
+          </div>
+          <p id="mgbLandslideReferenceNote" hidden>Official MGB source legend also includes: "Debris flow path/Possible accumulation zone".</p>
+          <p>Reference display only. Consult DENR-MGB and qualified authorities for an official site assessment.</p>
+        </div>
       </section>
 
       <section class="civ-map-card" aria-labelledby="riskLegendTitle">
