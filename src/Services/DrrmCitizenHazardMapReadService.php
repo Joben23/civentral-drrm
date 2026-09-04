@@ -12,7 +12,7 @@ use RuntimeException;
 final class DrrmCitizenHazardMapReadService
 {
     public const CITY_NAME = 'Caloocan City';
-    public const SUPPORTED_LAYERS = ['boundary', 'barangays', 'flood', 'landslide', 'fault', 'evacuation-centers'];
+    public const SUPPORTED_LAYERS = ['boundary', 'barangays', 'flood', 'landslide', 'fault'];
 
     private const FILES = [
         'boundary' => 'caloocan-city-boundary.geojson',
@@ -20,7 +20,6 @@ final class DrrmCitizenHazardMapReadService
         'flood' => 'caloocan-mgb-flood-susceptibility.geojson',
         'landslide' => 'caloocan-mgb-landslide-susceptibility.geojson',
         'fault' => 'caloocan-nearby-phivolcs-active-faults.geojson',
-        'evacuation-centers' => 'caloocan-evacuation-centers-ready.json',
     ];
 
     private const EXPECTED_COUNTS = ['boundary' => 1, 'barangays' => 187, 'flood' => 15, 'landslide' => 13, 'fault' => 254];
@@ -57,7 +56,6 @@ final class DrrmCitizenHazardMapReadService
             'flood' => $this->susceptibility('flood'),
             'landslide' => $this->susceptibility('landslide'),
             'fault' => $this->fault(),
-            'evacuation-centers' => $this->evacuationCenters(),
         };
     }
 
@@ -239,57 +237,6 @@ final class DrrmCitizenHazardMapReadService
         );
     }
 
-    /** @return array<string, mixed> */
-    private function evacuationCenters(): array
-    {
-        $document = $this->jsonFile(self::FILES['evacuation-centers']);
-        $records = $document['records'] ?? null;
-        if (!is_array($records) || ($document['record_count'] ?? null) !== 15 || count($records) !== 15) {
-            throw new RuntimeException('The prepared evacuation-center subset is invalid.');
-        }
-
-        $features = [];
-        foreach ($records as $record) {
-            if (!is_array($record)
-                || ($record['inside_caloocan'] ?? false) !== true
-                || ($record['ready_for_staging'] ?? false) !== true
-                || ($record['coordinate_status'] ?? null) !== 'HIGH_CONFIDENCE'
-            ) {
-                throw new RuntimeException('An evacuation center is not in the validated development subset.');
-            }
-
-            $latitude = $this->coordinate($record['latitude'] ?? null, -90, 90);
-            $longitude = $this->coordinate($record['longitude'] ?? null, -180, 180);
-            $barangay = (string) ($record['spatial_barangay_name'] ?? '');
-            if (!preg_match('/^Barangay (?:[1-9]|[1-9][0-9]|1[0-8][0-9])$/', $barangay)) {
-                throw new RuntimeException('An evacuation center is outside the supported Caloocan scope.');
-            }
-
-            $features[] = [
-                'type' => 'Feature',
-                'properties' => [
-                    'id' => (string) ($record['record_id'] ?? ''),
-                    'name' => (string) ($record['normalized_name'] ?? ''),
-                    'barangay' => $barangay,
-                    'location' => $barangay . ', ' . self::CITY_NAME,
-                    'latitude' => $latitude,
-                    'longitude' => $longitude,
-                    'verification_status' => 'Development-preview location pending LGU verification',
-                    'source_context' => (string) ($record['source_agency'] ?? 'City Government of Caloocan / Caloocan PIO'),
-                ],
-                'geometry' => ['type' => 'Point', 'coordinates' => [$longitude, $latitude]],
-            ];
-        }
-
-        return $this->response(
-            'evacuation-centers',
-            (string) ($document['generated_at'] ?? '2026-08-19T14:42:56+00:00'),
-            ['agency' => 'City Government of Caloocan / Caloocan PIO', 'name' => 'Existing Module 1 validated development evacuation-center subset'],
-            '15 development-preview locations are published pending LGU verification. Capacity is not published.',
-            $this->collection($features)
-        );
-    }
-
     /**
      * @param array<string, mixed> $source
      * @param array<string, mixed> $data
@@ -383,15 +330,4 @@ final class DrrmCitizenHazardMapReadService
         return ['type' => 'FeatureCollection', 'features' => $features];
     }
 
-    private function coordinate(mixed $value, float $minimum, float $maximum): float
-    {
-        if ((!is_int($value) && !is_float($value)) || !is_finite((float) $value)) {
-            throw new RuntimeException('A prepared location has an invalid coordinate.');
-        }
-        $coordinate = (float) $value;
-        if ($coordinate < $minimum || $coordinate > $maximum) {
-            throw new RuntimeException('A prepared location coordinate is outside the valid range.');
-        }
-        return $coordinate;
-    }
 }

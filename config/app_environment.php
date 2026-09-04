@@ -39,6 +39,11 @@ final class AppEnvironment
         return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     }
 
+    public static function isStaging(?string $envFile = null): bool
+    {
+        return self::value($envFile) === 'staging';
+    }
+
     private static function value(?string $envFile): string
     {
         $value = getenv(self::VARIABLE);

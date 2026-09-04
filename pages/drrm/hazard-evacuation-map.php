@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../config/app_environment.php';
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningAuthorizationService.php';
 require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningCsrfService.php';
+require_once __DIR__ . '/../../src/Services/DrrmMapAuthorizationService.php';
 
 $aiAuthorization = \App\Services\DrrmEarlyWarningAuthorizationService::fromTrustedSession($headerUser);
 $aiViewAuthorized = $aiAuthorization->canView();
@@ -17,21 +18,29 @@ $draftBarangayPreviewEnabled = AppEnvironment::allowsLocalDevelopmentRequest(
     __DIR__ . '/../../.env',
     $_SERVER
 );
+$stagingReferenceModeEnabled = AppEnvironment::isStaging(__DIR__ . '/../../.env');
+$module1Authorization = \App\Services\DrrmMapAuthorizationService::fromTrustedSession($headerUser);
+$stagingAdminCenterReferenceEnabled = $stagingReferenceModeEnabled
+    && $module1Authorization->canView();
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
 $operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
 $mgbLiveReferenceRelativePath = 'assets/js/drrm/mgb-live-reference.js';
+$phivolcsLiveReferenceRelativePath = 'assets/js/drrm/phivolcs-live-reference.js';
 $hazardMapJsRelativePath = 'assets/js/drrm/hazard-evacuation-map.js';
 $hazardMapCssFile = __DIR__ . '/../../' . $hazardMapCssRelativePath;
 $operationalMapDataFile = __DIR__ . '/../../' . $operationalMapDataRelativePath;
 $mgbLiveReferenceFile = __DIR__ . '/../../' . $mgbLiveReferenceRelativePath;
+$phivolcsLiveReferenceFile = __DIR__ . '/../../' . $phivolcsLiveReferenceRelativePath;
 $hazardMapJsFile = __DIR__ . '/../../' . $hazardMapJsRelativePath;
 $hazardMapCssVersion = filemtime($hazardMapCssFile);
 $operationalMapDataVersion = filemtime($operationalMapDataFile);
 $mgbLiveReferenceVersion = filemtime($mgbLiveReferenceFile);
+$phivolcsLiveReferenceVersion = filemtime($phivolcsLiveReferenceFile);
 $hazardMapJsVersion = filemtime($hazardMapJsFile);
 $hazardMapCssUrl = $basePath . $hazardMapCssRelativePath . '?v=' . rawurlencode((string) $hazardMapCssVersion);
 $operationalMapDataUrl = $basePath . $operationalMapDataRelativePath . '?v=' . rawurlencode((string) $operationalMapDataVersion);
 $mgbLiveReferenceUrl = $basePath . $mgbLiveReferenceRelativePath . '?v=' . rawurlencode((string) $mgbLiveReferenceVersion);
+$phivolcsLiveReferenceUrl = $basePath . $phivolcsLiveReferenceRelativePath . '?v=' . rawurlencode((string) $phivolcsLiveReferenceVersion);
 $hazardMapJsUrl = $basePath . $hazardMapJsRelativePath . '?v=' . rawurlencode((string) $hazardMapJsVersion);
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
@@ -125,6 +134,7 @@ include '../../includes/sidebar.php';
 <?php endif; ?>
 <script src='<?php echo htmlspecialchars($operationalMapDataUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
 <script src='<?php echo htmlspecialchars($mgbLiveReferenceUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
+<script src='<?php echo htmlspecialchars($phivolcsLiveReferenceUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
 <script>
   window.CiventralDrrmMapConfig = Object.freeze({
     dataMode: <?php echo json_encode(
@@ -159,7 +169,19 @@ include '../../includes/sidebar.php';
       ); ?>
     }),
     mgbLiveReference: Object.freeze({
-      enabled: <?php echo $draftBarangayPreviewEnabled ? 'false' : 'true'; ?>
+      enabled: <?php echo $stagingReferenceModeEnabled ? 'true' : 'false'; ?>
+    }),
+    phivolcsLiveReference: Object.freeze({
+      enabled: <?php echo $stagingReferenceModeEnabled ? 'true' : 'false'; ?>
+    }),
+    adminEvacuationCenterReference: Object.freeze({
+      enabled: <?php echo $stagingAdminCenterReferenceEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $stagingAdminCenterReferenceEnabled
+              ? $basePath . 'api/drrm/admin-evacuation-center-reference.php'
+              : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
     }),
     draftBarangayPreview: Object.freeze({
       enabled: <?php echo $draftBarangayPreviewEnabled ? 'true' : 'false'; ?>,

@@ -13,9 +13,9 @@
       </p>
     </div>
 
-    <div id="mapDataStatusBadge" class="civ-map-status-badge shrink-0" title="Verified Caloocan hazard and evacuation datasets will be connected during the data integration phase.">
+    <div id="mapDataStatusBadge" class="civ-map-status-badge shrink-0" title="<?php echo !empty($draftBarangayPreviewEnabled) ? 'Local development preview; records remain unpublished.' : (!empty($stagingReferenceModeEnabled) ? 'Published operational records retain priority; external and administrative references are explicitly labeled.' : 'Published CIVENTRAL operational data only.'); ?>">
       <span class="civ-map-status-dot" aria-hidden="true"></span>
-      <span id="mapDataStatusText">Map Data Status: Caloocan Context</span>
+      <span id="mapDataStatusText">Map Data Status: <?php echo !empty($draftBarangayPreviewEnabled) ? 'Development Preview' : (!empty($stagingReferenceModeEnabled) ? 'Operational + Reference' : 'Operational'); ?></span>
     </div>
   </div>
 
@@ -96,17 +96,23 @@
           <label class="civ-layer-option">
             <span class="flex min-w-0 items-center gap-2.5">
               <span class="civ-layer-symbol civ-layer-symbol-earthquake"><i class="fa-solid fa-wave-square" aria-hidden="true"></i></span>
-              <span>Earthquake / Fault Information</span>
+              <span class="civ-layer-label-stack">
+                <span>Earthquake / Fault Information</span>
+                <span id="faultSourceMode" class="civ-layer-source-mode">Source mode: not active</span>
+              </span>
             </span>
-            <input type="checkbox" data-map-layer="earthquakeFaults" class="civ-layer-checkbox" aria-describedby="hazardLayerStatus">
+            <input type="checkbox" data-map-layer="earthquakeFaults" class="civ-layer-checkbox" aria-describedby="faultSourceMode hazardLayerStatus phivolcsLiveReferenceNotice">
           </label>
 
           <label class="civ-layer-option">
             <span class="flex min-w-0 items-center gap-2.5">
               <span class="civ-layer-symbol civ-layer-symbol-center"><i class="fa-solid fa-house-medical" aria-hidden="true"></i></span>
-              <span>Evacuation Centers</span>
+              <span class="civ-layer-label-stack">
+                <span>Evacuation Centers</span>
+                <span id="evacuationCenterSourceMode" class="civ-layer-source-mode">Source mode: not active</span>
+              </span>
             </span>
-            <input type="checkbox" data-map-layer="evacuationCenters" class="civ-layer-checkbox" aria-describedby="hazardLayerStatus">
+            <input type="checkbox" data-map-layer="evacuationCenters" class="civ-layer-checkbox" aria-describedby="evacuationCenterSourceMode hazardLayerStatus adminCenterReferenceNotice">
           </label>
         </div>
 
@@ -126,6 +132,26 @@
           </div>
           <p id="mgbLandslideReferenceNote" hidden>Official MGB source legend also includes: "Debris flow path/Possible accumulation zone".</p>
           <p>Reference display only. Consult DENR-MGB and qualified authorities for an official site assessment.</p>
+        </div>
+        <div id="phivolcsLiveReferenceNotice" class="civ-mgb-reference-notice civ-phivolcs-reference-notice mt-3" role="status" aria-live="polite" hidden>
+          <div class="civ-mgb-reference-heading">
+            <span class="civ-mgb-reference-badge">PHIVOLCS LIVE REFERENCE</span>
+            <strong>Official Active Fault image overlay</strong>
+          </div>
+          <p>Displayed directly from the official DOST-PHIVOLCS public Active Fault MapServer. No raw fault geometry is stored or republished by CIVENTRAL.</p>
+          <p><strong>Finding:</strong> No mapped active fault in this dataset intersects Caloocan.</p>
+          <p>Nearest-fault wording and distances are approximate reference context only. The West Valley Fault does not cross Caloocan.</p>
+          <div class="civ-mgb-reference-links">
+            <a href="https://gisweb.phivolcs.dost.gov.ph/arcgis/rest/services/PHIVOLCSPublic/ActiveFault/MapServer" target="_blank" rel="noopener noreferrer">DOST-PHIVOLCS Active Fault MapServer</a>
+          </div>
+        </div>
+        <div id="adminCenterReferenceNotice" class="civ-mgb-reference-notice civ-center-reference-notice mt-3" role="status" aria-live="polite" hidden>
+          <div class="civ-mgb-reference-heading">
+            <span class="civ-mgb-reference-badge">UNVERIFIED ADMIN REFERENCE</span>
+            <strong>Center location preview</strong>
+          </div>
+          <p>Reference locations are shown for administrative planning only and remain pending LGU verification.</p>
+          <p>These draft, inactive records are not operational destinations and are not available to citizen or mobile APIs.</p>
         </div>
       </section>
 

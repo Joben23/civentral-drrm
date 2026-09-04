@@ -16,10 +16,17 @@ $page = file_get_contents($root . '/pages/drrm/hazard-evacuation-map.php');
 $map = file_get_contents($root . '/assets/js/drrm/hazard-evacuation-map.js');
 $adapter = file_get_contents($root . '/assets/js/drrm/operational-map-data.js');
 $mgbReference = file_get_contents($root . '/assets/js/drrm/mgb-live-reference.js');
+$phivolcsReference = file_get_contents($root . '/assets/js/drrm/phivolcs-live-reference.js');
 $markup = file_get_contents($root . '/includes/dashboard/hazard-evacuation-map.php');
+$css = file_get_contents($root . '/assets/css/hazard-evacuation-map.css');
 $readService = file_get_contents($root . '/src/Services/DrrmMapReadService.php');
+$adminCenterEndpoint = file_get_contents($root . '/api/drrm/admin-evacuation-center-reference.php');
+$adminCenterService = file_get_contents($root . '/src/Services/DrrmAdminEvacuationCenterReferenceService.php');
+$mapAuthorization = file_get_contents($root . '/src/Services/DrrmMapAuthorizationService.php');
+$citizenReadService = file_get_contents($root . '/src/Services/DrrmCitizenHazardMapReadService.php');
 
-foreach ([$page, $map, $adapter, $mgbReference, $markup, $readService] as $source) {
+foreach ([$page, $map, $adapter, $mgbReference, $phivolcsReference, $markup, $css, $readService,
+    $adminCenterEndpoint, $adminCenterService, $mapAuthorization, $citizenReadService] as $source) {
     if (!is_string($source)) {
         fwrite(STDERR, 'A Module 1 loader contract source could not be read.' . PHP_EOL);
         exit(1);
@@ -83,10 +90,22 @@ assertModule1Loader('OperationalRouteDoesNotUseDevelopmentOsrm',
 assertModule1Loader('MgbReferenceModuleLoadsBeforeMapRuntime',
     str_contains($page, 'assets/js/drrm/mgb-live-reference.js')
     && strpos($page, '$mgbLiveReferenceUrl') < strpos($page, '$hazardMapJsUrl'));
-assertModule1Loader('MgbReferenceIsOperationalEnvironmentOnly',
-    str_contains($page, "mgbLiveReference: Object.freeze")
-    && str_contains($page, "enabled: <?php echo \$draftBarangayPreviewEnabled ? 'false' : 'true'; ?>")
+assertModule1Loader('ReferenceModulesLoadBeforeMapRuntime',
+    str_contains($page, 'assets/js/drrm/phivolcs-live-reference.js')
+    && strpos($page, '$phivolcsLiveReferenceUrl') < strpos($page, '$hazardMapJsUrl'));
+assertModule1Loader('ExternalReferencesAreExplicitStagingOnly',
+    str_contains($page, '$stagingReferenceModeEnabled = AppEnvironment::isStaging')
+    && str_contains($page, "mgbLiveReference: Object.freeze")
+    && str_contains($page, "phivolcsLiveReference: Object.freeze")
+    && substr_count($page, "enabled: <?php echo \$stagingReferenceModeEnabled ? 'true' : 'false'; ?>") === 2
     && str_contains($map, "runtimeConfig.dataMode !== 'operational'"));
+assertModule1Loader('AdminReferenceEndpointIsSeparatelyPermissionGated',
+    str_contains($page, '$stagingAdminCenterReferenceEnabled = $stagingReferenceModeEnabled')
+    && str_contains($page, '$module1Authorization->canView()')
+    && str_contains($page, 'api/drrm/admin-evacuation-center-reference.php')
+    && str_contains($adminCenterEndpoint, 'AppEnvironment::isStaging')
+    && str_contains($adminCenterEndpoint, 'isLoggedIn()')
+    && str_contains($adminCenterEndpoint, 'canView()'));
 
 assertModule1Loader('TruthfulOperationalEmptyStatesPresent', array_reduce([
     'Barangay operational data is not yet published.',
@@ -129,7 +148,69 @@ assertModule1Loader('RouteDistanceUsesPublishedMeters',
     && str_contains($adapter, 'distanceMeters <= 0')
     && str_contains($map, 'formatRouteDistance(properties.distance_meters)'));
 
-$browserBundle = implode(PHP_EOL, [$page, $map, $adapter, $mgbReference, $markup]);
+assertModule1Loader('AllFourHazardControlsRemainVisible',
+    substr_count($markup, 'data-map-layer=') === 4
+    && array_reduce([
+        'Flood-Prone Areas',
+        'Landslide-Prone Areas',
+        'Earthquake / Fault Information',
+        'Evacuation Centers',
+    ], static fn (bool $found, string $label): bool => $found && str_contains($markup, $label), true));
+assertModule1Loader('CheckboxHandlersNeverRemoveControlElements',
+    !preg_match('/control\.(?:remove|replaceWith)\s*\(/', $map)
+    && str_contains($map, 'if (!control.checked)')
+    && str_contains($map, 'state.map.removeLayer'));
+assertModule1Loader('TruthfulModeAndSourceLabelsArePresent', array_reduce([
+    'Map Data Status: Development Preview',
+    'Map Data Status: Operational + Reference',
+    'Map Data Status: Operational',
+    'LOCAL DEVELOPMENT PREVIEW',
+    'MGB LIVE REFERENCE DATA',
+    'PHIVOLCS LIVE REFERENCE DATA',
+    'UNVERIFIED ADMIN REFERENCE',
+    'CIVENTRAL OPERATIONAL DATA',
+], static fn (bool $found, string $label): bool => $found
+    && (str_contains($map, $label) || str_contains($markup, $label)), true));
+assertModule1Loader('OperationalBarangayLoadPreservesModeAwareHeader',
+    str_contains($map, 'function setOperationalBarangayUi')
+    && str_contains($map, 'updateMapDataStatus();')
+    && !str_contains($map, "setStatus('mapDataStatusText', 'Map Data Status: Operational');"));
+assertModule1Loader('MgbLegendKeepsOfficialVeryHighTerminology',
+    str_contains($map, 'MGB LIVE REFERENCE \u2014 FLOOD + LANDSLIDE')
+    && str_contains($map, "sourceLayerActive ? 'Very High' : 'Critical'"));
+assertModule1Loader('CaloocanOutlineStaysAboveReferenceRaster',
+    str_contains($map, "['mgbReferencePane', 330, false]")
+    && str_contains($map, "['cityMaskPane', 340, false]")
+    && str_contains($map, "['cityOutlinePane', 410, false]")
+    && str_contains($map, "pane: 'cityOutlinePane'"));
+assertModule1Loader('CityFitFocusControlsAndMapDimensionsRemainStable',
+    str_contains($map, "['whole', 'Whole Caloocan']")
+    && str_contains($map, "['north', 'North']")
+    && str_contains($map, "['south', 'South']")
+    && str_contains($map, "focusMapArea('whole')")
+    && str_contains($map, 'state.map.fitBounds(bounds')
+    && str_contains($css, 'height: clamp(32rem, calc(100vh - 14.5rem), 43rem)')
+    && str_contains($css, 'height: 34rem')
+    && str_contains($css, 'height: 27rem')
+    && str_contains($css, 'height: 23rem'));
+assertModule1Loader('ReferenceCentersAreIsolatedFromOperationalRouting',
+    str_contains($map, 'if (isOperationalMode() || !getEvacuationRoutePreviewConfig()')
+    && str_contains($map, 'state.operationalEvacuationCenterFeatureCollection')
+    && !str_contains($adminCenterService, 'evacuation_center_id\' =>'));
+assertModule1Loader('PreparednessOperationalLabelRequiresPublishedRoute',
+    str_contains($map, 'state.operationalRouteFeatureCount > 0')
+    && str_contains($map, "' Operational Data'")
+    && str_contains($map, "' No Published Operational Routes'"));
+assertModule1Loader('CitizenApiCannotExposeAdminCenterReference',
+    !str_contains($citizenReadService, "'evacuation-centers'")
+    && !str_contains($citizenReadService, 'caloocan-evacuation-centers-ready.json'));
+assertModule1Loader('NoStagingReferenceUsesDevelopmentApiPath',
+    !str_contains($mgbReference, '/api/drrm/dev/')
+    && !str_contains($phivolcsReference, '/api/drrm/dev/')
+    && !str_contains($adminCenterEndpoint, '/api/drrm/dev/')
+    && str_contains($map, "config.endpoint.includes('/api/drrm/dev/')"));
+
+$browserBundle = implode(PHP_EOL, [$page, $map, $adapter, $mgbReference, $phivolcsReference, $markup]);
 $secretNames = ['SUPABASE_SECRET_KEY', 'CIVENTRAL_AI_INTERNAL_KEY'];
 assertModule1Loader('BrowserBundleContainsNoSecretVariableNames', array_reduce(
     $secretNames,

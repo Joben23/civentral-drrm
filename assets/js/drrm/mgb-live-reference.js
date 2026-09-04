@@ -87,8 +87,69 @@
       attribution: SOURCE_AGENCY,
       disclosure: DISCLOSURE,
       siteAssessmentNotice: SITE_ASSESSMENT_NOTICE,
-      nativeZoomRange: Object.freeze({ minimum: 6, maximum: 14 })
+      nativeZoomRange: Object.freeze({ minimum: 6, maximum: 14 }),
+      displayZoomRange: Object.freeze({ minimum: 6, maximum: 18 })
     }));
+  }
+
+  function resolveNativeTileZoom(hazard, displayZoom) {
+    if (!Number.isFinite(displayZoom)) {
+      throw new Error('Display zoom must be finite.');
+    }
+    const nativeRange = serviceFor(hazard).nativeZoomRange;
+    return Math.max(
+      nativeRange.minimum,
+      Math.min(nativeRange.maximum, Math.round(displayZoom))
+    );
+  }
+
+  function createOutsideCityMask(cityBoundary) {
+    const feature = cityBoundary && cityBoundary.type === 'FeatureCollection'
+      && Array.isArray(cityBoundary.features) && cityBoundary.features.length === 1
+      ? cityBoundary.features[0]
+      : null;
+    const geometry = feature && feature.geometry;
+    if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)
+      || !Array.isArray(geometry.coordinates) || geometry.coordinates.length === 0) {
+      throw new Error('A valid city polygon is required for the presentation mask.');
+    }
+
+    const polygons = geometry.type === 'Polygon'
+      ? [geometry.coordinates]
+      : geometry.coordinates;
+    const cityExteriorRings = polygons.map(function (polygon) {
+      const ring = Array.isArray(polygon) ? polygon[0] : null;
+      if (!Array.isArray(ring) || ring.length < 4) {
+        throw new Error('The city presentation mask has an invalid exterior ring.');
+      }
+      return ring.map(function (position) {
+        if (!Array.isArray(position) || position.length < 2
+          || !Number.isFinite(Number(position[0])) || !Number.isFinite(Number(position[1]))) {
+          throw new Error('The city presentation mask has an invalid coordinate.');
+        }
+        return [Number(position[0]), Number(position[1])];
+      });
+    });
+
+    return Object.freeze({
+      type: 'Feature',
+      properties: Object.freeze({
+        presentation_only: true,
+        source_imagery_modified: false
+      }),
+      geometry: Object.freeze({
+        type: 'Polygon',
+        coordinates: Object.freeze([
+          Object.freeze([
+            Object.freeze([-180, -85]),
+            Object.freeze([-180, 85]),
+            Object.freeze([180, 85]),
+            Object.freeze([180, -85]),
+            Object.freeze([-180, -85])
+          ])
+        ].concat(cityExteriorRings))
+      })
+    });
   }
 
   function selectOperationalOrReference(operationalRowCount, referenceEnabled) {
@@ -127,6 +188,8 @@
     trustedMapServerUrls: trustedMapServerUrls,
     assertTrustedMapServerUrl: assertTrustedMapServerUrl,
     serviceFor: serviceFor,
+    resolveNativeTileZoom: resolveNativeTileZoom,
+    createOutsideCityMask: createOutsideCityMask,
     selectOperationalOrReference: selectOperationalOrReference,
     selectHazardSourceModes: selectHazardSourceModes,
     failureState: failureState

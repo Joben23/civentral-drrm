@@ -5,9 +5,10 @@
     containerId: 'civentralHazardMap',
     center: [14.706, 121.02],
     initialZoom: 11.5,
+    maximumZoom: 18,
     maximumSearchSuggestions: 8,
     routeSampleIntervalMeters: 50,
-    mgbReferenceLoadTimeoutMilliseconds: 12000
+    referenceLoadTimeoutMilliseconds: 12000
   });
 
   const DEFAULT_LOCATION_DETAILS = 'Select a barangay, hazard area, or evacuation center from the map to view information.';
@@ -77,18 +78,27 @@
     faultLoadPromise: null,
     faultFetchCount: 0,
     faultInformationActive: false,
+    faultSourceMode: 'NOT_ACTIVE',
+    phivolcsReferenceTileLayer: null,
+    phivolcsReferenceRequestId: 0,
+    phivolcsReferenceTileLoadCount: 0,
+    phivolcsReferenceTileErrorCount: 0,
     selectedFaultLayer: null,
     evacuationCenterPreviewLoaded: false,
     evacuationCenterPreviewFeatureCount: 0,
     evacuationCenterPreviewLayer: null,
     evacuationCenterFeatureCollection: null,
+    operationalEvacuationCenterFeatureCollection: null,
     evacuationCenterLoadPromise: null,
     evacuationCenterFetchCount: 0,
+    evacuationCenterSourceMode: 'NOT_ACTIVE',
+    evacuationCenterLoadedSourceMode: null,
     selectedEvacuationCenterLayer: null,
     operationalRouteStatus: 'NOT_LOADED',
     operationalRouteFeatureCount: 0,
     operationalRouteFetchCount: 0,
     cityBaseLayer: null,
+    cityMaskLayer: null,
     cityBoundaryLayer: null,
     cityBoundaryFeatureCollection: null,
     cityBoundaryBounds: null,
@@ -149,6 +159,7 @@
       landslideHazards: L.layerGroup(),
       mgbFloodReference: L.layerGroup(),
       mgbLandslideReference: L.layerGroup(),
+      phivolcsFaultReference: L.layerGroup(),
       earthquakeFaults: L.layerGroup(),
       evacuationCenters: L.layerGroup(),
       evacuationRoutes: L.layerGroup(),
@@ -192,6 +203,30 @@
     setStatus('mappedFloodSusceptibilityContent', 'Published mapped flood susceptibility loads from the operational hazard layer.');
   }
 
+  function updateMapDataStatus() {
+    const runtimeConfig = window.CiventralDrrmMapConfig || {};
+    const badge = document.getElementById('mapDataStatusBadge');
+    if (runtimeConfig.dataMode === 'development-preview') {
+      setStatus('mapDataStatusText', 'Map Data Status: Development Preview');
+      if (badge) badge.title = 'Local development preview; records remain unpublished.';
+      return;
+    }
+    const hasReferenceMode = Boolean(
+      (runtimeConfig.mgbLiveReference && runtimeConfig.mgbLiveReference.enabled === true) ||
+      (runtimeConfig.phivolcsLiveReference && runtimeConfig.phivolcsLiveReference.enabled === true) ||
+      (runtimeConfig.adminEvacuationCenterReference
+        && runtimeConfig.adminEvacuationCenterReference.enabled === true)
+    );
+    setStatus('mapDataStatusText', hasReferenceMode
+      ? 'Map Data Status: Operational + Reference'
+      : 'Map Data Status: Operational');
+    if (badge) {
+      badge.title = hasReferenceMode
+        ? 'Published operational records retain priority; reference layers are explicitly labeled.'
+        : 'Published CIVENTRAL operational data only.';
+    }
+  }
+
   function getOperationalAdapter() {
     const adapter = window.CiventralDrrmOperationalData;
     return adapter && typeof adapter === 'object' ? adapter : null;
@@ -200,6 +235,40 @@
   function getMgbReferenceApi() {
     const api = window.CiventralMgbLiveReference;
     return api && typeof api === 'object' ? api : null;
+  }
+
+  function getPhivolcsReferenceApi() {
+    const api = window.CiventralPhivolcsLiveReference;
+    return api && typeof api === 'object' ? api : null;
+  }
+
+  function getPhivolcsLiveReferenceConfig() {
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.phivolcsLiveReference;
+    const api = getPhivolcsReferenceApi();
+    if (
+      !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
+      !config || config.enabled !== true || !api ||
+      typeof api.service !== 'function' ||
+      typeof api.selectOperationalOrReference !== 'function'
+    ) {
+      return null;
+    }
+    return Object.freeze({ enabled: true, api: api });
+  }
+
+  function getAdminEvacuationCenterReferenceConfig() {
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.adminEvacuationCenterReference;
+    if (
+      !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
+      !config || config.enabled !== true ||
+      typeof config.endpoint !== 'string' || config.endpoint === '' ||
+      config.endpoint.includes('/api/drrm/dev/')
+    ) {
+      return null;
+    }
+    return config;
   }
 
   function getMgbLiveReferenceConfig() {
@@ -369,6 +438,16 @@
     };
   }
 
+  function cityMaskStyle() {
+    return {
+      stroke: false,
+      fill: true,
+      fillColor: isDarkMode() ? '#0f172a' : '#f8fafc',
+      fillOpacity: isDarkMode() ? 0.94 : 0.96,
+      fillRule: 'evenodd'
+    };
+  }
+
   function draftBarangayStyle() {
     return {
       color: isDarkMode() ? '#64748b' : '#94a3b8',
@@ -498,6 +577,7 @@
 
   function refreshThematicStyles() {
     if (state.cityBaseLayer) state.cityBaseLayer.setStyle(cityBaseStyle());
+    if (state.cityMaskLayer) state.cityMaskLayer.setStyle(cityMaskStyle());
     if (state.cityBoundaryLayer) state.cityBoundaryLayer.setStyle(cityBoundaryStyle());
     if (state.draftPreviewLayer) state.draftPreviewLayer.setStyle(draftBarangayStyle());
     if (state.selectedBarangayLayer) state.selectedBarangayLayer.setStyle(draftBarangaySelectedStyle());
@@ -517,11 +597,16 @@
   function createCityContextPanes() {
     const panes = [
       ['cityBasePane', 300, false],
-      ['barangayPane', 320, true],
-      ['mgbReferencePane', 340, false],
-      ['hazardPolygonPane', 350, true],
-      ['cityOutlinePane', 390, false],
-      ['operationalLinePane', 420, true]
+      ['mgbReferencePane', 330, false],
+      ['cityMaskPane', 340, false],
+      ['hazardPolygonPane', 360, true],
+      ['barangayPane', 370, true],
+      ['phivolcsReferencePane', 380, false],
+      ['operationalLinePane', 390, true],
+      ['cityOutlinePane', 410, false],
+      ['markerPane', 600, true],
+      ['routeOverlayPane', 620, true],
+      ['selectionOverlayPane', 640, true]
     ];
 
     panes.forEach(function (paneDefinition) {
@@ -736,6 +821,18 @@
         style: cityBaseStyle
       }).addTo(state.map);
 
+      const mgbReferenceApi = getMgbReferenceApi();
+      if (mgbReferenceApi && typeof mgbReferenceApi.createOutsideCityMask === 'function') {
+        state.cityMaskLayer = L.geoJSON(
+          mgbReferenceApi.createOutsideCityMask(cityBoundary),
+          {
+            pane: 'cityMaskPane',
+            interactive: false,
+            style: cityMaskStyle
+          }
+        );
+      }
+
       state.cityBoundaryLayer = L.geoJSON(cityBoundary, {
         pane: 'cityOutlinePane',
         interactive: false,
@@ -775,7 +872,7 @@
       statusBadge.title = 'Local development preview only. The barangay-boundary dataset remains incomplete and unpublished.';
     }
 
-    setStatus('mapDataStatusText', 'Map Data Status: Draft Preview');
+    setStatus('mapDataStatusText', 'Map Data Status: Development Preview');
     if (state.cityBoundaryBounds) {
       setStatus('operationalMapSubtitle', 'Inspecting 187 validated draft barangay boundaries; the current city layer is incomplete.');
     }
@@ -811,8 +908,7 @@
       return;
     }
 
-    if (statusBadge) statusBadge.title = 'Only server-filtered operational map records are displayed.';
-    setStatus('mapDataStatusText', 'Map Data Status: Operational');
+    updateMapDataStatus();
     if (status === 'EMPTY') {
       setStatus('barangaySearchStatus', 'Barangay operational data is not yet published.');
       if (baselineNotice) {
@@ -1095,7 +1191,7 @@
     let helperLabel = 'Legend only. No risk level has been assigned to any location.';
 
     if (floodActive && landslideActive && floodReferenceActive && landslideReferenceActive) {
-      contextLabel = 'MGB LIVE REFERENCE DATA \u2014 FLOOD + LANDSLIDE';
+      contextLabel = 'MGB LIVE REFERENCE \u2014 FLOOD + LANDSLIDE';
       ariaLabel = 'Combined DENR-MGB flood and landslide susceptibility classifications';
       helperLabel = 'Official MGB terminology and source-rendered symbology. The landslide service also renders "Debris flow path/Possible accumulation zone" where present.';
     } else if (floodActive && landslideActive && (floodReferenceActive || landslideReferenceActive)) {
@@ -1171,6 +1267,16 @@
       } else if (state.hazardSourceModes.landslide === 'MGB_LIVE_REFERENCE') {
         activeSources.push('Landslide: live MGB reference data.');
       }
+      if (state.faultSourceMode === 'CIVENTRAL_OPERATIONAL') {
+        activeSources.push('Faults: CIVENTRAL operational data.');
+      } else if (state.faultSourceMode === 'PHIVOLCS_LIVE_REFERENCE') {
+        activeSources.push('Faults: live PHIVOLCS reference data.');
+      }
+      if (state.evacuationCenterSourceMode === 'CIVENTRAL_OPERATIONAL') {
+        activeSources.push('Centers: CIVENTRAL operational data.');
+      } else if (state.evacuationCenterSourceMode === 'UNVERIFIED_ADMIN_REFERENCE') {
+        activeSources.push('Centers: unverified admin reference.');
+      }
       return activeSources.length > 0
         ? activeSources.join(' ')
         : 'Operational layers load on demand and display only published server-filtered records.';
@@ -1227,6 +1333,61 @@
     element.dataset.mode = mode;
   }
 
+  function setFaultSourceMode(mode) {
+    state.faultSourceMode = mode;
+    const element = document.getElementById('faultSourceMode');
+    if (!element) return;
+    const labels = {
+      NOT_ACTIVE: 'Source mode: not active',
+      LOADING: 'Checking operational/reference source',
+      CIVENTRAL_OPERATIONAL: 'CIVENTRAL OPERATIONAL DATA',
+      DEVELOPMENT_PREVIEW: 'LOCAL DEVELOPMENT PREVIEW',
+      PHIVOLCS_LIVE_REFERENCE: 'PHIVOLCS LIVE REFERENCE DATA',
+      PHIVOLCS_REFERENCE_UNAVAILABLE: 'PHIVOLCS REFERENCE UNAVAILABLE'
+    };
+    element.textContent = labels[mode] || labels.NOT_ACTIVE;
+    element.dataset.mode = mode;
+  }
+
+  function setEvacuationCenterSourceMode(mode) {
+    state.evacuationCenterSourceMode = mode;
+    const element = document.getElementById('evacuationCenterSourceMode');
+    if (!element) return;
+    const labels = {
+      NOT_ACTIVE: 'Source mode: not active',
+      LOADING: 'Checking operational/reference source',
+      CIVENTRAL_OPERATIONAL: 'CIVENTRAL OPERATIONAL DATA',
+      DEVELOPMENT_PREVIEW: 'LOCAL DEVELOPMENT PREVIEW',
+      UNVERIFIED_ADMIN_REFERENCE: 'UNVERIFIED ADMIN REFERENCE',
+      CENTER_REFERENCE_UNAVAILABLE: 'CENTER REFERENCE UNAVAILABLE'
+    };
+    element.textContent = labels[mode] || labels.NOT_ACTIVE;
+    element.dataset.mode = mode;
+  }
+
+  function phivolcsReferenceIsActive() {
+    return Boolean(
+      state.map && state.layerGroups &&
+      state.map.hasLayer(state.layerGroups.phivolcsFaultReference) &&
+      state.faultSourceMode === 'PHIVOLCS_LIVE_REFERENCE'
+    );
+  }
+
+  function renderPhivolcsReferenceNotice() {
+    const notice = document.getElementById('phivolcsLiveReferenceNotice');
+    if (notice) notice.hidden = !phivolcsReferenceIsActive();
+  }
+
+  function renderAdminCenterReferenceNotice() {
+    const notice = document.getElementById('adminCenterReferenceNotice');
+    if (!notice) return;
+    notice.hidden = !(
+      state.map && state.layerGroups &&
+      state.map.hasLayer(state.layerGroups.evacuationCenters) &&
+      state.evacuationCenterSourceMode === 'UNVERIFIED_ADMIN_REFERENCE'
+    );
+  }
+
   function liveReferenceIsActive(hazard) {
     const group = mgbReferenceGroup(hazard);
     return Boolean(
@@ -1262,7 +1423,19 @@
     if (landslideNote) landslideNote.hidden = !landslideActive;
   }
 
+  function syncMgbOutsideCityMask() {
+    if (!state.map || !state.cityMaskLayer || !state.layerGroups) return;
+    const referenceVisible = state.map.hasLayer(state.layerGroups.mgbFloodReference)
+      || state.map.hasLayer(state.layerGroups.mgbLandslideReference);
+    if (referenceVisible) {
+      state.cityMaskLayer.addTo(state.map);
+    } else {
+      state.map.removeLayer(state.cityMaskLayer);
+    }
+  }
+
   function renderHazardSourceUi() {
+    syncMgbOutsideCityMask();
     renderMgbLiveReferenceNotice();
     updateHazardLegend();
   }
@@ -1321,6 +1494,8 @@
       tileSize: 256,
       minNativeZoom: descriptor.nativeZoomRange.minimum,
       maxNativeZoom: descriptor.nativeZoomRange.maximum,
+      maxZoom: descriptor.displayZoomRange.maximum,
+      opacity: 1,
       noWrap: true,
       updateWhenIdle: true,
       keepBuffer: 1,
@@ -1332,6 +1507,7 @@
     state.mgbReferenceTileLayers[hazard] = tileLayer;
     tileLayer.addTo(group);
     group.addTo(state.map);
+    syncMgbOutsideCityMask();
 
     return new Promise(function (resolve) {
       let activationSettled = false;
@@ -1348,7 +1524,7 @@
           activationSettled = true;
           resolve(false);
         }
-      }, CONFIG.mgbReferenceLoadTimeoutMilliseconds);
+      }, CONFIG.referenceLoadTimeoutMilliseconds);
 
       tileLayer.on('tileload', function () {
         if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) return;
@@ -1372,12 +1548,8 @@
       tileLayer.on('tileerror', function () {
         if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) return;
         state.mgbReferenceTileErrorCounts[hazard] += 1;
-        window.clearTimeout(timeoutId);
-        failMgbReferenceLayer(hazard, control, referenceConfig.api.UNAVAILABLE_MESSAGE);
-        if (!activationSettled) {
-          activationSettled = true;
-          resolve(false);
-        }
+        // A cached service can legitimately have an empty edge tile. Keep the
+        // layer while any tile succeeds; the timeout handles total failure.
       });
     });
   }
@@ -1909,6 +2081,117 @@
     }
   }
 
+  function removePhivolcsReferenceLayer(resetMode) {
+    const group = state.layerGroups ? state.layerGroups.phivolcsFaultReference : null;
+    state.phivolcsReferenceRequestId += 1;
+    if (state.phivolcsReferenceTileLayer
+      && typeof state.phivolcsReferenceTileLayer.off === 'function') {
+      state.phivolcsReferenceTileLayer.off();
+    }
+    if (group) {
+      group.clearLayers();
+      if (state.map) state.map.removeLayer(group);
+    }
+    state.phivolcsReferenceTileLayer = null;
+    if (resetMode !== false) setFaultSourceMode('NOT_ACTIVE');
+    renderPhivolcsReferenceNotice();
+  }
+
+  function failPhivolcsReferenceLayer(control, message) {
+    removePhivolcsReferenceLayer(false);
+    if (control) {
+      control.checked = false;
+      control.disabled = true;
+    }
+    state.faultInformationActive = false;
+    setFaultSourceMode('PHIVOLCS_REFERENCE_UNAVAILABLE');
+    renderPhivolcsReferenceNotice();
+    setStatus(
+      'hazardLayerStatus',
+      message || 'Official PHIVOLCS fault reference is temporarily unavailable.'
+    );
+  }
+
+  async function activatePhivolcsReferenceLayer(control) {
+    const referenceConfig = getPhivolcsLiveReferenceConfig();
+    const group = state.layerGroups ? state.layerGroups.phivolcsFaultReference : null;
+    if (!referenceConfig || !group || !state.map || !control || !control.checked) return false;
+
+    let descriptor;
+    try {
+      descriptor = referenceConfig.api.service();
+    } catch (error) {
+      failPhivolcsReferenceLayer(control, referenceConfig.api.UNAVAILABLE_MESSAGE);
+      return false;
+    }
+
+    removePhivolcsReferenceLayer(false);
+    const requestId = ++state.phivolcsReferenceRequestId;
+    state.phivolcsReferenceTileLoadCount = 0;
+    state.phivolcsReferenceTileErrorCount = 0;
+    setFaultSourceMode('LOADING');
+
+    const tileOptions = {
+      pane: 'phivolcsReferencePane',
+      layers: descriptor.layers,
+      format: descriptor.format,
+      transparent: descriptor.transparent,
+      version: '1.3.0',
+      maxZoom: CONFIG.maximumZoom,
+      noWrap: true,
+      updateWhenIdle: true,
+      keepBuffer: 1,
+      attribution: descriptor.attribution
+    };
+    if (state.cityBoundaryBounds) tileOptions.bounds = state.cityBoundaryBounds.pad(0.25);
+
+    const tileLayer = L.tileLayer.wms(descriptor.wmsUrl, tileOptions);
+    state.phivolcsReferenceTileLayer = tileLayer;
+    tileLayer.addTo(group);
+    group.addTo(state.map);
+
+    return new Promise(function (resolve) {
+      let activationSettled = false;
+      const timeoutId = window.setTimeout(function () {
+        if (requestId !== state.phivolcsReferenceRequestId || !control.checked) {
+          if (!activationSettled) {
+            activationSettled = true;
+            resolve(false);
+          }
+          return;
+        }
+        failPhivolcsReferenceLayer(control, referenceConfig.api.UNAVAILABLE_MESSAGE);
+        if (!activationSettled) {
+          activationSettled = true;
+          resolve(false);
+        }
+      }, CONFIG.referenceLoadTimeoutMilliseconds);
+
+      tileLayer.on('tileload', function () {
+        if (requestId !== state.phivolcsReferenceRequestId || !control.checked) return;
+        state.phivolcsReferenceTileLoadCount += 1;
+        if (activationSettled) return;
+        activationSettled = true;
+        window.clearTimeout(timeoutId);
+        state.faultInformationActive = true;
+        setFaultSourceMode(referenceConfig.api.SOURCE_MODES.PHIVOLCS_REFERENCE);
+        state.faultPreviewResponse = {
+          summary: descriptor.summary,
+          faults: { type: 'FeatureCollection', features: [] }
+        };
+        showFaultInformationDetails(descriptor.summary);
+        renderPhivolcsReferenceNotice();
+        setStatus('hazardLayerStatus', developmentLayerStatus());
+        resolve(true);
+      });
+
+      tileLayer.on('tileerror', function () {
+        if (requestId !== state.phivolcsReferenceRequestId || !control.checked) return;
+        state.phivolcsReferenceTileErrorCount += 1;
+      });
+    });
+  }
+
   function assertDraftFaultPreview(payload) {
     const summary = payload && payload.summary;
     const faults = payload && payload.faults;
@@ -1975,8 +2258,9 @@
 
     title.textContent = 'Earthquake / Fault Information';
     crossing.textContent = 'Mapped active fault crossing Caloocan: None';
-    nearest.textContent = 'Nearest Active Fault: ' + summary.nearest_fault_name;
-    distance.textContent = 'Approx. distance from city boundary: ' + Number(summary.minimum_city_distance_km).toFixed(2) + ' km';
+    nearest.textContent = 'Approximate nearest mapped fault reference: ' + summary.nearest_fault_name;
+    distance.textContent = 'Approximate reference distance from city boundary: '
+      + Number(summary.minimum_city_distance_km).toFixed(2) + ' km';
     source.textContent = 'Source: ' + summary.source_agency;
     advisory.textContent = summary.advisory;
     advisory.className = 'civ-map-helper mt-2';
@@ -2093,6 +2377,7 @@
     if (!control.checked) {
       state.faultInformationActive = false;
       state.map.removeLayer(layerGroup);
+      removePhivolcsReferenceLayer();
       restoreLocationDetailsAfterFault();
       setStatus('hazardLayerStatus', developmentLayerStatus());
       return;
@@ -2106,19 +2391,32 @@
     }
 
     setStatus('hazardLayerStatus', 'Loading DOST-PHIVOLCS fault information...');
+    setFaultSourceMode('LOADING');
     const loaded = await loadDraftFaultInformation();
     if (!loaded) {
       control.checked = false;
       state.faultInformationActive = false;
       state.map.removeLayer(layerGroup);
+      removePhivolcsReferenceLayer();
       setStatus('hazardLayerStatus', 'Earthquake/fault information could not be loaded.');
       return;
     }
 
     if (isOperationalMode() && state.faultPreviewFeatureCount === 0) {
+      state.map.removeLayer(layerGroup);
+      const liveReference = getPhivolcsLiveReferenceConfig();
+      const sourceMode = liveReference
+        ? liveReference.api.selectOperationalOrReference(0, true)
+        : 'PHIVOLCS_REFERENCE_UNAVAILABLE';
+      if (liveReference
+        && sourceMode === liveReference.api.SOURCE_MODES.PHIVOLCS_REFERENCE) {
+        setStatus('hazardLayerStatus', 'Loading official PHIVOLCS fault reference...');
+        await activatePhivolcsReferenceLayer(control);
+        return;
+      }
       control.checked = false;
       state.faultInformationActive = false;
-      state.map.removeLayer(layerGroup);
+      setFaultSourceMode('NOT_ACTIVE');
       setStatus('hazardLayerStatus', 'Fault operational data is not yet published.');
       return;
     }
@@ -2126,10 +2424,14 @@
     if (control.checked) {
       state.faultInformationActive = true;
       if (isOperationalMode()) {
+        removePhivolcsReferenceLayer(false);
+        setFaultSourceMode('CIVENTRAL_OPERATIONAL');
         layerGroup.addTo(state.map);
+        renderPhivolcsReferenceNotice();
         setStatus('hazardLayerStatus', state.faultPreviewFeatureCount + ' published fault feature'
           + (state.faultPreviewFeatureCount === 1 ? ' is' : 's are') + ' displayed.');
       } else {
+        setFaultSourceMode('DEVELOPMENT_PREVIEW');
         showFaultInformationDetails(state.faultPreviewResponse.summary);
         setStatus('hazardLayerStatus', developmentLayerStatus());
       }
@@ -2179,9 +2481,52 @@
     return payload;
   }
 
-  function evacuationCenterMarkerIcon() {
+  function assertAdminCenterReferenceFeatureCollection(payload) {
+    if (!payload || payload.type !== 'FeatureCollection' || !Array.isArray(payload.features)
+      || payload.features.length !== 15) {
+      throw new Error('Invalid admin center reference response.');
+    }
+    const seenIds = new Set();
+    payload.features.forEach(function (feature) {
+      const properties = feature && feature.properties;
+      const geometry = feature && feature.geometry;
+      const coordinates = geometry && geometry.coordinates;
+      const keys = properties ? Object.keys(properties).sort() : [];
+      const expectedKeys = [
+        'barangay_display_location',
+        'display_status',
+        'location_status',
+        'managing_office',
+        'name',
+        'reference_id',
+        'verification_status'
+      ].sort();
+      if (
+        !feature || feature.type !== 'Feature' || !properties ||
+        JSON.stringify(keys) !== JSON.stringify(expectedKeys) ||
+        typeof properties.reference_id !== 'string' ||
+        !/^[0-9a-f-]{36}$/i.test(properties.reference_id) ||
+        seenIds.has(properties.reference_id) ||
+        typeof properties.name !== 'string' || properties.name.trim() === '' ||
+        !/^Barangay (?:[1-9]|[1-9]\d|1\d\d)$/.test(properties.barangay_display_location) ||
+        properties.location_status !== 'APPROXIMATE_REFERENCE_LOCATION' ||
+        properties.managing_office !== 'City Government of Caloocan' ||
+        properties.verification_status !== 'PENDING_LGU_VERIFICATION' ||
+        properties.display_status !== 'UNVERIFIED CENTER REFERENCE' ||
+        !geometry || geometry.type !== 'Point' || !Array.isArray(coordinates) ||
+        coordinates.length !== 2 || !Number.isFinite(Number(coordinates[0])) ||
+        !Number.isFinite(Number(coordinates[1]))
+      ) {
+        throw new Error('Invalid unverified center reference feature.');
+      }
+      seenIds.add(properties.reference_id);
+    });
+    return payload;
+  }
+
+  function evacuationCenterMarkerIcon(referenceOnly) {
     return L.divIcon({
-      className: 'civ-evacuation-marker-wrap',
+      className: 'civ-evacuation-marker-wrap' + (referenceOnly ? ' is-reference' : ''),
       html: '<span class="civ-evacuation-marker" aria-hidden="true"><i class="fa-solid fa-house-medical"></i></span>',
       iconSize: [32, 38],
       iconAnchor: [16, 36],
@@ -2197,10 +2542,25 @@
     const status = document.createElement('div');
     const location = document.createElement('div');
     const source = document.createElement('div');
+    const referenceOnly = properties.display_status === 'UNVERIFIED CENTER REFERENCE';
 
-    heading.textContent = 'Evacuation Center';
+    heading.textContent = referenceOnly ? 'Unverified Center Reference' : 'Evacuation Center';
     name.textContent = properties.name;
     status.textContent = 'Status: ' + properties.display_status;
+    if (referenceOnly) {
+      const barangay = document.createElement('div');
+      const managingOffice = document.createElement('div');
+      const disclosure = document.createElement('p');
+      barangay.textContent = 'Barangay/display location: ' + properties.barangay_display_location;
+      location.textContent = 'Location: approximate reference location';
+      managingOffice.textContent = 'Managing office: ' + properties.managing_office;
+      disclosure.className = 'civ-map-helper mt-1';
+      disclosure.textContent = 'Reference locations are shown for administrative planning only and remain pending LGU verification.';
+      if (includeHeading) content.appendChild(heading);
+      content.append(name, status, barangay, location, managingOffice, disclosure);
+      return content;
+    }
+
     location.textContent = properties.address
       ? 'Address: ' + properties.address
       : 'Location: ' + properties.location_verification_status;
@@ -2267,7 +2627,12 @@
   }
 
   async function loadDraftEvacuationCenterPreview() {
-    if (state.evacuationCenterPreviewLoaded) return true;
+    if (state.evacuationCenterPreviewLoaded) {
+      setEvacuationCenterSourceMode(
+        state.evacuationCenterLoadedSourceMode || 'NOT_ACTIVE'
+      );
+      return true;
+    }
     if (state.evacuationCenterLoadPromise) return state.evacuationCenterLoadPromise;
 
     const previewConfig = getEvacuationCenterPreviewConfig();
@@ -2285,16 +2650,50 @@
         if (!response.ok) throw new Error('Evacuation-center data request failed.');
         const payload = await response.json();
         const adapter = getOperationalAdapter();
-        const featureCollection = previewConfig.operational === true
-          ? (adapter && typeof adapter.mapEvacuationCenters === 'function'
+        let featureCollection;
+        let sourceMode;
+        if (previewConfig.operational === true) {
+          featureCollection = adapter && typeof adapter.mapEvacuationCenters === 'function'
             ? adapter.mapEvacuationCenters(payload, state.operationalBarangayCollection)
-            : null)
-          : assertDraftEvacuationCenterFeatureCollection(payload);
+            : null;
+          state.operationalEvacuationCenterFeatureCollection = featureCollection;
+
+          if (featureCollection && featureCollection.features.length === 0) {
+            const adminReferenceConfig = getAdminEvacuationCenterReferenceConfig();
+            if (adminReferenceConfig) {
+              state.evacuationCenterFetchCount += 1;
+              const referenceResponse = await window.fetch(adminReferenceConfig.endpoint, {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { Accept: 'application/geo+json, application/json' }
+              });
+              if (!referenceResponse.ok) {
+                throw new Error('Admin center reference request failed.');
+              }
+              featureCollection = assertAdminCenterReferenceFeatureCollection(
+                await referenceResponse.json()
+              );
+              sourceMode = 'UNVERIFIED_ADMIN_REFERENCE';
+            } else {
+              sourceMode = 'CIVENTRAL_OPERATIONAL';
+            }
+          } else {
+            sourceMode = 'CIVENTRAL_OPERATIONAL';
+          }
+        } else {
+          featureCollection = assertDraftEvacuationCenterFeatureCollection(payload);
+          sourceMode = 'DEVELOPMENT_PREVIEW';
+        }
         if (!featureCollection) throw new Error('Operational evacuation-center adapter is unavailable.');
+        const referenceOnly = sourceMode === 'UNVERIFIED_ADMIN_REFERENCE';
         const previewLayer = L.geoJSON(featureCollection, {
           pane: 'markerPane',
           pointToLayer: function (feature, latlng) {
-            return L.marker(latlng, { pane: 'markerPane', icon: evacuationCenterMarkerIcon() });
+            return L.marker(latlng, {
+              pane: 'markerPane',
+              icon: evacuationCenterMarkerIcon(referenceOnly)
+            });
           },
           onEachFeature: function (feature, layer) {
             layer.bindTooltip(feature.properties.name, { direction: 'top', opacity: 0.96 });
@@ -2312,13 +2711,18 @@
         state.evacuationCenterPreviewLayer = previewLayer;
         state.evacuationCenterPreviewFeatureCount = featureCollection.features.length;
         state.evacuationCenterPreviewLoaded = true;
+        state.evacuationCenterLoadedSourceMode = sourceMode;
+        setEvacuationCenterSourceMode(sourceMode);
         return true;
       } catch (error) {
         state.layerGroups.evacuationCenters.clearLayers();
         state.evacuationCenterFeatureCollection = null;
+        state.operationalEvacuationCenterFeatureCollection = null;
         state.evacuationCenterPreviewLayer = null;
         state.evacuationCenterPreviewFeatureCount = 0;
         state.evacuationCenterPreviewLoaded = false;
+        state.evacuationCenterLoadedSourceMode = null;
+        setEvacuationCenterSourceMode('CENTER_REFERENCE_UNAVAILABLE');
         return false;
       } finally {
         state.evacuationCenterLoadPromise = null;
@@ -2335,6 +2739,8 @@
     if (!control.checked) {
       state.map.removeLayer(layerGroup);
       clearEvacuationCenterSelection();
+      setEvacuationCenterSourceMode('NOT_ACTIVE');
+      renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', developmentLayerStatus());
       return;
     }
@@ -2346,10 +2752,13 @@
     }
 
     setStatus('hazardLayerStatus', 'Loading evacuation centers...');
+    setEvacuationCenterSourceMode('LOADING');
     const loaded = await loadDraftEvacuationCenterPreview();
     if (!loaded) {
       control.checked = false;
+      control.disabled = true;
       state.map.removeLayer(layerGroup);
+      renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', 'Evacuation-center data could not be loaded.');
       return;
     }
@@ -2357,12 +2766,15 @@
     if (isOperationalMode() && state.evacuationCenterPreviewFeatureCount === 0) {
       control.checked = false;
       state.map.removeLayer(layerGroup);
+      setEvacuationCenterSourceMode('NOT_ACTIVE');
+      renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', 'No published evacuation centers are currently available.');
       return;
     }
 
     if (control.checked) {
       layerGroup.addTo(state.map);
+      renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', developmentLayerStatus());
     }
   }
@@ -2566,7 +2978,7 @@
 
     state.routeOrigin = Object.freeze({ latitude: latitude, longitude: longitude });
     state.routeOriginMarker = L.marker([latitude, longitude], {
-      pane: 'markerPane',
+      pane: 'routeOverlayPane',
       icon: routeOriginMarkerIcon(),
       keyboard: true,
       title: 'Selected route starting location'
@@ -2628,7 +3040,8 @@
 
   function populateRouteCenterOptions() {
     const select = document.getElementById('routeCenterSelect');
-    if (!select || !state.evacuationCenterFeatureCollection) return false;
+    if (isOperationalMode() || !getEvacuationRoutePreviewConfig()
+      || !select || !state.evacuationCenterFeatureCollection) return false;
 
     const features = state.evacuationCenterFeatureCollection.features.slice().sort(function (first, second) {
       return first.properties.name.localeCompare(second.properties.name);
@@ -2855,7 +3268,7 @@
       properties: { presentation: 'Development Recommended Route' },
       geometry: route.geometry
     }, {
-      pane: 'operationalLinePane',
+      pane: 'routeOverlayPane',
       interactive: false,
       style: developmentRouteStyle
     }).addTo(routeGroup);
@@ -2863,7 +3276,7 @@
     state.routeDestinationMarker = L.marker(
       [Number(destinationCoordinates[1]), Number(destinationCoordinates[0])],
       {
-        pane: 'markerPane',
+        pane: 'routeOverlayPane',
         icon: routeDestinationMarkerIcon(),
         keyboard: true,
         title: destination.name
@@ -3018,10 +3431,13 @@
     state.operationalRouteFetchCount += 1;
     try {
       const payload = await fetchOperationalJson(config.endpoint, 'Approved evacuation routes');
-      const collection = adapter.mapEvacuationRoutes(payload, state.evacuationCenterFeatureCollection);
+      const collection = adapter.mapEvacuationRoutes(
+        payload,
+        state.operationalEvacuationCenterFeatureCollection
+      );
       routeGroup.clearLayers();
       state.routeGeometryLayer = L.geoJSON(collection, {
-        pane: 'operationalLinePane',
+        pane: 'routeOverlayPane',
         style: approvedRouteStyle,
         onEachFeature: function (feature, layer) {
           layer.bindTooltip(feature.properties.route_name, { direction: 'top', sticky: true, opacity: 0.96 });
@@ -3084,7 +3500,11 @@
       icon.className = loaded ? 'fa-solid fa-route' : 'fa-solid fa-plug-circle-xmark';
       icon.setAttribute('aria-hidden', 'true');
       connectionStatus.replaceChildren(icon, document.createTextNode(
-        loaded ? ' Operational Data' : ' Route Data Unavailable'
+        loaded
+          ? (state.operationalRouteFeatureCount > 0
+              ? ' Operational Data'
+              : ' No Published Operational Routes')
+          : ' Route Data Unavailable'
       ));
     }
 
@@ -3353,7 +3773,7 @@
     });
     state.forecastUsesRouteOrigin = sourceLabel === 'ROUTE_ORIGIN';
     state.forecastLocationMarker = L.marker([latitude, longitude], {
-      pane: 'markerPane',
+      pane: 'selectionOverlayPane',
       icon: forecastLocationMarkerIcon(),
       keyboard: true,
       title: 'Selected flood risk check location'
@@ -3668,7 +4088,11 @@
 
     setHazardSourceMode('flood', 'NOT_ACTIVE');
     setHazardSourceMode('landslide', 'NOT_ACTIVE');
+    setFaultSourceMode('NOT_ACTIVE');
+    setEvacuationCenterSourceMode('NOT_ACTIVE');
     renderHazardSourceUi();
+    renderPhivolcsReferenceNotice();
+    renderAdminCenterReferenceNotice();
     setStatus('hazardLayerStatus', developmentLayerStatus());
 
     controls.forEach(function (control) {
@@ -4056,9 +4480,9 @@
       landslideHazards: 'hazardPolygonPane',
       riskPredictions: 'hazardPolygonPane',
       earthquakeFaults: 'operationalLinePane',
-      evacuationRoutes: 'operationalLinePane',
+      evacuationRoutes: 'routeOverlayPane',
       evacuationCenters: 'markerPane',
-      forecastLocations: 'markerPane'
+      forecastLocations: 'selectionOverlayPane'
     };
 
     return paneByLayer[layerKey] || 'hazardPolygonPane';
@@ -4110,6 +4534,7 @@
     const useRouteOriginButton = document.getElementById('useRouteOriginForForecastButton');
     const currentRouteOrigin = getCurrentRouteOrigin();
     const attribution = container ? container.querySelector('.leaflet-control-attribution') : null;
+    const layerControls = Array.from(document.querySelectorAll('[data-map-layer]'));
     const tileLayerCount = container
       ? container.querySelectorAll('.leaflet-tile-pane > .leaflet-layer').length
       : 0;
@@ -4130,6 +4555,8 @@
         (attribution.textContent || '').toLowerCase().includes(['open', 'street', 'map'].join(''))
       ),
       cityBoundaryLoaded: Boolean(state.cityBoundaryBounds),
+      cityMaskReady: Boolean(state.cityMaskLayer),
+      cityMaskActive: Boolean(state.map && state.cityMaskLayer && state.map.hasLayer(state.cityMaskLayer)),
       cityGeometryType: state.cityGeometryType,
       cityComponentCount: state.cityComponentCount,
       draftBarangayCount: state.draftPreviewFeatureCount,
@@ -4167,6 +4594,10 @@
       faultInformationActive: state.faultInformationActive,
       faultPreviewFeatureCount: state.faultPreviewFeatureCount,
       faultFetchCount: state.faultFetchCount,
+      faultSourceMode: state.faultSourceMode,
+      phivolcsReferenceActive: phivolcsReferenceIsActive(),
+      phivolcsTileLoadCount: state.phivolcsReferenceTileLoadCount,
+      phivolcsTileErrorCount: state.phivolcsReferenceTileErrorCount,
       faultDisplayMode: state.faultPreviewResponse && state.faultPreviewResponse.summary
         ? state.faultPreviewResponse.summary.display_mode
         : (isOperationalMode() ? 'OPERATIONAL_GEOMETRY' : null),
@@ -4180,6 +4611,10 @@
       ),
       evacuationCenterPreviewFeatureCount: state.evacuationCenterPreviewFeatureCount,
       evacuationCenterFetchCount: state.evacuationCenterFetchCount,
+      evacuationCenterSourceMode: state.evacuationCenterSourceMode,
+      operationalEvacuationCenterCount: state.operationalEvacuationCenterFeatureCollection
+        ? state.operationalEvacuationCenterFeatureCollection.features.length
+        : 0,
       evacuationCenterMarkerCount: container
         ? container.querySelectorAll('.civ-evacuation-marker-wrap').length
         : 0,
@@ -4238,14 +4673,23 @@
         : null,
       currentZoom: state.map ? state.map.getZoom() : null,
       minZoom: state.map ? state.map.getMinZoom() : state.operationalMinZoom,
+      maxZoom: state.map ? state.map.getMaxZoom() : CONFIG.maximumZoom,
+      hazardControlCount: layerControls.length,
+      visibleHazardControlCount: layerControls.filter(function (control) {
+        return control.getClientRects().length > 0;
+      }).length,
       paneZIndexes: Object.freeze({
         cityBase: paneZIndex('cityBasePane'),
-        barangay: paneZIndex('barangayPane'),
         mgbReference: paneZIndex('mgbReferencePane'),
+        cityMask: paneZIndex('cityMaskPane'),
         hazardPolygon: paneZIndex('hazardPolygonPane'),
-        cityOutline: paneZIndex('cityOutlinePane'),
+        barangay: paneZIndex('barangayPane'),
+        phivolcsReference: paneZIndex('phivolcsReferencePane'),
         operationalLine: paneZIndex('operationalLinePane'),
-        marker: 600
+        cityOutline: paneZIndex('cityOutlinePane'),
+        marker: paneZIndex('markerPane'),
+        routeOverlay: paneZIndex('routeOverlayPane'),
+        selectionOverlay: paneZIndex('selectionOverlayPane')
       }),
       maximumBoundsConfigured: Boolean(state.operationalMaxBounds),
       maxBoundsViscosity: state.map ? state.map.options.maxBoundsViscosity : null,
@@ -4261,6 +4705,7 @@
     bindPreparednessTabs();
     bindPreparednessActionDelegation();
     initializeOperationalShell();
+    updateMapDataStatus();
 
     if (typeof window.L === 'undefined') {
       showMapUnavailable();
@@ -4274,6 +4719,7 @@
       zoomSnap: 0.5,
       zoomControl: true,
       attributionControl: true,
+      maxZoom: CONFIG.maximumZoom,
       maxBoundsViscosity: 1.0
     });
 

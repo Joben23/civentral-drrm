@@ -61,11 +61,50 @@ check('LiveReferencesUseCachedTilesNotRawFeatures', function () {
     const service = reference.serviceFor(hazard);
     assert.equal(service.tileUrlTemplate, service.mapServerUrl + '/tile/{z}/{y}/{x}');
     assert.deepEqual(service.nativeZoomRange, { minimum: 6, maximum: 14 });
+    assert.deepEqual(service.displayZoomRange, { minimum: 6, maximum: 18 });
     assert.doesNotMatch(service.tileUrlTemplate, /FeatureServer|\/query(?:[/?]|$)/i);
   });
   assert.equal((referenceSource.match(/FeatureServer/g) || []).length, 1);
   assert.match(referenceSource, /parsed\.pathname\.includes\('\/FeatureServer'\)/);
   assert.doesNotMatch(referenceSource, /mapServerUrl:\s*[^\n]*FeatureServer|\/query(?:[/?'"`]|$)/i);
+});
+
+check('HigherDisplayZoomReusesNativeZoomFourteen', function () {
+  ['flood', 'landslide'].forEach(function (hazard) {
+    assert.equal(reference.resolveNativeTileZoom(hazard, 14), 14);
+    assert.equal(reference.resolveNativeTileZoom(hazard, 15), 14);
+    assert.equal(reference.resolveNativeTileZoom(hazard, 18), 14);
+  });
+  assert.match(mapSource, /maxNativeZoom:\s*descriptor\.nativeZoomRange\.maximum/);
+  assert.match(mapSource, /maxZoom:\s*descriptor\.displayZoomRange\.maximum/);
+  assert.match(mapSource, /maximumZoom:\s*18/);
+});
+
+check('OutsideCityMaskIsPresentationOnlyAndDoesNotMutateSource', function () {
+  const city = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: { adm3_name: 'Caloocan City' },
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [[[120.9, 14.7], [121, 14.7], [121, 14.8], [120.9, 14.7]]],
+          [[[120.95, 14.6], [121.05, 14.6], [121.05, 14.65], [120.95, 14.6]]]
+        ]
+      }
+    }]
+  };
+  const before = JSON.stringify(city);
+  const mask = reference.createOutsideCityMask(city);
+  assert.equal(JSON.stringify(city), before);
+  assert.equal(mask.properties.presentation_only, true);
+  assert.equal(mask.properties.source_imagery_modified, false);
+  assert.equal(mask.geometry.type, 'Polygon');
+  assert.equal(mask.geometry.coordinates.length, 3);
+  assert.match(mapSource, /pane:\s*'cityMaskPane'/);
+  assert.match(mapSource, /fillRule:\s*'evenodd'/);
+  assert.match(mapSource, /opacity:\s*1/);
 });
 
 check('LiveReferencePathCannotPersistMgbFeatures', function () {
@@ -79,7 +118,7 @@ check('LiveReferencePathCannotPersistMgbFeatures', function () {
 });
 
 check('StagingGuardCannotUseDevelopmentEndpointsOrLocalhost', function () {
-  assert.match(pageSource, /mgbLiveReference:[\s\S]*enabled:\s*<\?php echo \$draftBarangayPreviewEnabled \? 'false' : 'true'; \?>/);
+  assert.match(pageSource, /mgbLiveReference:[\s\S]*enabled:\s*<\?php echo \$stagingReferenceModeEnabled \? 'true' : 'false'; \?>/);
   assert.match(mapSource, /runtimeConfig\.dataMode !== 'operational'/);
   assert.doesNotMatch(referenceSource, /localhost|\/api\/drrm\/dev\//i);
 });
@@ -122,6 +161,25 @@ check('ExternalFailureHasTruthfulIsolatedUnavailableState', function () {
   assert.match(mapSource, /control\.disabled = true/);
   assert.match(mapSource, /removeMgbReferenceLayer\(hazard, false\)/);
   assert.doesNotMatch(mapSource, /fake polygon|fallback.*draft/i);
+});
+
+check('CaloocanOutlineAndMaskHavePredictablePaneOrder', function () {
+  assert.match(mapSource, /\['mgbReferencePane', 330, false\]/);
+  assert.match(mapSource, /\['cityMaskPane', 340, false\]/);
+  assert.match(mapSource, /\['hazardPolygonPane', 360, true\]/);
+  assert.match(mapSource, /\['cityOutlinePane', 410, false\]/);
+  assert.match(mapSource, /\['markerPane', 600, true\]/);
+  assert.match(mapSource, /\['routeOverlayPane', 620, true\]/);
+  assert.match(mapSource, /pane:\s*'cityOutlinePane'/);
+  assert.match(mapSource, /pane:\s*'mgbReferencePane'/);
+});
+
+check('SingleEmptyEdgeTileDoesNotDisableWholeReference', function () {
+  const start = mapSource.indexOf("tileLayer.on('tileerror'", mapSource.indexOf('activateMgbReferenceLayer'));
+  const end = mapSource.indexOf('});', start);
+  const handler = mapSource.slice(start, end);
+  assert.match(handler, /mgbReferenceTileErrorCounts/);
+  assert.doesNotMatch(handler, /failMgbReferenceLayer/);
 });
 
 check('UiContainsMgbAttributionAndNonRepublicationDisclosure', function () {

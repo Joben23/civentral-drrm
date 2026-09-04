@@ -290,7 +290,17 @@
   color: #1d4ed8;
 }
 
-.civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_REFERENCE_UNAVAILABLE"] {
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="PHIVOLCS_LIVE_REFERENCE"] {
+  color: #6d28d9;
+}
+
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="UNVERIFIED_ADMIN_REFERENCE"] {
+  color: #b45309;
+}
+
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_REFERENCE_UNAVAILABLE"],
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="PHIVOLCS_REFERENCE_UNAVAILABLE"],
+.civ-hazard-map-module .civ-layer-source-mode[data-mode="CENTER_REFERENCE_UNAVAILABLE"] {
   color: #b45309;
 }
 
@@ -374,6 +384,33 @@
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.civ-hazard-map-module .civ-phivolcs-reference-notice {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+}
+
+.civ-hazard-map-module .civ-phivolcs-reference-notice .civ-mgb-reference-heading,
+.civ-hazard-map-module .civ-phivolcs-reference-notice .civ-mgb-reference-links a {
+  color: #6d28d9;
+}
+
+.civ-hazard-map-module .civ-phivolcs-reference-notice .civ-mgb-reference-badge {
+  background: #6d28d9;
+}
+
+.civ-hazard-map-module .civ-center-reference-notice {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.civ-hazard-map-module .civ-center-reference-notice .civ-mgb-reference-heading {
+  color: #92400e;
+}
+
+.civ-hazard-map-module .civ-center-reference-notice .civ-mgb-reference-badge {
+  background: #b45309;
 }
 
 .civ-hazard-map-module .civ-risk-item {
@@ -944,6 +981,12 @@
   transform: rotate(45deg);
 }
 
+.civ-hazard-map-module .civ-evacuation-marker-wrap.is-reference .civ-evacuation-marker {
+  border-color: #fef3c7;
+  border-style: dashed;
+  background: #b45309;
+}
+
 .civ-hazard-map-module .civ-evacuation-marker-wrap:hover .civ-evacuation-marker,
 .civ-hazard-map-module .civ-evacuation-marker-wrap:focus .civ-evacuation-marker,
 .civ-hazard-map-module .civ-evacuation-marker-wrap.is-selected .civ-evacuation-marker {
@@ -1048,7 +1091,14 @@
   color: #93c5fd;
 }
 
-.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_REFERENCE_UNAVAILABLE"] {
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="PHIVOLCS_LIVE_REFERENCE"] {
+  color: #c4b5fd;
+}
+
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="UNVERIFIED_ADMIN_REFERENCE"],
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="MGB_REFERENCE_UNAVAILABLE"],
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="PHIVOLCS_REFERENCE_UNAVAILABLE"],
+.dark .civ-hazard-map-module .civ-layer-source-mode[data-mode="CENTER_REFERENCE_UNAVAILABLE"] {
   color: #fcd34d;
 }
 
@@ -1061,6 +1111,27 @@
 .dark .civ-hazard-map-module .civ-mgb-reference-heading,
 .dark .civ-hazard-map-module .civ-mgb-reference-links a {
   color: #93c5fd;
+}
+
+.dark .civ-hazard-map-module .civ-phivolcs-reference-notice,
+.dark .civ-hazard-map-module .civ-center-reference-notice {
+  border-color: #4c1d95;
+  background: rgba(76, 29, 149, 0.2);
+  color: #cbd5e1;
+}
+
+.dark .civ-hazard-map-module .civ-center-reference-notice {
+  border-color: #92400e;
+  background: rgba(120, 53, 15, 0.2);
+}
+
+.dark .civ-hazard-map-module .civ-phivolcs-reference-notice .civ-mgb-reference-heading,
+.dark .civ-hazard-map-module .civ-phivolcs-reference-notice .civ-mgb-reference-links a {
+  color: #c4b5fd;
+}
+
+.dark .civ-hazard-map-module .civ-center-reference-notice .civ-mgb-reference-heading {
+  color: #fcd34d;
 }
 
 .dark .civ-hazard-map-module .civ-map-label,
