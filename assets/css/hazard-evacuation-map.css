@@ -1272,6 +1272,15 @@
   }
 }
 
+@media (min-width: 1320px) and (max-height: 900px) {
+  .civ-hazard-map-module .civ-map-primary-controls {
+    max-height: calc(100vh - 7.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
 @media (max-width: 1099px) {
   .civ-hazard-map-module .civ-hazard-layout {
     grid-template-columns: 1fr;

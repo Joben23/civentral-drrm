@@ -35,6 +35,7 @@ check('OnlyExactOfficialPublicMapServersAreTrusted', function () {
   assert.deepEqual(reference.trustedMapServerUrls, expectedServices);
   reference.trustedMapServerUrls.forEach(function (url) {
     assert.equal(reference.assertTrustedMapServerUrl(url), url);
+    assert.equal(reference.assertTrustedExportUrl(url + '/export'), url + '/export');
     const parsed = new URL(url);
     assert.equal(parsed.protocol, 'https:');
     assert.equal(parsed.hostname, 'controlmap.mgb.gov.ph');
@@ -54,30 +55,33 @@ check('UntrustedDowngradedAndFeatureServerUrlsAreRejected', function () {
       reference.assertTrustedMapServerUrl(url);
     }, /Untrusted|Unsafe/);
   });
+  assert.throws(function () {
+    reference.assertTrustedExportUrl(expectedServices[0] + '/export?bbox=unsafe');
+  }, /Untrusted|Unsafe/);
 });
 
-check('LiveReferencesUseCachedTilesNotRawFeatures', function () {
+check('LiveReferencesUseSingleExportImagesNotCachedTiles', function () {
   ['flood', 'landslide'].forEach(function (hazard) {
     const service = reference.serviceFor(hazard);
-    assert.equal(service.tileUrlTemplate, service.mapServerUrl + '/tile/{z}/{y}/{x}');
-    assert.deepEqual(service.nativeZoomRange, { minimum: 6, maximum: 14 });
+    assert.equal(service.exportUrl, service.mapServerUrl + '/export');
     assert.deepEqual(service.displayZoomRange, { minimum: 6, maximum: 18 });
-    assert.doesNotMatch(service.tileUrlTemplate, /FeatureServer|\/query(?:[/?]|$)/i);
+    assert.doesNotMatch(service.exportUrl, /FeatureServer|\/query|\/tile(?:[/?]|$)/i);
   });
   assert.equal((referenceSource.match(/FeatureServer/g) || []).length, 1);
   assert.match(referenceSource, /parsed\.pathname\.includes\('\/FeatureServer'\)/);
+  assert.doesNotMatch(referenceSource, /\/tile\/\{z\}\/\{y\}\/\{x\}/);
   assert.doesNotMatch(referenceSource, /mapServerUrl:\s*[^\n]*FeatureServer|\/query(?:[/?'"`]|$)/i);
+  assert.match(mapSource, /L\.imageOverlay\(/);
+  assert.doesNotMatch(mapSource, /L\.tileLayer\(descriptor\.tileUrlTemplate/);
 });
 
 check('HigherDisplayZoomReusesNativeZoomFourteen', function () {
-  ['flood', 'landslide'].forEach(function (hazard) {
-    assert.equal(reference.resolveNativeTileZoom(hazard, 14), 14);
-    assert.equal(reference.resolveNativeTileZoom(hazard, 15), 14);
-    assert.equal(reference.resolveNativeTileZoom(hazard, 18), 14);
-  });
-  assert.match(mapSource, /maxNativeZoom:\s*descriptor\.nativeZoomRange\.maximum/);
-  assert.match(mapSource, /maxZoom:\s*descriptor\.displayZoomRange\.maximum/);
-  assert.match(mapSource, /maximumZoom:\s*18/);
+  assert.doesNotMatch(referenceSource, /resolveNativeTileZoom/);
+  assert.match(mapSource, /bounds\.toBBoxString\(\)/);
+  assert.match(mapSource, /bboxSR: '4326'/);
+  assert.match(mapSource, /imageSR: '4326'/);
+  assert.match(mapSource, /state\.map\.on\('zoomend moveend', scheduleMgbReferenceRefresh\)/);
+  assert.doesNotMatch(mapSource, /zoom(?:anim|start)/);
 });
 
 check('OutsideCityMaskIsPresentationOnlyAndDoesNotMutateSource', function () {
@@ -114,7 +118,7 @@ check('LiveReferencePathCannotPersistMgbFeatures', function () {
   assert.ok(activationStart >= 0 && activationEnd > activationStart);
   assert.doesNotMatch(referenceSource, /supabase|fetch\s*\(|\.insert\s*\(|\.upsert\s*\(|method\s*:\s*['"]POST/i);
   assert.doesNotMatch(activationSource, /supabase|fetch\s*\(|geoJSON\s*\(|FeatureServer|method\s*:\s*['"]POST/i);
-  assert.match(activationSource, /L\.tileLayer\(descriptor\.tileUrlTemplate/);
+  assert.match(activationSource, /requestMgbReferenceImage\(hazard, control\)/);
 });
 
 check('StagingGuardCannotUseDevelopmentEndpointsOrLocalhost', function () {
@@ -157,7 +161,7 @@ check('ExternalFailureHasTruthfulIsolatedUnavailableState', function () {
   const failure = reference.failureState('flood');
   assert.equal(failure.mode, reference.SOURCE_MODES.UNAVAILABLE);
   assert.equal(failure.message, 'Official MGB reference layer is temporarily unavailable.');
-  assert.match(mapSource, /tileLayer\.on\('tileerror'/);
+  assert.match(mapSource, /imageOverlay\.once\('error'/);
   assert.match(mapSource, /control\.disabled = true/);
   assert.match(mapSource, /removeMgbReferenceLayer\(hazard, false\)/);
   assert.doesNotMatch(mapSource, /fake polygon|fallback.*draft/i);
@@ -174,12 +178,13 @@ check('CaloocanOutlineAndMaskHavePredictablePaneOrder', function () {
   assert.match(mapSource, /pane:\s*'mgbReferencePane'/);
 });
 
-check('SingleEmptyEdgeTileDoesNotDisableWholeReference', function () {
-  const start = mapSource.indexOf("tileLayer.on('tileerror'", mapSource.indexOf('activateMgbReferenceLayer'));
-  const end = mapSource.indexOf('});', start);
-  const handler = mapSource.slice(start, end);
-  assert.match(handler, /mgbReferenceTileErrorCounts/);
-  assert.doesNotMatch(handler, /failMgbReferenceLayer/);
+check('StaleMgbImagesCannotRemainStacked', function () {
+  assert.match(mapSource, /mgbReferenceRequestIds/);
+  assert.match(mapSource, /previous && previous !== imageOverlay/);
+  assert.match(mapSource, /imageOverlay\.remove\(\)/);
+  assert.match(mapSource, /mgbReferenceImageOpacity/);
+  assert.match(mapSource, /return otherVisible \? 0\.7 : 0\.9/);
+  assert.match(cssSource, /max-height: calc\(100vh - 7\.5rem\)/);
 });
 
 check('UiContainsMgbAttributionAndNonRepublicationDisclosure', function () {

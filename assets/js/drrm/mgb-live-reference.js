@@ -83,24 +83,37 @@
     const mapServerUrl = assertTrustedMapServerUrl(service.mapServerUrl);
     return Object.freeze(Object.assign({}, service, {
       mapServerUrl: mapServerUrl,
-      tileUrlTemplate: mapServerUrl + '/tile/{z}/{y}/{x}',
+      exportUrl: assertTrustedExportUrl(mapServerUrl + '/export'),
       attribution: SOURCE_AGENCY,
       disclosure: DISCLOSURE,
       siteAssessmentNotice: SITE_ASSESSMENT_NOTICE,
-      nativeZoomRange: Object.freeze({ minimum: 6, maximum: 14 }),
-      displayZoomRange: Object.freeze({ minimum: 6, maximum: 18 })
+      displayZoomRange: Object.freeze({ minimum: 6, maximum: 18 }),
+      exportImageFormat: 'png32'
     }));
   }
 
-  function resolveNativeTileZoom(hazard, displayZoom) {
-    if (!Number.isFinite(displayZoom)) {
-      throw new Error('Display zoom must be finite.');
+  function assertTrustedExportUrl(url) {
+    if (typeof url !== 'string') {
+      throw new Error('Untrusted MGB export URL.');
     }
-    const nativeRange = serviceFor(hazard).nativeZoomRange;
-    return Math.max(
-      nativeRange.minimum,
-      Math.min(nativeRange.maximum, Math.round(displayZoom))
-    );
+    const parsed = new URL(url);
+    const trusted = trustedMapServerUrls.some(function (mapServerUrl) {
+      return url === mapServerUrl + '/export';
+    });
+    if (
+      !trusted ||
+      parsed.protocol !== 'https:' ||
+      parsed.hostname !== 'controlmap.mgb.gov.ph' ||
+      parsed.port !== '' ||
+      parsed.username !== '' ||
+      parsed.password !== '' ||
+      parsed.search !== '' ||
+      parsed.hash !== '' ||
+      !parsed.pathname.endsWith('_Public/MapServer/export')
+    ) {
+      throw new Error('Unsafe MGB export URL.');
+    }
+    return url;
   }
 
   function createOutsideCityMask(cityBoundary) {
@@ -187,8 +200,8 @@
     SITE_ASSESSMENT_NOTICE: SITE_ASSESSMENT_NOTICE,
     trustedMapServerUrls: trustedMapServerUrls,
     assertTrustedMapServerUrl: assertTrustedMapServerUrl,
+    assertTrustedExportUrl: assertTrustedExportUrl,
     serviceFor: serviceFor,
-    resolveNativeTileZoom: resolveNativeTileZoom,
     createOutsideCityMask: createOutsideCityMask,
     selectOperationalOrReference: selectOperationalOrReference,
     selectHazardSourceModes: selectHazardSourceModes,

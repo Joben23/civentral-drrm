@@ -69,9 +69,11 @@
     operationalHazardLoadPromise: null,
     hazardSourceModes: { flood: 'NOT_ACTIVE', landslide: 'NOT_ACTIVE' },
     mgbReferenceTileLayers: { flood: null, landslide: null },
+    mgbReferenceImageOverlays: { flood: null, landslide: null },
     mgbReferenceRequestIds: { flood: 0, landslide: 0 },
     mgbReferenceTileLoadCounts: { flood: 0, landslide: 0 },
     mgbReferenceTileErrorCounts: { flood: 0, landslide: 0 },
+    mgbReferenceRefreshTimer: null,
     selectedLandslideLayer: null,
     faultPreviewLoaded: false,
     faultPreviewFeatureCount: 0,
@@ -1493,14 +1495,16 @@
 
   function removeMgbReferenceLayer(hazard, resetMode) {
     const group = mgbReferenceGroup(hazard);
-    const tileLayer = state.mgbReferenceTileLayers[hazard];
+    const imageOverlay = state.mgbReferenceImageOverlays[hazard];
     state.mgbReferenceRequestIds[hazard] += 1;
-    if (tileLayer && typeof tileLayer.off === 'function') tileLayer.off();
+    if (imageOverlay && typeof imageOverlay.off === 'function') imageOverlay.off();
+    if (imageOverlay && group) group.removeLayer(imageOverlay);
     if (group) {
       group.clearLayers();
       if (state.map) state.map.removeLayer(group);
     }
     state.mgbReferenceTileLayers[hazard] = null;
+    state.mgbReferenceImageOverlays[hazard] = null;
     if (resetMode !== false) setHazardSourceMode(hazard, 'NOT_ACTIVE');
   }
 
@@ -1520,6 +1524,116 @@
     }
   }
 
+  function mgbReferenceImageOpacity(hazard) {
+    const otherHazard = hazard === 'flood' ? 'landslide' : 'flood';
+    const otherGroup = mgbReferenceGroup(otherHazard);
+    const otherVisible = Boolean(otherGroup && state.map && state.map.hasLayer(otherGroup));
+    return otherVisible ? 0.7 : 0.9;
+  }
+
+  function getMgbReferenceExportUrl(descriptor, bounds, size) {
+    const bbox = bounds.toBBoxString();
+    const params = new URLSearchParams({
+      bbox: bbox,
+      bboxSR: '4326',
+      imageSR: '4326',
+      size: size.width + ',' + size.height,
+      transparent: 'true',
+      format: descriptor.exportImageFormat,
+      f: 'image'
+    });
+    return descriptor.exportUrl + '?' + params.toString();
+  }
+
+  function requestMgbReferenceImage(hazard, control) {
+    const referenceConfig = getMgbLiveReferenceConfig();
+    const group = mgbReferenceGroup(hazard);
+    if (!referenceConfig || !group || !state.map || !control || !control.checked) return Promise.resolve(false);
+
+    let descriptor;
+    try {
+      descriptor = referenceConfig.api.serviceFor(hazard);
+    } catch (error) {
+      return Promise.resolve(false);
+    }
+
+    const requestId = ++state.mgbReferenceRequestIds[hazard];
+    const bounds = state.map.getBounds();
+    const container = state.map.getContainer();
+    const size = {
+      width: Math.max(256, Math.min(2048, Math.round(container.clientWidth || 1024))),
+      height: Math.max(256, Math.min(2048, Math.round(container.clientHeight || 768)))
+    };
+    const imageOverlay = L.imageOverlay(
+      getMgbReferenceExportUrl(descriptor, bounds, size),
+      bounds,
+      {
+        pane: 'mgbReferencePane',
+        opacity: mgbReferenceImageOpacity(hazard),
+        interactive: false,
+        attribution: descriptor.attribution
+      }
+    );
+
+    return new Promise(function (resolve) {
+      let settled = false;
+      const timeoutId = window.setTimeout(function () {
+        imageOverlay.remove();
+        settle(false);
+      }, CONFIG.referenceLoadTimeoutMilliseconds);
+      const settle = function (value) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      };
+      imageOverlay.once('load', function () {
+        const current = requestId === state.mgbReferenceRequestIds[hazard] && control.checked;
+        if (!current) {
+          imageOverlay.remove();
+          settle(false);
+          return;
+        }
+        const previous = state.mgbReferenceImageOverlays[hazard];
+        imageOverlay.setOpacity(mgbReferenceImageOpacity(hazard));
+        state.mgbReferenceImageOverlays[hazard] = imageOverlay;
+        state.mgbReferenceTileLayers[hazard] = null;
+        if (previous && previous !== imageOverlay) group.removeLayer(previous);
+        setHazardSourceMode(hazard, referenceConfig.api.SOURCE_MODES.MGB_REFERENCE);
+        renderHazardSourceUi();
+        setStatus('hazardLayerStatus', developmentLayerStatus());
+        if (hazard === 'flood') {
+          state.mappedFloodSusceptibility = null;
+          setStatus(
+            'mappedFloodSusceptibilityContent',
+            'The live MGB reference is display-only; CIVENTRAL does not receive feature geometry for point assessment.'
+          );
+        }
+        settle(true);
+      });
+      imageOverlay.once('error', function () {
+        imageOverlay.remove();
+        settle(false);
+      });
+      imageOverlay.setOpacity(0);
+      imageOverlay.addTo(group);
+    });
+  }
+
+  function scheduleMgbReferenceRefresh() {
+    if (state.mgbReferenceRefreshTimer) window.clearTimeout(state.mgbReferenceRefreshTimer);
+    state.mgbReferenceRefreshTimer = window.setTimeout(function () {
+      state.mgbReferenceRefreshTimer = null;
+      ['flood', 'landslide'].forEach(function (hazard) {
+        const control = hazardControl(hazard);
+        const group = mgbReferenceGroup(hazard);
+        if (control && control.checked && group && state.map && state.map.hasLayer(group)) {
+          requestMgbReferenceImage(hazard, control);
+        }
+      });
+    }, 180);
+  }
+
   async function activateMgbReferenceLayer(hazard, control) {
     const referenceConfig = getMgbLiveReferenceConfig();
     const group = mgbReferenceGroup(hazard);
@@ -1534,75 +1648,15 @@
     }
 
     removeMgbReferenceLayer(hazard, false);
-    const requestId = ++state.mgbReferenceRequestIds[hazard];
-    state.mgbReferenceTileLoadCounts[hazard] = 0;
-    state.mgbReferenceTileErrorCounts[hazard] = 0;
     setHazardSourceMode(hazard, 'LOADING');
     renderHazardSourceUi();
-
-    const tileOptions = {
-      pane: 'mgbReferencePane',
-      tileSize: 256,
-      minNativeZoom: descriptor.nativeZoomRange.minimum,
-      maxNativeZoom: descriptor.nativeZoomRange.maximum,
-      maxZoom: descriptor.displayZoomRange.maximum,
-      opacity: 1,
-      noWrap: true,
-      updateWhenIdle: true,
-      keepBuffer: 1,
-      attribution: descriptor.attribution
-    };
-    if (state.cityBoundaryBounds) tileOptions.bounds = state.cityBoundaryBounds;
-
-    const tileLayer = L.tileLayer(descriptor.tileUrlTemplate, tileOptions);
-    state.mgbReferenceTileLayers[hazard] = tileLayer;
-    tileLayer.addTo(group);
     group.addTo(state.map);
     syncMgbOutsideCityMask();
-
-    return new Promise(function (resolve) {
-      let activationSettled = false;
-      const timeoutId = window.setTimeout(function () {
-        if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) {
-          if (!activationSettled) {
-            activationSettled = true;
-            resolve(false);
-          }
-          return;
-        }
-        failMgbReferenceLayer(hazard, control, referenceConfig.api.UNAVAILABLE_MESSAGE);
-        if (!activationSettled) {
-          activationSettled = true;
-          resolve(false);
-        }
-      }, CONFIG.referenceLoadTimeoutMilliseconds);
-
-      tileLayer.on('tileload', function () {
-        if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) return;
-        state.mgbReferenceTileLoadCounts[hazard] += 1;
-        if (activationSettled) return;
-        activationSettled = true;
-        window.clearTimeout(timeoutId);
-        setHazardSourceMode(hazard, referenceConfig.api.SOURCE_MODES.MGB_REFERENCE);
-        renderHazardSourceUi();
-        setStatus('hazardLayerStatus', developmentLayerStatus());
-        if (hazard === 'flood') {
-          state.mappedFloodSusceptibility = null;
-          setStatus(
-            'mappedFloodSusceptibilityContent',
-            'The live MGB reference is display-only; CIVENTRAL does not receive feature geometry for point assessment.'
-          );
-        }
-        resolve(true);
-      });
-
-      tileLayer.on('tileerror', function () {
-        if (requestId !== state.mgbReferenceRequestIds[hazard] || !control.checked) return;
-        state.mgbReferenceTileErrorCounts[hazard] += 1;
-        // A cached service can legitimately have an empty edge tile. Keep the
-        // layer while any tile succeeds; the timeout handles total failure.
-      });
-    });
+    const loaded = await requestMgbReferenceImage(hazard, control);
+    if (!loaded && control.checked && state.mgbReferenceRequestIds[hazard] > 0) {
+      failMgbReferenceLayer(hazard, control, referenceConfig.api.UNAVAILABLE_MESSAGE);
+    }
+    return loaded;
   }
 
   function createFloodTooltip(properties) {
@@ -4827,6 +4881,7 @@
       maxZoom: CONFIG.maximumZoom,
       maxBoundsViscosity: 1.0
     });
+    state.map.on('zoomend moveend', scheduleMgbReferenceRefresh);
 
     createCityContextPanes();
     state.map.on('click', function (event) {
