@@ -668,10 +668,10 @@
       ['phivolcsReferencePane', 330, false],
       ['operationalLinePane', 390, true],
       ['cityOutlinePane', 410, false],
+      ['barangayInteractionPane', 440, true],
       ['markerPane', 600, true],
       ['routeOverlayPane', 620, true],
-      ['selectionOverlayPane', 640, true],
-      ['barangayInteractionPane', 650, true]
+      ['selectionOverlayPane', 640, true]
     ];
 
     panes.forEach(function (paneDefinition) {
@@ -3036,7 +3036,9 @@
             layer.bindTooltip(feature.properties.name, { direction: 'top', opacity: 0.96 });
             layer.bindPopup(createEvacuationCenterContent(feature.properties, false));
             layer.on('click', function (event) {
-              if (delegateFeatureClickToMapPointSelection(event)) return;
+              if (event && event.originalEvent && L.DomEvent) {
+                L.DomEvent.stopPropagation(event.originalEvent);
+              }
               selectEvacuationCenter(layer, feature.properties);
             });
           }

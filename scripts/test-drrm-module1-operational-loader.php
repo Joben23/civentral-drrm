@@ -270,11 +270,30 @@ assertModule1Loader('HazardTogglesOnlyRemoveTheirOwnGroups',
     && substr_count($map, 'state.layerGroups.floodHazards.clearLayers()') >= 2
     && substr_count($map, 'state.layerGroups.landslideHazards.clearLayers()') >= 2);
 assertModule1Loader('BarangayInteractionLayerPreservesTransparentClickTarget',
-    str_contains($map, "['barangayInteractionPane', 650, true]")
+    str_contains($map, "['barangayInteractionPane', 440, true]")
     && str_contains($map, 'function barangayInteractionStyle()')
     && str_contains($map, 'fillOpacity: 0.001')
     && str_contains($map, 'state.barangayInteractionLayer = L.geoJSON')
     && str_contains($map, 'interactive: true'));
+assertModule1Loader('EvacuationMarkersStayAboveBarangayInteraction',
+    strpos($map, "['barangayInteractionPane', 440, true]") < strpos($map, "['markerPane', 600, true]")
+    && str_contains($map, "pane: 'markerPane'")
+    && str_contains($map, 'L.marker(latlng'));
+$centerHandlerStart = strpos($map, 'onEachFeature: function (feature, layer) {', strpos($map, 'async function loadDraftEvacuationCenterPreview'));
+$centerHandlerEnd = strpos($map, '}', $centerHandlerStart ?: 0);
+$centerHandlerSource = $centerHandlerStart !== false && $centerHandlerEnd !== false
+    ? substr($map, $centerHandlerStart, 900)
+    : '';
+assertModule1Loader('EvacuationMarkerClickStopsBarangayPropagation',
+    str_contains($centerHandlerSource, 'L.DomEvent.stopPropagation(event.originalEvent)')
+    && str_contains($centerHandlerSource, 'selectEvacuationCenter(layer, feature.properties)')
+    && strpos($centerHandlerSource, 'L.DomEvent.stopPropagation') < strpos($centerHandlerSource, 'selectEvacuationCenter'));
+assertModule1Loader('CenterDetailsRetainReferenceDisclosure',
+    str_contains($map, 'function showEvacuationCenterLocationDetails(properties)')
+    && str_contains($map, 'UNVERIFIED CENTER REFERENCE')
+    && str_contains($map, 'approximate reference location')
+    && str_contains($map, 'Managing office: ')
+    && str_contains($map, 'administrative planning only'));
 assertModule1Loader('BarangayClicksAndSearchShareSelectionPath',
     substr_count($map, 'selectDraftBarangay(record);') >= 3
     && str_contains($map, 'const recordsByCode = new Map')
