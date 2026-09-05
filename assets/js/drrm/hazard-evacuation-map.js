@@ -4824,6 +4824,18 @@
         onEachFeature: function (feature, layer) {
           const record = recordsByCode.get(feature.properties.barangay_code);
           if (!record) return;
+          layer.bindTooltip(feature.properties.name, {
+            direction: 'top',
+            sticky: true,
+            opacity: 0.9,
+            permanent: false
+          });
+          layer.on('mouseover', function () {
+            if (typeof layer.bringToFront === 'function') layer.bringToFront();
+          });
+          layer.on('mouseout', function () {
+            layer.closeTooltip();
+          });
           layer.on('click', function (event) {
             if (delegateFeatureClickToMapPointSelection(event)) return;
             selectDraftBarangay(record);

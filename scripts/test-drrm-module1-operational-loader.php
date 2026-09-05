@@ -280,6 +280,23 @@ assertModule1Loader('BarangayClicksAndSearchShareSelectionPath',
     && str_contains($map, 'const recordsByCode = new Map')
     && str_contains($map, 'recordsByCode.get(feature.properties.barangay_code)')
     && str_contains($map, 'state.barangayInteractionLayer'));
+$interactionStart = strpos($map, 'state.barangayInteractionLayer = L.geoJSON');
+$interactionEnd = strpos($map, '}).addTo(state.map);', $interactionStart ?: 0);
+$interactionSource = $interactionStart !== false && $interactionEnd !== false
+    ? substr($map, $interactionStart, $interactionEnd - $interactionStart)
+    : '';
+assertModule1Loader('BarangayHoverTooltipIsTemporaryAndNameOnly',
+    str_contains($interactionSource, 'layer.bindTooltip(feature.properties.name')
+    && str_contains($interactionSource, "permanent: false")
+    && str_contains($interactionSource, "sticky: true")
+    && str_contains($interactionSource, "layer.closeTooltip();")
+    && !str_contains($interactionSource, 'permanent: true')
+    && !str_contains($interactionSource, 'bindTooltip(createDraftPopup')
+    && !str_contains($interactionSource, 'bindTooltip(feature.properties.name +'));
+assertModule1Loader('BarangayHoverTooltipUsesExistingInteractionLayer',
+    str_contains($interactionSource, "pane: 'barangayInteractionPane'")
+    && str_contains($interactionSource, 'layer.on(\'mouseover\'')
+    && str_contains($interactionSource, 'selectDraftBarangay(record);'));
 assertModule1Loader('HazardVectorsDoNotInferWholeBarangays',
     str_contains($floodHandlerSource, 'state.layerGroups.floodHazards')
     && str_contains($landslideHandlerSource, 'state.layerGroups.landslideHazards')
