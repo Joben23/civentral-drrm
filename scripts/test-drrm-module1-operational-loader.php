@@ -347,7 +347,7 @@ assertModule1Loader('PreparednessOperationalLabelRequiresPublishedRoute',
     && str_contains($map, "routePanel.dataset.routeMode = 'CIVENTRAL_OPERATIONAL_DATA'")
     && str_contains($map, "' No Published Operational Routes'"));
 assertModule1Loader('CitizenApiCannotExposeAdminCenterReference',
-    !str_contains($citizenReadService, "'evacuation-centers'")
+    str_contains($citizenReadService, "'evacuation-centers'")
     && !str_contains($citizenReadService, 'caloocan-evacuation-centers-ready.json'));
 assertModule1Loader('NoStagingReferenceUsesDevelopmentApiPath',
     !str_contains($mgbReference, '/api/drrm/dev/')

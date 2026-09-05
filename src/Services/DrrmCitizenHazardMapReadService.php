@@ -12,7 +12,7 @@ use RuntimeException;
 final class DrrmCitizenHazardMapReadService
 {
     public const CITY_NAME = 'Caloocan City';
-    public const SUPPORTED_LAYERS = ['boundary', 'barangays', 'flood', 'landslide', 'fault'];
+    public const SUPPORTED_LAYERS = ['boundary', 'barangays', 'flood', 'landslide', 'fault', 'evacuation-centers'];
 
     private const FILES = [
         'boundary' => 'caloocan-city-boundary.geojson',
@@ -39,7 +39,10 @@ final class DrrmCitizenHazardMapReadService
         'VHL' => ['Very High', 'Very High Susceptibility to Landslide'],
     ];
 
-    public function __construct(private readonly string $preparedDataDirectory)
+    public function __construct(
+        private readonly string $preparedDataDirectory,
+        private readonly ?DrrmCitizenEvacuationCenterReadService $evacuationCenterService = null
+    )
     {
     }
 
@@ -56,7 +59,18 @@ final class DrrmCitizenHazardMapReadService
             'flood' => $this->susceptibility('flood'),
             'landslide' => $this->susceptibility('landslide'),
             'fault' => $this->fault(),
+            'evacuation-centers' => $this->evacuationCenters(),
         };
+    }
+
+    /** @return array<string, mixed> */
+    private function evacuationCenters(): array
+    {
+        if ($this->evacuationCenterService === null) {
+            throw new RuntimeException('The citizen evacuation-center service is unavailable.');
+        }
+
+        return $this->evacuationCenterService->response();
     }
 
     /** @return array<string, mixed> */

@@ -7,6 +7,8 @@ namespace App\Services;
 use JsonException;
 use RuntimeException;
 
+require_once __DIR__ . '/DrrmDataStoreInterface.php';
+
 /**
  * Read-only projection for the controlled 15-center development subset.
  *
@@ -39,7 +41,7 @@ final class DrrmDraftEvacuationCenterPreviewService
     ];
 
     public function __construct(
-        private readonly SupabaseRestClient $client,
+        private readonly DrrmDataStoreInterface $client,
         bool $localDevelopmentPreviewAllowed
     ) {
         if (!$localDevelopmentPreviewAllowed) {

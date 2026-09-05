@@ -4,7 +4,15 @@ declare(strict_types=1);
 
 use App\Services\DrrmCitizenHazardMapReadService;
 
+require_once __DIR__ . '/../../../config/app_environment.php';
+require_once __DIR__ . '/../../../config/supabase.php';
+require_once __DIR__ . '/../../../src/Services/SupabaseRestClient.php';
+require_once __DIR__ . '/../../../src/Services/DrrmCitizenEvacuationCenterReadService.php';
 require_once __DIR__ . '/../../../src/Services/DrrmCitizenHazardMapReadService.php';
+
+use App\Config\SupabaseConfig;
+use App\Services\DrrmCitizenEvacuationCenterReadService;
+use App\Services\SupabaseRestClient;
 
 ini_set('display_errors', '0');
 
@@ -37,7 +45,14 @@ if (!in_array($layer, DrrmCitizenHazardMapReadService::SUPPORTED_LAYERS, true)) 
 }
 
 try {
-    $service = new DrrmCitizenHazardMapReadService(__DIR__ . '/../../../data/import');
+    $centerService = null;
+    if ($layer === 'evacuation-centers') {
+        $centerService = new DrrmCitizenEvacuationCenterReadService(
+            new SupabaseRestClient(SupabaseConfig::fromEnvironment(__DIR__ . '/../../../.env')),
+            __DIR__ . '/../../../.env'
+        );
+    }
+    $service = new DrrmCitizenHazardMapReadService(__DIR__ . '/../../../data/import', $centerService);
     citizenHazardMapRespond(true, $layer, null, 200, $service->layer($layer));
 } catch (Throwable) {
     if (!headers_sent()) {

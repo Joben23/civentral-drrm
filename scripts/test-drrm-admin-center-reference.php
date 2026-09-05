@@ -250,14 +250,14 @@ assertAdminCenterReference(
 
 assertAdminCenterReference(
     'CitizenApiCannotRequestReferenceCenters',
-    !in_array('evacuation-centers', DrrmCitizenHazardMapReadService::SUPPORTED_LAYERS, true)
+    in_array('evacuation-centers', DrrmCitizenHazardMapReadService::SUPPORTED_LAYERS, true)
     && !str_contains($citizenSource, 'caloocan-evacuation-centers-ready.json')
 );
 try {
     (new DrrmCitizenHazardMapReadService($root . '/data/import'))->layer('evacuation-centers');
-    assertAdminCenterReference('CitizenServiceRejectsReferenceCenterLayer', false);
-} catch (InvalidArgumentException) {
-    assertAdminCenterReference('CitizenServiceRejectsReferenceCenterLayer', true);
+    assertAdminCenterReference('CitizenServiceRequiresPublicCenterAdapter', false);
+} catch (RuntimeException) {
+    assertAdminCenterReference('CitizenServiceRequiresPublicCenterAdapter', true);
 }
 
 $routeSelectorStart = strpos($mapSource, 'function populateRouteCenterOptions');

@@ -19,7 +19,7 @@ final class AppEnvironment
         ?string $envFile = null,
         ?array $server = null
     ): bool {
-        $environment = self::value($envFile);
+        $environment = self::value(self::VARIABLE, $envFile);
 
         if (!in_array($environment, ['development', 'local'], true)) {
             return false;
@@ -41,29 +41,34 @@ final class AppEnvironment
 
     public static function isStaging(?string $envFile = null): bool
     {
-        return self::value($envFile) === 'staging';
+        return self::value(self::VARIABLE, $envFile) === 'staging';
     }
 
-    private static function value(?string $envFile): string
+    public static function isPublicDrrmPreviewEnabled(?string $envFile = null): bool
     {
-        $value = getenv(self::VARIABLE);
+        return self::value('DRRM_PUBLIC_PREVIEW_ENABLED', $envFile) === 'true';
+    }
 
-        if ($value === false && array_key_exists(self::VARIABLE, $_ENV)) {
-            $value = (string) $_ENV[self::VARIABLE];
+    private static function value(string $variable, ?string $envFile): string
+    {
+        $value = getenv($variable);
+
+        if ($value === false && array_key_exists($variable, $_ENV)) {
+            $value = (string) $_ENV[$variable];
         }
 
-        if ($value === false && array_key_exists(self::VARIABLE, $_SERVER)) {
-            $value = (string) $_SERVER[self::VARIABLE];
+        if ($value === false && array_key_exists($variable, $_SERVER)) {
+            $value = (string) $_SERVER[$variable];
         }
 
         if ($value === false && $envFile !== null && is_file($envFile)) {
-            $value = self::readValueFromFile($envFile);
+            $value = self::readValueFromFile($variable, $envFile);
         }
 
         return is_string($value) ? strtolower(trim($value)) : '';
     }
 
-    private static function readValueFromFile(string $envFile): string|false
+    private static function readValueFromFile(string $variable, string $envFile): string|false
     {
         $lines = file($envFile, FILE_IGNORE_NEW_LINES);
 
@@ -88,7 +93,7 @@ final class AppEnvironment
 
             [$name, $value] = array_map('trim', explode('=', $line, 2));
 
-            if ($name !== self::VARIABLE) {
+            if ($name !== $variable) {
                 continue;
             }
 
