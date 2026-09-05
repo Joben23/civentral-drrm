@@ -4484,14 +4484,6 @@
           });
           state.searchableBarangays.push(record);
           layer.bindPopup(createDraftPopup(feature.properties));
-          if (typeof layer.bindTooltip === 'function') {
-            layer.bindTooltip(feature.properties.name, {
-              direction: 'center',
-              permanent: true,
-              opacity: 0.8,
-              className: 'civ-barangay-label'
-            });
-          }
           layer.on('mouseover', function () {
             if (state.selectedBarangayLayer !== layer) layer.setStyle(draftBarangayHoverStyle());
             if (typeof layer.bringToFront === 'function') layer.bringToFront();
