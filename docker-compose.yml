@@ -15,6 +15,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-staging}
       APP_DEBUG: ${APP_DEBUG:-false}
+      DRRM_PUBLIC_PREVIEW_ENABLED: ${DRRM_PUBLIC_PREVIEW_ENABLED:-false}
 
       CIVENTRAL_LEGACY_DB_ENABLED: ${CIVENTRAL_LEGACY_DB_ENABLED:-false}
 
