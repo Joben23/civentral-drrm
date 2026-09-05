@@ -157,6 +157,7 @@
             <a id="mgbLandslideReferenceLink" href="https://controlmap.mgb.gov.ph/arcgis/rest/services/GeospatialDataInventory_Public/GDI_Detailed_Rain_induced_Landslide_Susceptibility_Public/MapServer" target="_blank" rel="noopener noreferrer" hidden>Landslide MapServer</a>
           </div>
           <p id="mgbLandslideReferenceNote" hidden>Official MGB source legend also includes: "Debris flow path/Possible accumulation zone".</p>
+          <p id="mgbReferenceOverlapNote" hidden>Flood and landslide reference layers overlap. Toggle one layer off for clearer source classification.</p>
           <p>Reference display only. Consult DENR-MGB and qualified authorities for an official site assessment.</p>
         </div>
         <div id="phivolcsLiveReferenceNotice" class="civ-mgb-reference-notice civ-phivolcs-reference-notice mt-3" role="status" aria-live="polite" hidden>

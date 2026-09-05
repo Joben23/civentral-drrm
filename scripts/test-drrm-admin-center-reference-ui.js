@@ -9,6 +9,7 @@ const adapter = require('../assets/js/drrm/operational-map-data.js');
 const root = path.resolve(__dirname, '..');
 const mapPath = path.join(root, 'assets/js/drrm/hazard-evacuation-map.js');
 const originalSource = fs.readFileSync(mapPath, 'utf8');
+const cssSource = fs.readFileSync(path.join(root, 'assets/css/hazard-evacuation-map.css'), 'utf8');
 const exportPoint = 'window.CiventralHazardMap = Object.freeze(publicApi);';
 const testExport = [
   'publicApi.__test = Object.freeze({',
@@ -102,14 +103,16 @@ function createMap() {
 const renderedMarkers = [];
 const L = {
   divIcon: function (options) { return options; },
-  marker: function (_latlng, options) {
+  marker: function (latlng, options) {
     const element = new FakeElement();
     const marker = {
       options: options,
+      _latlng: latlng,
       bindTooltip: function () { return marker; },
       bindPopup: function () { return marker; },
       on: function () { return marker; },
       getElement: function () { return element; }
+      ,getLatLng: function () { return marker._latlng; }
     };
     renderedMarkers.push(marker);
     return marker;
@@ -204,6 +207,11 @@ const references = {
 };
 
 async function run() {
+  assert.match(originalSource, /iconSize: \[32, 38\]/);
+  assert.match(originalSource, /iconAnchor: \[16, 38\]/);
+  assert.match(originalSource, /civ-evacuation-marker-visual/);
+  assert.doesNotMatch(cssSource, /\.civ-hazard-map-module \.civ-evacuation-marker-wrap \{[^}]*transform:/s);
+  assert.doesNotMatch(cssSource, /\.leaflet-marker-icon[^{]*\{[^}]*transform:/s);
   resetCenterState();
   const requests = [];
   window.fetch = async function (url, options) {
@@ -229,7 +237,10 @@ async function run() {
   assert.equal(renderedMarkers.length, 15);
   renderedMarkers.forEach(function (marker) {
     assert.match(marker.options.icon.className, /is-reference/);
+    assert.equal(marker.getLatLng().lat, marker._latlng.lat);
+    assert.equal(marker.getLatLng().lng, marker._latlng.lng);
   });
+  assert.equal(state.layerGroups.evacuationCenters.getLayers().length, 1);
 
   const checkbox = { checked: true, disabled: false };
   await hooks.handleEvacuationCenterControl(checkbox);

@@ -978,6 +978,13 @@
   background: transparent;
 }
 
+.civ-hazard-map-module .civ-evacuation-marker-visual {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-2px);
+}
+
 .civ-hazard-map-module .civ-evacuation-marker {
   display: grid;
   width: 32px;

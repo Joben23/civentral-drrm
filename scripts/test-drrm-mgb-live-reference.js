@@ -185,7 +185,7 @@ check('StaleMgbImagesCannotRemainStacked', function () {
   assert.match(mapSource, /previous && previous !== imageOverlay/);
   assert.match(mapSource, /imageOverlay\.remove\(\)/);
   assert.match(mapSource, /mgbReferenceImageOpacity/);
-  assert.match(mapSource, /return otherVisible \? 0\.6 : 0\.9/);
+  assert.match(mapSource, /return otherVisible \? 0\.75 : 0\.92/);
   assert.match(mapSource, /overlay\.setOpacity\(mgbReferenceImageOpacity\(hazard\)\)/);
   assert.match(mapSource, /mgbReferenceImageOverlays: \{ flood: null, landslide: null \}/);
   assert.match(mapSource, /group\.removeLayer\(imageOverlay\)/);

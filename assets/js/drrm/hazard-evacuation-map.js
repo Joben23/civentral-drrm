@@ -1470,10 +1470,12 @@
     const floodLink = document.getElementById('mgbFloodReferenceLink');
     const landslideLink = document.getElementById('mgbLandslideReferenceLink');
     const landslideNote = document.getElementById('mgbLandslideReferenceNote');
+    const overlapNote = document.getElementById('mgbReferenceOverlapNote');
     if (activeLabel) activeLabel.textContent = activeLayers.join(' + ');
     if (floodLink) floodLink.hidden = !floodActive;
     if (landslideLink) landslideLink.hidden = !landslideActive;
     if (landslideNote) landslideNote.hidden = !landslideActive;
+    if (overlapNote) overlapNote.hidden = !(floodActive && landslideActive);
   }
 
   function syncMgbOutsideCityMask() {
@@ -1534,7 +1536,7 @@
     const otherHazard = hazard === 'flood' ? 'landslide' : 'flood';
     const otherGroup = mgbReferenceGroup(otherHazard);
     const otherVisible = Boolean(otherGroup && state.map && state.map.hasLayer(otherGroup));
-    return otherVisible ? 0.6 : 0.9;
+    return otherVisible ? 0.75 : 0.92;
   }
 
   function projectMgbLatitude(latitude) {
@@ -2671,9 +2673,9 @@
   function evacuationCenterMarkerIcon(referenceOnly) {
     return L.divIcon({
       className: 'civ-evacuation-marker-wrap' + (referenceOnly ? ' is-reference' : ''),
-      html: '<span class="civ-evacuation-marker" aria-hidden="true"><i class="fa-solid fa-house-medical"></i></span>',
+      html: '<span class="civ-evacuation-marker-visual" aria-hidden="true"><span class="civ-evacuation-marker"><i class="fa-solid fa-house-medical"></i></span></span>',
       iconSize: [32, 38],
-      iconAnchor: [16, 36],
+      iconAnchor: [16, 38],
       popupAnchor: [0, -34],
       tooltipAnchor: [0, -30]
     });
