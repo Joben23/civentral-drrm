@@ -24,6 +24,8 @@ $stagingAdminCenterReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
 $stagingAdminBarangayReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
+$stagingAdminHazardReferenceEnabled = $stagingReferenceModeEnabled
+    && $module1Authorization->canView();
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
 $operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
 $mgbLiveReferenceRelativePath = 'assets/js/drrm/mgb-live-reference.js';
@@ -171,10 +173,19 @@ include '../../includes/sidebar.php';
       ); ?>
     }),
     mgbLiveReference: Object.freeze({
-      enabled: <?php echo $stagingReferenceModeEnabled ? 'true' : 'false'; ?>
+      enabled: <?php echo $stagingAdminHazardReferenceEnabled ? 'false' : ($stagingReferenceModeEnabled ? 'true' : 'false'); ?>
     }),
     phivolcsLiveReference: Object.freeze({
       enabled: <?php echo $stagingReferenceModeEnabled ? 'true' : 'false'; ?>
+    }),
+    adminHazardReference: Object.freeze({
+      enabled: <?php echo $stagingAdminHazardReferenceEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $stagingAdminHazardReferenceEnabled
+              ? $basePath . 'api/drrm/admin-hazard-reference.php'
+              : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
     }),
     adminEvacuationCenterReference: Object.freeze({
       enabled: <?php echo $stagingAdminCenterReferenceEnabled ? 'true' : 'false'; ?>,

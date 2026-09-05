@@ -123,6 +123,13 @@
           </label>
         </div>
 
+        <div id="adminHazardReferenceNotice" class="civ-mgb-reference-notice civ-center-reference-notice mt-3" role="status" aria-live="polite" hidden>
+          <div class="civ-mgb-reference-heading">
+            <span class="civ-mgb-reference-badge">DRAFT ADMIN REFERENCE</span>
+            <strong>Flood and landslide planning reference</strong>
+          </div>
+          <p>Controlled draft hazard geometry is shown to authenticated administrators for planning and validation only. It is not published operational data.</p>
+        </div>
         <p id="hazardLayerStatus" class="civ-map-empty-state mt-3" role="status" aria-live="polite">
           <?php echo !empty($draftBarangayPreviewEnabled) ? 'Hazard datasets are not yet connected.' : 'Operational layers load on demand.'; ?>
         </p>

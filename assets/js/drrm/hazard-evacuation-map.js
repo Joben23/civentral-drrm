@@ -67,6 +67,8 @@
     landslideFetchCount: 0,
     operationalHazardCollections: null,
     operationalHazardLoadPromise: null,
+    adminHazardReferenceFeatureCollection: null,
+    adminHazardReferenceLoadPromise: null,
     hazardSourceModes: { flood: 'NOT_ACTIVE', landslide: 'NOT_ACTIVE' },
     mgbReferenceTileLayers: { flood: null, landslide: null },
     mgbReferenceImageOverlays: { flood: null, landslide: null },
@@ -217,6 +219,7 @@
     const hasReferenceMode = Boolean(
       (runtimeConfig.mgbLiveReference && runtimeConfig.mgbLiveReference.enabled === true) ||
       (runtimeConfig.phivolcsLiveReference && runtimeConfig.phivolcsLiveReference.enabled === true) ||
+      (runtimeConfig.adminHazardReference && runtimeConfig.adminHazardReference.enabled === true) ||
       (runtimeConfig.adminEvacuationCenterReference
         && runtimeConfig.adminEvacuationCenterReference.enabled === true)
       || (runtimeConfig.adminBarangayReference
@@ -291,8 +294,25 @@
     return config;
   }
 
+  function getAdminHazardReferenceConfig() {
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.adminHazardReference;
+    if (
+      !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
+      !config || config.enabled !== true ||
+      typeof config.endpoint !== 'string' || config.endpoint === '' ||
+      config.endpoint.includes('/api/drrm/dev/')
+    ) {
+      return null;
+    }
+    return config;
+  }
+
   function getMgbLiveReferenceConfig() {
     const runtimeConfig = window.CiventralDrrmMapConfig;
+    if (runtimeConfig && runtimeConfig.adminHazardReference && runtimeConfig.adminHazardReference.enabled === true) {
+      return null;
+    }
     const config = runtimeConfig && runtimeConfig.mgbLiveReference;
     const api = getMgbReferenceApi();
     if (
@@ -353,7 +373,13 @@
     const operational = operationalEndpoint('hazardsEndpoint');
     if (operational) return Object.freeze({ endpoint: operational, operational: true });
     const runtimeConfig = window.CiventralDrrmMapConfig;
-    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') {
+      const adminConfig = getAdminHazardReferenceConfig();
+      if (adminConfig) {
+        return Object.freeze({ endpoint: adminConfig.endpoint, adminReference: true });
+      }
+      return null;
+    }
     const previewConfig = runtimeConfig && runtimeConfig.draftFloodPreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -367,7 +393,13 @@
     const operational = operationalEndpoint('hazardsEndpoint');
     if (operational) return Object.freeze({ endpoint: operational, operational: true });
     const runtimeConfig = window.CiventralDrrmMapConfig;
-    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') {
+      const adminConfig = getAdminHazardReferenceConfig();
+      if (adminConfig) {
+        return Object.freeze({ endpoint: adminConfig.endpoint, adminReference: true });
+      }
+      return null;
+    }
     const previewConfig = runtimeConfig && runtimeConfig.draftLandslidePreview;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -1301,11 +1333,15 @@
         activeSources.push('Flood: CIVENTRAL operational data.');
       } else if (state.hazardSourceModes.flood === 'MGB_LIVE_REFERENCE') {
         activeSources.push('Flood: live MGB reference data.');
+      } else if (state.hazardSourceModes.flood === 'DRAFT_ADMIN_REFERENCE') {
+        activeSources.push('Flood: draft admin reference data.');
       }
       if (state.hazardSourceModes.landslide === 'CIVENTRAL_OPERATIONAL') {
         activeSources.push('Landslide: CIVENTRAL operational data.');
       } else if (state.hazardSourceModes.landslide === 'MGB_LIVE_REFERENCE') {
         activeSources.push('Landslide: live MGB reference data.');
+      } else if (state.hazardSourceModes.landslide === 'DRAFT_ADMIN_REFERENCE') {
+        activeSources.push('Landslide: draft admin reference data.');
       }
       if (state.faultSourceMode === 'CIVENTRAL_OPERATIONAL') {
         activeSources.push('Faults: CIVENTRAL operational data.');
@@ -1367,7 +1403,9 @@
       CIVENTRAL_OPERATIONAL: 'CIVENTRAL OPERATIONAL DATA',
       DEVELOPMENT_PREVIEW: 'LOCAL DEVELOPMENT PREVIEW',
       MGB_LIVE_REFERENCE: 'MGB LIVE REFERENCE DATA',
-      MGB_REFERENCE_UNAVAILABLE: 'MGB REFERENCE UNAVAILABLE'
+      MGB_REFERENCE_UNAVAILABLE: 'MGB REFERENCE UNAVAILABLE',
+      DRAFT_ADMIN_REFERENCE: 'DRAFT ADMIN REFERENCE',
+      ADMIN_REFERENCE_UNAVAILABLE: 'ADMIN REFERENCE UNAVAILABLE'
     };
     element.textContent = labels[mode] || labels.NOT_ACTIVE;
     element.dataset.mode = mode;
@@ -1478,6 +1516,18 @@
     if (overlapNote) overlapNote.hidden = !(floodActive && landslideActive);
   }
 
+  function renderAdminHazardReferenceNotice() {
+    const notice = document.getElementById('adminHazardReferenceNotice');
+    if (!notice) return;
+    const config = getAdminHazardReferenceConfig();
+    notice.hidden = !(config && state.map && state.layerGroups
+      && (state.map.hasLayer(state.layerGroups.floodHazards) || state.map.hasLayer(state.layerGroups.landslideHazards))
+      && (
+        state.hazardSourceModes.flood === 'DRAFT_ADMIN_REFERENCE'
+        || state.hazardSourceModes.landslide === 'DRAFT_ADMIN_REFERENCE'
+      ));
+  }
+
   function syncMgbOutsideCityMask() {
     if (!state.map || !state.cityMaskLayer || !state.layerGroups) return;
     const referenceVisible = state.map.hasLayer(state.layerGroups.mgbFloodReference)
@@ -1498,6 +1548,7 @@
       }
     });
     renderMgbLiveReferenceNotice();
+    renderAdminHazardReferenceNotice();
     updateHazardLegend();
   }
 
@@ -1828,6 +1879,42 @@
     return state.operationalHazardLoadPromise;
   }
 
+  async function loadAdminHazardReferenceCollection() {
+    if (state.adminHazardReferenceFeatureCollection) {
+      return state.adminHazardReferenceFeatureCollection;
+    }
+    if (state.adminHazardReferenceLoadPromise) {
+      return state.adminHazardReferenceLoadPromise;
+    }
+
+    const config = getAdminHazardReferenceConfig();
+    if (!config) throw new Error('Admin hazard reference configuration is unavailable.');
+
+    state.adminHazardReferenceLoadPromise = (async function () {
+      try {
+        const response = await fetchOperationalJson(config.endpoint, 'Admin hazard reference');
+        if (!response || response.type !== 'FeatureCollection' || !Array.isArray(response.features)) {
+          throw new Error('Invalid admin hazard reference response.');
+        }
+        state.adminHazardReferenceFeatureCollection = response;
+        return response;
+      } finally {
+        state.adminHazardReferenceLoadPromise = null;
+      }
+    })();
+    return state.adminHazardReferenceLoadPromise;
+  }
+
+  function adminHazardFallbackActive(hazard) {
+    const operational = state.operationalHazardCollections && state.operationalHazardCollections[hazard];
+    return Boolean(
+      isOperationalMode()
+      && getAdminHazardReferenceConfig()
+      && operational
+      && operational.features.length === 0
+    );
+  }
+
   async function loadDraftFloodPreview() {
     if (state.floodPreviewLoaded) return true;
     if (state.floodLoadPromise) return state.floodLoadPromise;
@@ -1841,11 +1928,35 @@
         let featureCollection;
         if (previewConfig.operational === true) {
           featureCollection = (await loadOperationalHazardCollections()).flood;
+          if (featureCollection.features.length === 0 && getAdminHazardReferenceConfig()) {
+            const reference = await loadAdminHazardReferenceCollection();
+            featureCollection = {
+              type: 'FeatureCollection',
+              features: reference.features.filter(function (feature) {
+                return String(feature && feature.properties && feature.properties.hazard || '').toLowerCase() === 'flood';
+              })
+            };
+          }
           const counts = { LF: 0, MF: 0, HF: 0, VHF: 0 };
           featureCollection.features.forEach(function (feature) {
             counts[feature.properties.mgb_code] += 1;
           });
           state.floodPreviewClassCounts = Object.freeze(counts);
+        } else if (previewConfig.adminReference === true) {
+          const response = await fetchOperationalJson(previewConfig.endpoint, 'Admin flood reference');
+          if (!response || response.type !== 'FeatureCollection' || !Array.isArray(response.features)) {
+            throw new Error('Invalid admin flood reference response.');
+          }
+          featureCollection = {
+            type: 'FeatureCollection',
+            features: response.features.filter(function (feature) {
+              return String(feature && feature.properties && feature.properties.hazard || '').toLowerCase() === 'flood';
+            })
+          };
+          if (featureCollection.features.length !== 15) {
+            throw new Error('Unexpected admin flood feature count.');
+          }
+          featureCollection = assertDraftFloodFeatureCollection(featureCollection);
         } else {
           const response = await window.fetch(previewConfig.endpoint, {
             method: 'GET',
@@ -1935,9 +2046,12 @@
       return;
     }
 
+    const previewConfig = getFloodPreviewConfig();
     setHazardSourceMode('flood', 'LOADING');
     renderHazardSourceUi();
-    setStatus('hazardLayerStatus', 'Checking for CIVENTRAL operational flood data...');
+    setStatus('hazardLayerStatus', previewConfig && previewConfig.adminReference === true
+      ? 'Checking for staged admin flood reference data...'
+      : 'Checking for CIVENTRAL operational flood data...');
     const loaded = await loadDraftFloodPreview();
 
     if (!loaded) {
@@ -1969,7 +2083,11 @@
 
     if (control.checked) {
       removeMgbReferenceLayer('flood', false);
-      setHazardSourceMode('flood', isOperationalMode() ? 'CIVENTRAL_OPERATIONAL' : 'DEVELOPMENT_PREVIEW');
+      const hazardReferenceMode = (previewConfig && previewConfig.adminReference === true)
+        || adminHazardFallbackActive('flood')
+        ? 'DRAFT_ADMIN_REFERENCE'
+        : (isOperationalMode() ? 'CIVENTRAL_OPERATIONAL' : 'DEVELOPMENT_PREVIEW');
+      setHazardSourceMode('flood', hazardReferenceMode);
       layerGroup.addTo(state.map);
       renderHazardSourceUi();
       setStatus('hazardLayerStatus', developmentLayerStatus());
@@ -2092,11 +2210,35 @@
         let featureCollection;
         if (previewConfig.operational === true) {
           featureCollection = (await loadOperationalHazardCollections()).landslide;
+          if (featureCollection.features.length === 0 && getAdminHazardReferenceConfig()) {
+            const reference = await loadAdminHazardReferenceCollection();
+            featureCollection = {
+              type: 'FeatureCollection',
+              features: reference.features.filter(function (feature) {
+                return String(feature && feature.properties && feature.properties.hazard || '').toLowerCase() === 'landslide';
+              })
+            };
+          }
           const counts = { LL: 0, ML: 0, HL: 0, VHL: 0 };
           featureCollection.features.forEach(function (feature) {
             counts[feature.properties.mgb_code] += 1;
           });
           state.landslidePreviewClassCounts = Object.freeze(counts);
+        } else if (previewConfig.adminReference === true) {
+          const response = await fetchOperationalJson(previewConfig.endpoint, 'Admin landslide reference');
+          if (!response || response.type !== 'FeatureCollection' || !Array.isArray(response.features)) {
+            throw new Error('Invalid admin landslide reference response.');
+          }
+          featureCollection = {
+            type: 'FeatureCollection',
+            features: response.features.filter(function (feature) {
+              return String(feature && feature.properties && feature.properties.hazard || '').toLowerCase() === 'landslide';
+            })
+          };
+          if (featureCollection.features.length !== 13) {
+            throw new Error('Unexpected admin landslide feature count.');
+          }
+          featureCollection = assertDraftLandslideFeatureCollection(featureCollection);
         } else {
           const response = await window.fetch(previewConfig.endpoint, {
             method: 'GET',
@@ -2186,9 +2328,12 @@
       return;
     }
 
+    const previewConfig = getLandslidePreviewConfig();
     setHazardSourceMode('landslide', 'LOADING');
     renderHazardSourceUi();
-    setStatus('hazardLayerStatus', 'Checking for CIVENTRAL operational landslide data...');
+    setStatus('hazardLayerStatus', previewConfig && previewConfig.adminReference === true
+      ? 'Checking for staged admin landslide reference data...'
+      : 'Checking for CIVENTRAL operational landslide data...');
     const loaded = await loadDraftLandslidePreview();
 
     if (!loaded) {
@@ -2220,7 +2365,11 @@
 
     if (control.checked) {
       removeMgbReferenceLayer('landslide', false);
-      setHazardSourceMode('landslide', isOperationalMode() ? 'CIVENTRAL_OPERATIONAL' : 'DEVELOPMENT_PREVIEW');
+      const hazardReferenceMode = (previewConfig && previewConfig.adminReference === true)
+        || adminHazardFallbackActive('landslide')
+        ? 'DRAFT_ADMIN_REFERENCE'
+        : (isOperationalMode() ? 'CIVENTRAL_OPERATIONAL' : 'DEVELOPMENT_PREVIEW');
+      setHazardSourceMode('landslide', hazardReferenceMode);
       layerGroup.addTo(state.map);
       renderHazardSourceUi();
       setStatus('hazardLayerStatus', developmentLayerStatus());

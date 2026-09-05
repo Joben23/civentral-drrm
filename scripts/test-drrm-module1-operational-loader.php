@@ -100,7 +100,10 @@ assertModule1Loader('ExternalReferencesAreExplicitStagingOnly',
     str_contains($page, '$stagingReferenceModeEnabled = AppEnvironment::isStaging')
     && str_contains($page, "mgbLiveReference: Object.freeze")
     && str_contains($page, "phivolcsLiveReference: Object.freeze")
-    && substr_count($page, "enabled: <?php echo \$stagingReferenceModeEnabled ? 'true' : 'false'; ?>") === 2
+    && str_contains($page, "adminHazardReference: Object.freeze")
+    && str_contains($page, '$stagingAdminHazardReferenceEnabled')
+    && substr_count($page, "enabled: <?php echo \$stagingReferenceModeEnabled ? 'true' : 'false'; ?>") === 1
+    && str_contains($page, "enabled: <?php echo \$stagingAdminHazardReferenceEnabled ? 'false' : (\$stagingReferenceModeEnabled ? 'true' : 'false'); ?>")
     && str_contains($map, "runtimeConfig.dataMode !== 'operational'"));
 assertModule1Loader('AdminReferenceEndpointIsSeparatelyPermissionGated',
     str_contains($page, '$stagingAdminCenterReferenceEnabled = $stagingReferenceModeEnabled')
