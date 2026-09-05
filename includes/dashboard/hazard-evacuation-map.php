@@ -126,6 +126,25 @@
         <p id="hazardLayerStatus" class="civ-map-empty-state mt-3" role="status" aria-live="polite">
           <?php echo !empty($draftBarangayPreviewEnabled) ? 'Hazard datasets are not yet connected.' : 'Operational layers load on demand.'; ?>
         </p>
+      </section>
+
+      <section class="civ-map-card civ-risk-legend-card" aria-labelledby="riskLegendTitle">
+        <div class="civ-map-card-heading">
+          <span class="civ-map-card-icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i></span>
+          <h2 id="riskLegendTitle">Risk Level Legend</h2>
+        </div>
+
+        <p id="riskLegendContext" class="civ-risk-legend-context mt-3">Project risk classifications</p>
+        <div id="riskLegendItems" class="mt-2 grid grid-cols-2 gap-2" aria-label="Project risk classifications">
+          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-low"></span><span>Low</span></div>
+          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-moderate"></span><span>Moderate</span></div>
+          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-high"></span><span>High</span></div>
+          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-critical"></span><span id="highestRiskLegendLabel">Critical</span></div>
+        </div>
+        <p id="riskLegendHelper" class="civ-map-helper mt-2">Legend only. No risk level has been assigned to any location.</p>
+      </section>
+
+      <section class="civ-map-card civ-reference-disclosures" aria-label="Reference source disclosures">
         <div id="mgbLiveReferenceNotice" class="civ-mgb-reference-notice mt-3" role="status" aria-live="polite" hidden>
           <div class="civ-mgb-reference-heading">
             <span class="civ-mgb-reference-badge">LIVE MGB REFERENCE</span>
@@ -160,22 +179,6 @@
           <p>Reference locations are shown for administrative planning only and remain pending LGU verification.</p>
           <p>These draft, inactive records are not operational destinations and are not available to citizen or mobile APIs.</p>
         </div>
-      </section>
-
-      <section class="civ-map-card" aria-labelledby="riskLegendTitle">
-        <div class="civ-map-card-heading">
-          <span class="civ-map-card-icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i></span>
-          <h2 id="riskLegendTitle">Risk Level Legend</h2>
-        </div>
-
-        <p id="riskLegendContext" class="civ-risk-legend-context mt-3">Project risk classifications</p>
-        <div id="riskLegendItems" class="mt-2 grid grid-cols-2 gap-2" aria-label="Project risk classifications">
-          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-low"></span><span>Low</span></div>
-          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-moderate"></span><span>Moderate</span></div>
-          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-high"></span><span>High</span></div>
-          <div class="civ-risk-item"><span class="civ-risk-dot civ-risk-critical"></span><span id="highestRiskLegendLabel">Critical</span></div>
-        </div>
-        <p id="riskLegendHelper" class="civ-map-helper mt-2">Legend only. No risk level has been assigned to any location.</p>
       </section>
 
     </aside>

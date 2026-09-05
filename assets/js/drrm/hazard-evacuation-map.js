@@ -461,7 +461,7 @@
       stroke: false,
       fill: true,
       fillColor: isDarkMode() ? '#0f172a' : '#f8fafc',
-      fillOpacity: isDarkMode() ? 0.94 : 0.96,
+      fillOpacity: 1,
       fillRule: 'evenodd'
     };
   }
@@ -619,7 +619,7 @@
       ['cityMaskPane', 340, false],
       ['hazardPolygonPane', 360, true],
       ['barangayPane', 370, true],
-      ['phivolcsReferencePane', 380, false],
+      ['phivolcsReferencePane', 330, false],
       ['operationalLinePane', 390, true],
       ['cityOutlinePane', 410, false],
       ['markerPane', 600, true],
@@ -777,7 +777,7 @@
   function configureOperationalViewport(fitWholeCity) {
     if (!state.map || !state.cityBoundaryBounds || !state.cityBoundaryBounds.isValid()) return false;
 
-    const maxBounds = state.cityBoundaryBounds.pad(0.08);
+    const maxBounds = state.cityBoundaryBounds.pad(0.04);
     const minimumZoom = state.map.getBoundsZoom(
       state.cityBoundaryBounds,
       false,

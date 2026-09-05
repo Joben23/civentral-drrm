@@ -44,6 +44,22 @@
   padding: 1rem;
 }
 
+.civ-hazard-map-module .civ-risk-legend-card {
+  padding-block: 0.8rem;
+}
+
+.civ-hazard-map-module .civ-reference-disclosures {
+  padding: 0.65rem;
+}
+
+.civ-hazard-map-module .civ-reference-disclosures .civ-mgb-reference-notice {
+  margin-top: 0;
+}
+
+.civ-hazard-map-module .civ-reference-disclosures .civ-mgb-reference-notice + .civ-mgb-reference-notice {
+  margin-top: 0.5rem;
+}
+
 .civ-hazard-map-module .civ-map-panel {
   grid-area: map;
   overflow: hidden;

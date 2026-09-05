@@ -222,8 +222,16 @@ assertModule1Loader('MgbLegendKeepsOfficialVeryHighTerminology',
 assertModule1Loader('CaloocanOutlineStaysAboveReferenceRaster',
     str_contains($map, "['mgbReferencePane', 330, false]")
     && str_contains($map, "['cityMaskPane', 340, false]")
+    && str_contains($map, "['phivolcsReferencePane', 330, false]")
+    && str_contains($map, 'fillOpacity: 1')
     && str_contains($map, "['cityOutlinePane', 410, false]")
     && str_contains($map, "pane: 'cityOutlinePane'"));
+assertModule1Loader('RiskLegendFollowsHazardLayers',
+    strpos($markup, 'aria-labelledby="hazardLayersTitle"') < strpos($markup, 'aria-labelledby="riskLegendTitle"')
+    && strpos($markup, 'aria-labelledby="riskLegendTitle"') < strpos($markup, 'civ-reference-disclosures'));
+assertModule1Loader('MapUsesTightCaloocanBounds',
+    str_contains($map, 'state.cityBoundaryBounds.pad(0.04)')
+    && str_contains($map, 'maxBoundsViscosity: 1.0'));
 assertModule1Loader('CityFitFocusControlsAndMapDimensionsRemainStable',
     str_contains($map, "['whole', 'Whole Caloocan']")
     && str_contains($map, "['north', 'North']")

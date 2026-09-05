@@ -198,6 +198,8 @@ check('MgbVeryHighTerminologyRemainsVisibleAndNotCritical', function () {
   assert.doesNotMatch(referenceSource, /Critical/i);
   assert.match(markupSource, /id="highestRiskLegendLabel">Critical/);
   assert.match(mapSource, /highestLabel\.textContent = sourceLayerActive \? 'Very High' : 'Critical'/);
+  assert.match(mapSource, /fillOpacity: 1/);
+  assert.match(mapSource, /\['phivolcsReferencePane', 330, false\]/);
   assert.match(markupSource, /Debris flow path\/Possible accumulation zone/);
 });
 
