@@ -247,6 +247,43 @@ assertModule1Loader('BarangaySelectionLifecycleClearsHighlight',
     && str_contains($map, 'state.selectedBarangayRecord = null;')
     && str_contains($map, 'clearDraftBarangaySelection();')
     && str_contains($map, 'state.map.removeLayer(layerGroup)'));
+$floodHandlerStart = strpos($map, 'async function handleFloodControl');
+$floodHandlerEnd = strpos($map, 'async function handleLandslideControl', $floodHandlerStart ?: 0);
+$floodHandlerSource = $floodHandlerStart !== false && $floodHandlerEnd !== false
+    ? substr($map, $floodHandlerStart, $floodHandlerEnd - $floodHandlerStart)
+    : '';
+$landslideHandlerStart = strpos($map, 'async function handleLandslideControl');
+$landslideHandlerEnd = strpos($map, 'function removePhivolcsReferenceLayer', $landslideHandlerStart ?: 0);
+$landslideHandlerSource = $landslideHandlerStart !== false && $landslideHandlerEnd !== false
+    ? substr($map, $landslideHandlerStart, $landslideHandlerEnd - $landslideHandlerStart)
+    : '';
+assertModule1Loader('IndependentDraftHazardCollectionsRemainExact',
+    str_contains($map, 'if (featureCollection.features.length !== 15)')
+    && str_contains($map, 'if (featureCollection.features.length !== 13)')
+    && str_contains($map, 'state.layerGroups.floodHazards.clearLayers()')
+    && str_contains($map, 'state.layerGroups.landslideHazards.clearLayers()'));
+assertModule1Loader('HazardTogglesOnlyRemoveTheirOwnGroups',
+    $floodHandlerSource !== ''
+    && $landslideHandlerSource !== ''
+    && str_contains($floodHandlerSource, 'const layerGroup = state.layerGroups ? state.layerGroups.floodHazards : null')
+    && str_contains($landslideHandlerSource, 'const layerGroup = state.layerGroups ? state.layerGroups.landslideHazards : null')
+    && substr_count($map, 'state.layerGroups.floodHazards.clearLayers()') >= 2
+    && substr_count($map, 'state.layerGroups.landslideHazards.clearLayers()') >= 2);
+assertModule1Loader('BarangayInteractionLayerPreservesTransparentClickTarget',
+    str_contains($map, "['barangayInteractionPane', 650, true]")
+    && str_contains($map, 'function barangayInteractionStyle()')
+    && str_contains($map, 'fillOpacity: 0.001')
+    && str_contains($map, 'state.barangayInteractionLayer = L.geoJSON')
+    && str_contains($map, 'interactive: true'));
+assertModule1Loader('BarangayClicksAndSearchShareSelectionPath',
+    substr_count($map, 'selectDraftBarangay(record);') >= 3
+    && str_contains($map, 'const recordsByCode = new Map')
+    && str_contains($map, 'recordsByCode.get(feature.properties.barangay_code)')
+    && str_contains($map, 'state.barangayInteractionLayer'));
+assertModule1Loader('HazardVectorsDoNotInferWholeBarangays',
+    str_contains($floodHandlerSource, 'state.layerGroups.floodHazards')
+    && str_contains($landslideHandlerSource, 'state.layerGroups.landslideHazards')
+    && !str_contains($floodHandlerSource . $landslideHandlerSource, 'fillEntireBarangay'));
 assertModule1Loader('RiskLegendFollowsHazardLayers',
     strpos($markup, 'aria-labelledby="hazardLayersTitle"') < strpos($markup, 'aria-labelledby="riskLegendTitle"')
     && strpos($markup, 'aria-labelledby="riskLegendTitle"') < strpos($markup, 'civ-reference-disclosures'));

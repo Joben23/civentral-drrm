@@ -105,6 +105,7 @@
     cityBaseLayer: null,
     cityMaskLayer: null,
     cityBoundaryLayer: null,
+    barangayInteractionLayer: null,
     cityBoundaryFeatureCollection: null,
     cityBoundaryBounds: null,
     cityGeometryType: null,
@@ -171,6 +172,19 @@
       forecastLocations: L.layerGroup(),
       riskPredictions: L.layerGroup()
     });
+  }
+
+  function barangayInteractionStyle() {
+    return {
+      stroke: false,
+      color: 'transparent',
+      weight: 0,
+      opacity: 0,
+      fill: true,
+      fillColor: 'transparent',
+      fillOpacity: 0.001,
+      interactive: true
+    };
   }
 
   function setStatus(elementId, message) {
@@ -656,7 +670,8 @@
       ['cityOutlinePane', 410, false],
       ['markerPane', 600, true],
       ['routeOverlayPane', 620, true],
-      ['selectionOverlayPane', 640, true]
+      ['selectionOverlayPane', 640, true],
+      ['barangayInteractionPane', 650, true]
     ];
 
     panes.forEach(function (paneDefinition) {
@@ -4739,6 +4754,10 @@
       setBarangaySourceMode(sourceMode);
       state.searchableBarangays = [];
       clearDraftBarangaySelection();
+      if (state.barangayInteractionLayer && state.map) {
+        state.map.removeLayer(state.barangayInteractionLayer);
+        state.barangayInteractionLayer = null;
+      }
       const previewLayer = L.geoJSON(featureCollection, {
         pane: 'barangayPane',
         style: draftBarangayStyle,
@@ -4793,6 +4812,25 @@
       state.layerGroups.barangays.clearLayers();
       previewLayer.addTo(state.layerGroups.barangays);
 
+      const recordsByCode = new Map(
+        state.searchableBarangays.map(function (record) {
+          return [record.properties.barangay_code, record];
+        })
+      );
+      state.barangayInteractionLayer = L.geoJSON(featureCollection, {
+        pane: 'barangayInteractionPane',
+        interactive: true,
+        style: barangayInteractionStyle,
+        onEachFeature: function (feature, layer) {
+          const record = recordsByCode.get(feature.properties.barangay_code);
+          if (!record) return;
+          layer.on('click', function (event) {
+            if (delegateFeatureClickToMapPointSelection(event)) return;
+            selectDraftBarangay(record);
+          });
+        }
+      }).addTo(state.map);
+
       const bounds = previewLayer.getBounds();
       if (featureCollection.features.length > 0 && !bounds.isValid()) {
         throw new Error('Barangay layer bounds are invalid.');
@@ -4817,6 +4855,10 @@
       state.layerGroups.barangays.clearLayers();
       state.searchableBarangays = [];
       state.operationalBarangayCollection = null;
+      if (state.barangayInteractionLayer && state.map) {
+        state.map.removeLayer(state.barangayInteractionLayer);
+      }
+      state.barangayInteractionLayer = null;
       state.draftPreviewLayer = null;
       state.draftPreviewBounds = null;
       state.draftPreviewLoaded = false;
