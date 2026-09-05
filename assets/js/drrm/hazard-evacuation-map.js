@@ -473,9 +473,8 @@
   function cityBaseStyle() {
     return {
       stroke: false,
-      fill: true,
-      fillColor: isDarkMode() ? '#4c1d24' : '#fecaca',
-      fillOpacity: isDarkMode() ? 0.34 : 0.3
+      fill: false,
+      fillOpacity: 0
     };
   }
 
@@ -505,9 +504,8 @@
       color: isDarkMode() ? '#64748b' : '#94a3b8',
       weight: 0.9,
       opacity: 0.95,
-      fill: true,
-      fillColor: isDarkMode() ? '#1e293b' : '#f8fafc',
-      fillOpacity: 0.88,
+      fill: false,
+      fillOpacity: 0,
       lineCap: 'round',
       lineJoin: 'round'
     };
@@ -539,11 +537,11 @@
 
     return {
       color: classification.color,
-      weight: 1.25,
-      opacity: 0.95,
+      weight: 1.55,
+      opacity: 0.98,
       fill: true,
       fillColor: classification.color,
-      fillOpacity: isDarkMode() ? 0.46 : 0.4,
+      fillOpacity: isDarkMode() ? 0.58 : 0.52,
       lineCap: 'round',
       lineJoin: 'round'
     };
@@ -551,17 +549,17 @@
 
   function floodFeatureHoverStyle(feature) {
     const style = floodFeatureStyle(feature);
-    style.weight = 2.25;
+    style.weight = 2.5;
     style.opacity = 1;
-    style.fillOpacity = isDarkMode() ? 0.62 : 0.56;
+    style.fillOpacity = isDarkMode() ? 0.72 : 0.66;
     return style;
   }
 
   function floodFeatureSelectedStyle(feature) {
     const style = floodFeatureStyle(feature);
-    style.weight = 2.75;
+    style.weight = 3;
     style.opacity = 1;
-    style.fillOpacity = isDarkMode() ? 0.68 : 0.62;
+    style.fillOpacity = isDarkMode() ? 0.8 : 0.74;
     return style;
   }
 
@@ -571,11 +569,11 @@
 
     return {
       color: classification.color,
-      weight: 1.4,
-      opacity: 0.98,
+      weight: 1.65,
+      opacity: 1,
       fill: true,
       fillColor: classification.color,
-      fillOpacity: isDarkMode() ? 0.38 : 0.3,
+      fillOpacity: isDarkMode() ? 0.54 : 0.48,
       dashArray: '5 3',
       lineCap: 'round',
       lineJoin: 'round'
@@ -584,15 +582,15 @@
 
   function landslideFeatureHoverStyle(feature) {
     const style = landslideFeatureStyle(feature);
-    style.weight = 2.4;
-    style.fillOpacity = isDarkMode() ? 0.52 : 0.44;
+    style.weight = 2.7;
+    style.fillOpacity = isDarkMode() ? 0.68 : 0.62;
     return style;
   }
 
   function landslideFeatureSelectedStyle(feature) {
     const style = landslideFeatureStyle(feature);
-    style.weight = 3;
-    style.fillOpacity = isDarkMode() ? 0.58 : 0.5;
+    style.weight = 3.2;
+    style.fillOpacity = isDarkMode() ? 0.76 : 0.7;
     return style;
   }
 
@@ -1255,6 +1253,10 @@
       state.hazardSourceModes.flood === 'DEVELOPMENT_PREVIEW';
     const landslideDevelopmentActive = landslideOperationalActive &&
       state.hazardSourceModes.landslide === 'DEVELOPMENT_PREVIEW';
+    const floodAdminReferenceActive = floodOperationalActive &&
+      state.hazardSourceModes.flood === 'DRAFT_ADMIN_REFERENCE';
+    const landslideAdminReferenceActive = landslideOperationalActive &&
+      state.hazardSourceModes.landslide === 'DRAFT_ADMIN_REFERENCE';
     const floodActive = floodOperationalActive || floodReferenceActive;
     const landslideActive = landslideOperationalActive || landslideReferenceActive;
     const sourceLayerActive = floodActive || landslideActive;
@@ -1262,7 +1264,23 @@
     let ariaLabel = 'Project risk classifications';
     let helperLabel = 'Legend only. No risk level has been assigned to any location.';
 
-    if (floodActive && landslideActive && floodReferenceActive && landslideReferenceActive) {
+    if (floodActive && landslideActive && floodAdminReferenceActive && landslideAdminReferenceActive) {
+      contextLabel = 'DRAFT ADMIN REFERENCE \u2014 FLOOD + LANDSLIDE';
+      ariaLabel = 'Draft admin flood and landslide susceptibility classifications';
+      helperLabel = 'Controlled draft hazard geometry is shown to authenticated administrators for planning and validation only. Toggle one layer off for clearer overlap classification.';
+    } else if (floodActive && landslideActive && (floodAdminReferenceActive || landslideAdminReferenceActive)) {
+      contextLabel = 'DRAFT ADMIN REFERENCE \u2014 FLOOD + LANDSLIDE';
+      ariaLabel = 'Draft admin flood and landslide susceptibility classifications';
+      helperLabel = 'Controlled draft hazard geometry is shown to authenticated administrators for planning and validation only.';
+    } else if (floodAdminReferenceActive) {
+      contextLabel = 'DRAFT ADMIN REFERENCE \u2014 FLOOD';
+      ariaLabel = 'Draft admin flood susceptibility classifications';
+      helperLabel = 'Controlled draft hazard geometry is shown to authenticated administrators for planning and validation only.';
+    } else if (landslideAdminReferenceActive) {
+      contextLabel = 'DRAFT ADMIN REFERENCE \u2014 LANDSLIDE';
+      ariaLabel = 'Draft admin landslide susceptibility classifications';
+      helperLabel = 'Controlled draft hazard geometry is shown to authenticated administrators for planning and validation only.';
+    } else if (floodActive && landslideActive && floodReferenceActive && landslideReferenceActive) {
       contextLabel = 'MGB LIVE REFERENCE \u2014 FLOOD + LANDSLIDE';
       ariaLabel = 'Combined DENR-MGB flood and landslide susceptibility classifications';
       helperLabel = 'Official MGB terminology and source-rendered symbology. The landslide service also renders "Debris flow path/Possible accumulation zone" where present.';
@@ -1310,7 +1328,13 @@
     if (context) context.textContent = contextLabel;
     if (legendItems) {
       legendItems.setAttribute('aria-label', ariaLabel);
-      if (floodReferenceActive && landslideReferenceActive) {
+      if (floodAdminReferenceActive && landslideAdminReferenceActive) {
+        legendItems.dataset.palette = 'admin-mixed';
+      } else if (floodAdminReferenceActive) {
+        legendItems.dataset.palette = 'admin-flood';
+      } else if (landslideAdminReferenceActive) {
+        legendItems.dataset.palette = 'admin-landslide';
+      } else if (floodReferenceActive && landslideReferenceActive) {
         legendItems.dataset.palette = 'mgb-mixed';
       } else if (floodActive && landslideActive && (floodReferenceActive || landslideReferenceActive)) {
         legendItems.dataset.palette = 'source-mixed';

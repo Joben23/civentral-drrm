@@ -486,6 +486,26 @@
 .civ-hazard-map-module .civ-risk-moderate { background: #eab308; }
 .civ-hazard-map-module .civ-risk-high { background: #f97316; }
 .civ-hazard-map-module .civ-risk-critical { background: #dc2626; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-flood"] .civ-risk-low { background: #16a34a; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-flood"] .civ-risk-moderate { background: #eab308; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-flood"] .civ-risk-high { background: #f97316; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-flood"] .civ-risk-critical { background: #dc2626; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-landslide"] .civ-risk-low { background: #65a30d; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-landslide"] .civ-risk-moderate { background: #ca8a04; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-landslide"] .civ-risk-high { background: #ea580c; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-landslide"] .civ-risk-critical { background: #991b1b; }
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-mixed"] .civ-risk-low {
+  background: linear-gradient(135deg, #16a34a 0 48%, #65a30d 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-mixed"] .civ-risk-moderate {
+  background: linear-gradient(135deg, #eab308 0 48%, #ca8a04 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-mixed"] .civ-risk-high {
+  background: linear-gradient(135deg, #f97316 0 48%, #ea580c 52% 100%);
+}
+.civ-hazard-map-module #riskLegendItems[data-palette="admin-mixed"] .civ-risk-critical {
+  background: linear-gradient(135deg, #dc2626 0 48%, #991b1b 52% 100%);
+}
 
 .civ-hazard-map-module .civ-route-button {
   display: inline-flex;

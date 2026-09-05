@@ -229,6 +229,24 @@ assertModule1Loader('CaloocanOutlineStaysAboveReferenceRaster',
     && str_contains($map, 'fillOpacity: 1')
     && str_contains($map, "['cityOutlinePane', 410, false]")
     && str_contains($map, "pane: 'cityOutlinePane'"));
+assertModule1Loader('NoPersistentCityOrBarangayFillObscuresHazards',
+    str_contains($map, "function cityBaseStyle()")
+    && str_contains($map, "fill: false,\n      fillOpacity: 0")
+    && str_contains($map, "function draftBarangayStyle()")
+    && str_contains($map, "fill: false,\n      fillOpacity: 0")
+    && str_contains($map, "['hazardPolygonPane', 360, true]")
+    && str_contains($map, "['barangayPane', 370, true]")
+    && str_contains($map, "['cityOutlinePane', 410, false]"));
+assertModule1Loader('OutsideMaskUsesEvenOddInteriorHole',
+    str_contains($map, "style: cityMaskStyle")
+    && str_contains($map, "fillRule: 'evenodd'")
+    && str_contains($mgbReference, "Object.freeze([-180, -85])")
+    && str_contains($mgbReference, '].concat(cityExteriorRings)'));
+assertModule1Loader('BarangaySelectionLifecycleClearsHighlight',
+    str_contains($map, 'state.selectedBarangayLayer = null;')
+    && str_contains($map, 'state.selectedBarangayRecord = null;')
+    && str_contains($map, 'clearDraftBarangaySelection();')
+    && str_contains($map, 'state.map.removeLayer(layerGroup)'));
 assertModule1Loader('RiskLegendFollowsHazardLayers',
     strpos($markup, 'aria-labelledby="hazardLayersTitle"') < strpos($markup, 'aria-labelledby="riskLegendTitle"')
     && strpos($markup, 'aria-labelledby="riskLegendTitle"') < strpos($markup, 'civ-reference-disclosures'));
