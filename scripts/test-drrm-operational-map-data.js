@@ -16,6 +16,17 @@ function check(name, callback) {
   }
 }
 
+async function checkAsync(name, callback) {
+  try {
+    await callback();
+    assertions += 1;
+    process.stdout.write(name + '=PASS\n');
+  } catch (error) {
+    process.stderr.write(name + '=FAIL\n');
+    throw error;
+  }
+}
+
 const polygon = {
   type: 'Polygon',
   coordinates: [[
@@ -223,5 +234,60 @@ check('FaultGeometryMapsToOperationalLines', function () {
   assert.equal(faults.features[0].properties.fault_name, 'Mapped Fault');
 });
 
-process.stdout.write('OperationalMapDataAssertions=' + assertions + '\n');
-process.stdout.write('DrrmOperationalMapData=PASS\n');
+async function runEvacuationCenterSourceTests() {
+  const emptyOperational = adapter.mapEvacuationCenters({ success: true, data: [] }, null);
+  const references = {
+    type: 'FeatureCollection',
+    features: Array.from({ length: 15 }, function (_, index) {
+      return { type: 'Feature', geometry: point, properties: { reference_id: 'reference-' + index } };
+    })
+  };
+
+  await checkAsync('OperationalZeroRowsTriggerAdminReferenceFallback', async function () {
+    let requests = 0;
+    const selection = await adapter.resolveEvacuationCenterSource(emptyOperational, async function () {
+      requests += 1;
+      return references;
+    });
+    assert.equal(requests, 1);
+    assert.equal(selection.sourceMode, 'UNVERIFIED_ADMIN_REFERENCE');
+    assert.strictEqual(selection.featureCollection, references);
+    assert.equal(selection.featureCollection.features.length, 15);
+    assert.notStrictEqual(selection.featureCollection, emptyOperational);
+  });
+
+  await checkAsync('PublishedOperationalCentersRetainPriority', async function () {
+    let requests = 0;
+    const selection = await adapter.resolveEvacuationCenterSource(centers, async function () {
+      requests += 1;
+      return references;
+    });
+    assert.equal(requests, 0);
+    assert.equal(selection.sourceMode, 'CIVENTRAL_OPERATIONAL');
+    assert.strictEqual(selection.featureCollection, centers);
+  });
+
+  await checkAsync('MissingAuthorizedReferenceKeepsTruthfulOperationalEmpty', async function () {
+    const selection = await adapter.resolveEvacuationCenterSource(emptyOperational, null);
+    assert.equal(selection.sourceMode, 'CIVENTRAL_OPERATIONAL');
+    assert.strictEqual(selection.featureCollection, emptyOperational);
+    assert.equal(selection.adminReferenceAttempted, false);
+  });
+
+  await checkAsync('ReferenceEndpointFailureRemainsUnavailable', async function () {
+    await assert.rejects(
+      adapter.resolveEvacuationCenterSource(emptyOperational, async function () {
+        throw new Error('403');
+      }),
+      /403/
+    );
+  });
+}
+
+runEvacuationCenterSourceTests().then(function () {
+  process.stdout.write('OperationalMapDataAssertions=' + assertions + '\n');
+  process.stdout.write('DrrmOperationalMapData=PASS\n');
+}).catch(function (error) {
+  process.stderr.write(String(error && error.stack ? error.stack : error) + '\n');
+  process.exitCode = 1;
+});

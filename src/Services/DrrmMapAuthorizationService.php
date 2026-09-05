@@ -9,14 +9,18 @@ namespace App\Services;
  */
 final class DrrmMapAuthorizationService
 {
-    public const RESOURCE = 'hazard & evacuation map system';
+    /** Current RBAC resource name returned by the employee permissions API. */
+    public const RESOURCE = 'hazard & evacuation map';
+    /** Older deployments may still retain the original Module 1 resource name. */
+    public const LEGACY_RESOURCE = 'hazard & evacuation map system';
+    private const RESOURCES = [self::RESOURCE, self::LEGACY_RESOURCE];
     public const ACTION_VIEW = 'VIEW';
 
     /** @var list<string> */
     private array $resourceActions;
 
     /** @param list<string> $resourceActions */
-    public function __construct(array $resourceActions, private readonly bool $isSuperadmin)
+    public function __construct(array $resourceActions)
     {
         $normalized = [];
         foreach ($resourceActions as $action) {
@@ -31,15 +35,19 @@ final class DrrmMapAuthorizationService
         $this->resourceActions = array_values(array_unique($normalized));
     }
 
-    /** @param array<string, mixed>|null $trustedHeaderUser */
-    public static function fromTrustedSession(?array $trustedHeaderUser = null): self
+    /**
+     * @param array<string, mixed>|null $_trustedHeaderUser Retained for caller compatibility;
+     *        Module 1 VIEW must still be present in the trusted permission map.
+     */
+    public static function fromTrustedSession(?array $_trustedHeaderUser = null): self
     {
         $permissionMap = $_SESSION['user_permissions_map'] ?? [];
         $resourceActions = [];
 
         if (is_array($permissionMap)) {
             foreach ($permissionMap as $resource => $actions) {
-                if (!is_string($resource) || strtolower(trim($resource)) !== self::RESOURCE) {
+                if (!is_string($resource)
+                    || !in_array(strtolower(trim($resource)), self::RESOURCES, true)) {
                     continue;
                 }
                 if (is_array($actions)) {
@@ -49,20 +57,11 @@ final class DrrmMapAuthorizationService
             }
         }
 
-        $currentUser = $_SESSION['current_user_details'] ?? [];
-        $currentUser = is_array($currentUser) ? $currentUser : [];
-        $trustedSuperadmin = $trustedHeaderUser['is_superadmin']
-            ?? $currentUser['is_superadmin']
-            ?? false;
-
-        return new self(
-            $resourceActions,
-            filter_var($trustedSuperadmin, FILTER_VALIDATE_BOOLEAN)
-        );
+        return new self($resourceActions);
     }
 
     public function canView(): bool
     {
-        return $this->isSuperadmin || in_array(self::ACTION_VIEW, $this->resourceActions, true);
+        return in_array(self::ACTION_VIEW, $this->resourceActions, true);
     }
 }

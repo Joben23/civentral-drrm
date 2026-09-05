@@ -106,6 +106,15 @@ assertModule1Loader('AdminReferenceEndpointIsSeparatelyPermissionGated',
     && str_contains($adminCenterEndpoint, 'AppEnvironment::isStaging')
     && str_contains($adminCenterEndpoint, 'isLoggedIn()')
     && str_contains($adminCenterEndpoint, 'canView()'));
+assertModule1Loader('OperationalZeroRowsUseExplicitAdminReferenceResolver',
+    str_contains($adapter, 'async function resolveEvacuationCenterSource')
+    && str_contains($map, 'adapter.resolveEvacuationCenterSource')
+    && str_contains($map, 'state.operationalEvacuationCenterFeatureCollection = operationalCollection')
+    && str_contains($map, 'loadAdminReference'));
+$sameOriginCredential = 'credentials: ' . chr(39) . 'same-origin' . chr(39);
+assertModule1Loader('AdminReferenceRequestUsesAuthenticatedSameOriginSession',
+    str_contains($map, 'window.fetch(adminReferenceConfig.endpoint')
+    && str_contains($map, $sameOriginCredential));
 
 assertModule1Loader('TruthfulOperationalEmptyStatesPresent', array_reduce([
     'Barangay operational data is not yet published.',
@@ -160,6 +169,16 @@ assertModule1Loader('CheckboxHandlersNeverRemoveControlElements',
     !preg_match('/control\.(?:remove|replaceWith)\s*\(/', $map)
     && str_contains($map, 'if (!control.checked)')
     && str_contains($map, 'state.map.removeLayer'));
+$centerHandlerStart = strpos($map, 'async function handleEvacuationCenterControl');
+$centerHandlerEnd = strpos($map, 'function pointSelectionToolsAvailable', $centerHandlerStart ?: 0);
+$centerHandlerSource = $centerHandlerStart !== false && $centerHandlerEnd !== false
+    ? substr($map, $centerHandlerStart, $centerHandlerEnd - $centerHandlerStart)
+    : '';
+assertModule1Loader('CenterCheckboxHideRetainsLoadedSourceAndCollection',
+    str_contains($centerHandlerSource, 'state.evacuationCenterLoadedSourceMode')
+    && !str_contains($centerHandlerSource, 'clearLayers')
+    && !str_contains($centerHandlerSource, 'evacuationCenterFeatureCollection = null')
+    && str_contains($centerHandlerSource, 'control.disabled = false'));
 assertModule1Loader('TruthfulModeAndSourceLabelsArePresent', array_reduce([
     'Map Data Status: Development Preview',
     'Map Data Status: Operational + Reference',

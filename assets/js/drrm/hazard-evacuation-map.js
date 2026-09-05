@@ -1359,6 +1359,7 @@
       CIVENTRAL_OPERATIONAL: 'CIVENTRAL OPERATIONAL DATA',
       DEVELOPMENT_PREVIEW: 'LOCAL DEVELOPMENT PREVIEW',
       UNVERIFIED_ADMIN_REFERENCE: 'UNVERIFIED ADMIN REFERENCE',
+      NO_OPERATIONAL_CENTERS: 'NO PUBLISHED OPERATIONAL CENTERS',
       CENTER_REFERENCE_UNAVAILABLE: 'CENTER REFERENCE UNAVAILABLE'
     };
     element.textContent = labels[mode] || labels.NOT_ACTIVE;
@@ -2653,34 +2654,37 @@
         let featureCollection;
         let sourceMode;
         if (previewConfig.operational === true) {
-          featureCollection = adapter && typeof adapter.mapEvacuationCenters === 'function'
-            ? adapter.mapEvacuationCenters(payload, state.operationalBarangayCollection)
-            : null;
-          state.operationalEvacuationCenterFeatureCollection = featureCollection;
-
-          if (featureCollection && featureCollection.features.length === 0) {
-            const adminReferenceConfig = getAdminEvacuationCenterReferenceConfig();
-            if (adminReferenceConfig) {
-              state.evacuationCenterFetchCount += 1;
-              const referenceResponse = await window.fetch(adminReferenceConfig.endpoint, {
-                method: 'GET',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: { Accept: 'application/geo+json, application/json' }
-              });
-              if (!referenceResponse.ok) {
-                throw new Error('Admin center reference request failed.');
-              }
-              featureCollection = assertAdminCenterReferenceFeatureCollection(
-                await referenceResponse.json()
-              );
-              sourceMode = 'UNVERIFIED_ADMIN_REFERENCE';
-            } else {
-              sourceMode = 'CIVENTRAL_OPERATIONAL';
-            }
-          } else {
-            sourceMode = 'CIVENTRAL_OPERATIONAL';
+          if (!adapter || typeof adapter.mapEvacuationCenters !== 'function'
+            || typeof adapter.resolveEvacuationCenterSource !== 'function') {
+            throw new Error('Operational evacuation-center adapter is unavailable.');
           }
+          const operationalCollection = adapter.mapEvacuationCenters(
+            payload,
+            state.operationalBarangayCollection
+          );
+          state.operationalEvacuationCenterFeatureCollection = operationalCollection;
+          const adminReferenceConfig = getAdminEvacuationCenterReferenceConfig();
+          const loadAdminReference = adminReferenceConfig
+            ? async function () {
+                state.evacuationCenterFetchCount += 1;
+                const referenceResponse = await window.fetch(adminReferenceConfig.endpoint, {
+                  method: 'GET',
+                  credentials: 'same-origin',
+                  cache: 'no-store',
+                  headers: { Accept: 'application/geo+json, application/json' }
+                });
+                if (!referenceResponse.ok) {
+                  throw new Error('Admin center reference request failed.');
+                }
+                return assertAdminCenterReferenceFeatureCollection(await referenceResponse.json());
+              }
+            : null;
+          const selection = await adapter.resolveEvacuationCenterSource(
+            operationalCollection,
+            loadAdminReference
+          );
+          featureCollection = selection.featureCollection;
+          sourceMode = selection.sourceMode;
         } else {
           featureCollection = assertDraftEvacuationCenterFeatureCollection(payload);
           sourceMode = 'DEVELOPMENT_PREVIEW';
@@ -2717,7 +2721,6 @@
       } catch (error) {
         state.layerGroups.evacuationCenters.clearLayers();
         state.evacuationCenterFeatureCollection = null;
-        state.operationalEvacuationCenterFeatureCollection = null;
         state.evacuationCenterPreviewLayer = null;
         state.evacuationCenterPreviewFeatureCount = 0;
         state.evacuationCenterPreviewLoaded = false;
@@ -2739,7 +2742,9 @@
     if (!control.checked) {
       state.map.removeLayer(layerGroup);
       clearEvacuationCenterSelection();
-      setEvacuationCenterSourceMode('NOT_ACTIVE');
+      setEvacuationCenterSourceMode(
+        state.evacuationCenterLoadedSourceMode || 'NOT_ACTIVE'
+      );
       renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', developmentLayerStatus());
       return;
@@ -2747,6 +2752,7 @@
 
     if (!getEvacuationCenterPreviewConfig()) {
       control.checked = false;
+      control.disabled = true;
       setStatus('hazardLayerStatus', 'Evacuation-center data is not available in this environment.');
       return;
     }
@@ -2765,14 +2771,16 @@
 
     if (isOperationalMode() && state.evacuationCenterPreviewFeatureCount === 0) {
       control.checked = false;
+      control.disabled = true;
       state.map.removeLayer(layerGroup);
-      setEvacuationCenterSourceMode('NOT_ACTIVE');
+      setEvacuationCenterSourceMode('NO_OPERATIONAL_CENTERS');
       renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', 'No published evacuation centers are currently available.');
       return;
     }
 
     if (control.checked) {
+      control.disabled = false;
       layerGroup.addTo(state.map);
       renderAdminCenterReferenceNotice();
       setStatus('hazardLayerStatus', developmentLayerStatus());

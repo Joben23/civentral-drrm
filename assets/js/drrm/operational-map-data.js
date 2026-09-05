@@ -260,6 +260,33 @@
     return featureCollection(features);
   }
 
+  async function resolveEvacuationCenterSource(operationalCollection, loadAdminReference) {
+    if (!operationalCollection || operationalCollection.type !== 'FeatureCollection'
+      || !Array.isArray(operationalCollection.features)) {
+      throw new Error('Operational evacuation-center collection is invalid.');
+    }
+
+    if (operationalCollection.features.length > 0 || typeof loadAdminReference !== 'function') {
+      return Object.freeze({
+        featureCollection: operationalCollection,
+        sourceMode: 'CIVENTRAL_OPERATIONAL',
+        adminReferenceAttempted: false
+      });
+    }
+
+    const referenceCollection = await loadAdminReference();
+    if (!referenceCollection || referenceCollection.type !== 'FeatureCollection'
+      || !Array.isArray(referenceCollection.features)) {
+      throw new Error('Admin evacuation-center reference collection is invalid.');
+    }
+
+    return Object.freeze({
+      featureCollection: referenceCollection,
+      sourceMode: 'UNVERIFIED_ADMIN_REFERENCE',
+      adminReferenceAttempted: true
+    });
+  }
+
   function centerNamesById(centerCollection) {
     const result = new Map();
     if (!centerCollection || !Array.isArray(centerCollection.features)) return result;
@@ -306,6 +333,7 @@
     mapHazards: mapHazards,
     mapFaults: mapFaults,
     mapEvacuationCenters: mapEvacuationCenters,
+    resolveEvacuationCenterSource: resolveEvacuationCenterSource,
     mapEvacuationRoutes: mapEvacuationRoutes
   });
 });
