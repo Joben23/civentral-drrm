@@ -1489,6 +1489,12 @@
 
   function renderHazardSourceUi() {
     syncMgbOutsideCityMask();
+    ['flood', 'landslide'].forEach(function (hazard) {
+      const overlay = state.mgbReferenceImageOverlays[hazard];
+      if (overlay && typeof overlay.setOpacity === 'function') {
+        overlay.setOpacity(mgbReferenceImageOpacity(hazard));
+      }
+    });
     renderMgbLiveReferenceNotice();
     updateHazardLegend();
   }
@@ -1528,15 +1534,44 @@
     const otherHazard = hazard === 'flood' ? 'landslide' : 'flood';
     const otherGroup = mgbReferenceGroup(otherHazard);
     const otherVisible = Boolean(otherGroup && state.map && state.map.hasLayer(otherGroup));
-    return otherVisible ? 0.7 : 0.9;
+    return otherVisible ? 0.6 : 0.9;
   }
 
-  function getMgbReferenceExportUrl(descriptor, bounds, size) {
-    const bbox = bounds.toBBoxString();
+  function projectMgbLatitude(latitude) {
+    const clampedLatitude = Math.max(-85.05112878, Math.min(85.05112878, latitude));
+    const radians = clampedLatitude * Math.PI / 180;
+    return 6378137 * Math.log(Math.tan(Math.PI / 4 + radians / 2));
+   }
+
+   function projectMgbLongitude(longitude) {
+    return longitude * 20037508.342789244 / 180;
+   }
+
+   function snapshotMgbView() {
+    const currentBounds = state.map.getBounds();
+    const southWest = currentBounds.getSouthWest();
+    const northEast = currentBounds.getNorthEast();
+    const leafletBounds = L.latLngBounds(
+      L.latLng(southWest.lat, southWest.lng),
+      L.latLng(northEast.lat, northEast.lng)
+    );
+    const bbox = [
+      projectMgbLongitude(southWest.lng),
+      projectMgbLatitude(southWest.lat),
+      projectMgbLongitude(northEast.lng),
+      projectMgbLatitude(northEast.lat)
+    ].join(',');
+    return Object.freeze({
+      leafletBounds: leafletBounds,
+      bbox: bbox
+    });
+   }
+
+   function getMgbReferenceExportUrl(descriptor, view, size) {
     const params = new URLSearchParams({
-      bbox: bbox,
-      bboxSR: '4326',
-      imageSR: '4326',
+      bbox: view.bbox,
+      bboxSR: '3857',
+      imageSR: '3857',
       size: size.width + ',' + size.height,
       transparent: 'true',
       format: descriptor.exportImageFormat,
@@ -1558,15 +1593,15 @@
     }
 
     const requestId = ++state.mgbReferenceRequestIds[hazard];
-    const bounds = state.map.getBounds();
+    const view = snapshotMgbView();
     const container = state.map.getContainer();
     const size = {
       width: Math.max(256, Math.min(2048, Math.round(container.clientWidth || 1024))),
       height: Math.max(256, Math.min(2048, Math.round(container.clientHeight || 768)))
     };
     const imageOverlay = L.imageOverlay(
-      getMgbReferenceExportUrl(descriptor, bounds, size),
-      bounds,
+      getMgbReferenceExportUrl(descriptor, view, size),
+      view.leafletBounds,
       {
         pane: 'mgbReferencePane',
         opacity: mgbReferenceImageOpacity(hazard),
@@ -1577,8 +1612,12 @@
 
     return new Promise(function (resolve) {
       let settled = false;
-      const timeoutId = window.setTimeout(function () {
+      const discard = function () {
+        group.removeLayer(imageOverlay);
         imageOverlay.remove();
+      };
+      const timeoutId = window.setTimeout(function () {
+        discard();
         settle(false);
       }, CONFIG.referenceLoadTimeoutMilliseconds);
       const settle = function (value) {
@@ -1590,7 +1629,7 @@
       imageOverlay.once('load', function () {
         const current = requestId === state.mgbReferenceRequestIds[hazard] && control.checked;
         if (!current) {
-          imageOverlay.remove();
+          discard();
           settle(false);
           return;
         }
@@ -1612,7 +1651,7 @@
         settle(true);
       });
       imageOverlay.once('error', function () {
-        imageOverlay.remove();
+        discard();
         settle(false);
       });
       imageOverlay.setOpacity(0);

@@ -77,9 +77,11 @@ check('LiveReferencesUseSingleExportImagesNotCachedTiles', function () {
 
 check('HigherDisplayZoomReusesNativeZoomFourteen', function () {
   assert.doesNotMatch(referenceSource, /resolveNativeTileZoom/);
-  assert.match(mapSource, /bounds\.toBBoxString\(\)/);
-  assert.match(mapSource, /bboxSR: '4326'/);
-  assert.match(mapSource, /imageSR: '4326'/);
+  assert.match(mapSource, /snapshotMgbView/);
+  assert.match(mapSource, /bboxSR: '3857'/);
+  assert.match(mapSource, /imageSR: '3857'/);
+  assert.match(mapSource, /view\.leafletBounds/);
+  assert.match(mapSource, /view\.bbox/);
   assert.match(mapSource, /state\.map\.on\('zoomend moveend', scheduleMgbReferenceRefresh\)/);
   assert.doesNotMatch(mapSource, /zoom(?:anim|start)/);
 });
@@ -183,7 +185,10 @@ check('StaleMgbImagesCannotRemainStacked', function () {
   assert.match(mapSource, /previous && previous !== imageOverlay/);
   assert.match(mapSource, /imageOverlay\.remove\(\)/);
   assert.match(mapSource, /mgbReferenceImageOpacity/);
-  assert.match(mapSource, /return otherVisible \? 0\.7 : 0\.9/);
+  assert.match(mapSource, /return otherVisible \? 0\.6 : 0\.9/);
+  assert.match(mapSource, /overlay\.setOpacity\(mgbReferenceImageOpacity\(hazard\)\)/);
+  assert.match(mapSource, /mgbReferenceImageOverlays: \{ flood: null, landslide: null \}/);
+  assert.match(mapSource, /group\.removeLayer\(imageOverlay\)/);
   assert.match(cssSource, /max-height: calc\(100vh - 7\.5rem\)/);
 });
 
