@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningAuthorizationService.php';
 require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningCsrfService.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapAuthorizationService.php';
+require_once __DIR__ . '/../../src/Services/DrrmMapCsrfService.php';
 
 $aiAuthorization = \App\Services\DrrmEarlyWarningAuthorizationService::fromTrustedSession($headerUser);
 $aiViewAuthorized = $aiAuthorization->canView();
@@ -26,6 +27,11 @@ $stagingAdminBarangayReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
 $stagingAdminHazardReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
+$stagingAdminRoutePreviewEnabled = $stagingReferenceModeEnabled
+    && $module1Authorization->canView();
+$stagingAdminRoutePreviewCsrfToken = $stagingAdminRoutePreviewEnabled
+    ? (new \App\Services\DrrmMapCsrfService())->token()
+    : null;
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
 $operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
 $mgbLiveReferenceRelativePath = 'assets/js/drrm/mgb-live-reference.js';
@@ -133,7 +139,7 @@ include '../../includes/sidebar.php';
   src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   crossorigin=""
 ></script>
-<?php if ($draftBarangayPreviewEnabled): ?>
+<?php if ($draftBarangayPreviewEnabled || $stagingAdminRoutePreviewEnabled): ?>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
 <?php endif; ?>
 <script src='<?php echo htmlspecialchars($operationalMapDataUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
@@ -193,6 +199,19 @@ include '../../includes/sidebar.php';
           $stagingAdminCenterReferenceEnabled
               ? $basePath . 'api/drrm/admin-evacuation-center-reference.php'
               : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    adminEvacuationRoutePreview: Object.freeze({
+      enabled: <?php echo $stagingAdminRoutePreviewEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $stagingAdminRoutePreviewEnabled
+              ? $basePath . 'api/drrm/admin-evacuation-route-preview.php'
+              : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      csrfToken: <?php echo json_encode(
+          $stagingAdminRoutePreviewCsrfToken,
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     }),

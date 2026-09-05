@@ -94,6 +94,8 @@
     evacuationCenterPreviewLayer: null,
     evacuationCenterFeatureCollection: null,
     operationalEvacuationCenterFeatureCollection: null,
+    adminEvacuationCenterReferenceFeatureCollection: null,
+    adminEvacuationCenterReferenceLoadPromise: null,
     evacuationCenterLoadPromise: null,
     evacuationCenterFetchCount: 0,
     evacuationCenterSourceMode: 'NOT_ACTIVE',
@@ -129,6 +131,7 @@
     routeOriginMarker: null,
     routeDestinationMarker: null,
     routeGeometryLayer: null,
+    routePresentationMode: 'NONE',
     routeCentersById: new Map(),
     routeCenterOptionsLoaded: false,
     selectedEvacuationCenterId: null,
@@ -453,7 +456,21 @@
 
   function getEvacuationRoutePreviewConfig() {
     const runtimeConfig = window.CiventralDrrmMapConfig;
-    if (runtimeConfig && runtimeConfig.dataMode === 'operational') return null;
+    if (runtimeConfig && runtimeConfig.dataMode === 'operational') {
+      const adminPreviewConfig = runtimeConfig.adminEvacuationRoutePreview;
+      if (!adminPreviewConfig || adminPreviewConfig.enabled !== true
+        || typeof adminPreviewConfig.endpoint !== 'string'
+        || typeof adminPreviewConfig.csrfToken !== 'string'
+        || adminPreviewConfig.csrfToken === ''
+        || !adminPreviewConfig.endpoint.includes('/api/drrm/admin-evacuation-route-preview.php')) {
+        return null;
+      }
+      return Object.freeze({
+        endpoint: adminPreviewConfig.endpoint,
+        adminPlanning: true,
+        csrfToken: adminPreviewConfig.csrfToken
+      });
+    }
     const previewConfig = runtimeConfig && runtimeConfig.developmentEvacuationRoute;
 
     if (!previewConfig || previewConfig.enabled !== true || typeof previewConfig.endpoint !== 'string') {
@@ -654,7 +671,11 @@
       state.selectedLandslideLayer.setStyle(landslideFeatureSelectedStyle(state.selectedLandslideLayer.feature));
     }
     if (state.routeGeometryLayer) {
-      state.routeGeometryLayer.setStyle(isOperationalMode() ? approvedRouteStyle() : developmentRouteStyle());
+      state.routeGeometryLayer.setStyle(
+        state.routePresentationMode === 'CIVENTRAL_OPERATIONAL'
+          ? approvedRouteStyle()
+          : developmentRouteStyle()
+      );
     }
   }
 
@@ -2960,6 +2981,41 @@
     }
   }
 
+  async function loadAdminEvacuationCenterReference() {
+    if (state.adminEvacuationCenterReferenceFeatureCollection) {
+      return state.adminEvacuationCenterReferenceFeatureCollection;
+    }
+    if (state.adminEvacuationCenterReferenceLoadPromise) {
+      return state.adminEvacuationCenterReferenceLoadPromise;
+    }
+
+    const adminReferenceConfig = getAdminEvacuationCenterReferenceConfig();
+    if (!adminReferenceConfig) return null;
+
+    state.adminEvacuationCenterReferenceLoadPromise = (async function () {
+      try {
+        state.evacuationCenterFetchCount += 1;
+        const response = await window.fetch(adminReferenceConfig.endpoint, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/geo+json, application/json' }
+        });
+        if (!response.ok) throw new Error('Admin center reference request failed.');
+        const collection = assertAdminCenterReferenceFeatureCollection(await response.json());
+        state.adminEvacuationCenterReferenceFeatureCollection = collection;
+        return collection;
+      } catch (error) {
+        state.adminEvacuationCenterReferenceFeatureCollection = null;
+        return null;
+      } finally {
+        state.adminEvacuationCenterReferenceLoadPromise = null;
+      }
+    })();
+
+    return state.adminEvacuationCenterReferenceLoadPromise;
+  }
+
   async function loadDraftEvacuationCenterPreview() {
     if (state.evacuationCenterPreviewLoaded) {
       setEvacuationCenterSourceMode(
@@ -2996,21 +3052,8 @@
             state.operationalBarangayCollection
           );
           state.operationalEvacuationCenterFeatureCollection = operationalCollection;
-          const adminReferenceConfig = getAdminEvacuationCenterReferenceConfig();
-          const loadAdminReference = adminReferenceConfig
-            ? async function () {
-                state.evacuationCenterFetchCount += 1;
-                const referenceResponse = await window.fetch(adminReferenceConfig.endpoint, {
-                  method: 'GET',
-                  credentials: 'same-origin',
-                  cache: 'no-store',
-                  headers: { Accept: 'application/geo+json, application/json' }
-                });
-                if (!referenceResponse.ok) {
-                  throw new Error('Admin center reference request failed.');
-                }
-                return assertAdminCenterReferenceFeatureCollection(await referenceResponse.json());
-              }
+          const loadAdminReference = getAdminEvacuationCenterReferenceConfig()
+            ? loadAdminEvacuationCenterReference
             : null;
           const selection = await adapter.resolveEvacuationCenterSource(
             operationalCollection,
@@ -3140,7 +3183,9 @@
   }
 
   function routePointIsInsideCaloocan(latitude, longitude) {
-    if (!pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) return false;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+      || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180
+      || !pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) return false;
 
     const point = window.turf.point([longitude, latitude]);
     return state.cityBoundaryFeatureCollection.features.some(function (feature) {
@@ -3264,6 +3309,7 @@
 
     state.routeGeometryLayer = null;
     state.routeDestinationMarker = null;
+    state.routePresentationMode = 'NONE';
     resetRouteDiagnostics();
 
     const result = document.getElementById('routeResultContent');
@@ -3274,11 +3320,17 @@
     }
     if (clearButton) clearButton.hidden = true;
     if (updateStatus) {
+      const adminPlanning = Boolean(
+        getEvacuationRoutePreviewConfig()
+        && getEvacuationRoutePreviewConfig().adminPlanning === true
+      );
       setStatus(
         'routeRequestStatus',
         state.routeOrigin && state.selectedEvacuationCenterId
-          ? 'Ready to request route alternatives.'
-          : 'Select a starting point and evacuation center.'
+          ? (adminPlanning ? 'Ready to preview a road route.' : 'Ready to request route alternatives.')
+          : (adminPlanning
+              ? 'Select a starting point and unverified center reference.'
+              : 'Select a starting point and evacuation center.')
       );
     }
   }
@@ -3286,14 +3338,18 @@
   function updateFindRouteButton() {
     const button = document.getElementById('findSafeRouteButton');
     if (!button) return;
+    const previewConfig = getEvacuationRoutePreviewConfig();
+    const requiredToolsAvailable = previewConfig && previewConfig.adminPlanning === true
+      ? pointSelectionToolsAvailable()
+      : routeGeospatialToolsAvailable();
 
     button.disabled = Boolean(
       state.routeRequestPending ||
       !state.routeOrigin ||
       !state.selectedEvacuationCenterId ||
       !state.routeCenterOptionsLoaded ||
-      !getEvacuationRoutePreviewConfig() ||
-      !routeGeospatialToolsAvailable()
+      !previewConfig ||
+      !requiredToolsAvailable
     );
   }
 
@@ -3303,7 +3359,8 @@
     state.routeOriginLastAttemptLat = Number.isFinite(latitude) ? latitude : null;
     state.routeOriginLastAttemptLng = Number.isFinite(longitude) ? longitude : null;
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+      || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
       state.routeOriginLastResult = 'INVALID_COORDINATES';
       setStatus('routeOriginStatus', 'Choose a valid point inside the validated Caloocan boundary.');
       return false;
@@ -3336,8 +3393,12 @@
     setStatus(
       'routeRequestStatus',
       state.selectedEvacuationCenterId
-        ? 'Ready to request route alternatives.'
-        : 'Select an evacuation center, then request route alternatives.'
+        ? (getEvacuationRoutePreviewConfig().adminPlanning === true
+            ? 'Ready to preview a road route.'
+            : 'Ready to request route alternatives.')
+        : (getEvacuationRoutePreviewConfig().adminPlanning === true
+            ? 'Select an unverified center reference, then preview the route.'
+            : 'Select an evacuation center, then request route alternatives.')
     );
     setRouteOriginSelectionActive(false);
     updateFindRouteButton();
@@ -3376,17 +3437,27 @@
     if (input) input.value = 'No starting point selected';
     if (clearButton) clearButton.hidden = true;
     setStatus('routeOriginStatus', 'Choose an exact point inside Caloocan City.');
-    setStatus('routeRequestStatus', 'Select a starting point and evacuation center.');
+    const previewConfig = getEvacuationRoutePreviewConfig();
+    setStatus(
+      'routeRequestStatus',
+      previewConfig && previewConfig.adminPlanning === true
+        ? 'Select a starting point and unverified center reference.'
+        : 'Select a starting point and evacuation center.'
+    );
     updateFindRouteButton();
     updateForecastRouteOriginButton();
   }
 
   function populateRouteCenterOptions() {
     const select = document.getElementById('routeCenterSelect');
-    if (isOperationalMode() || !getEvacuationRoutePreviewConfig()
-      || !select || !state.evacuationCenterFeatureCollection) return false;
+    const previewConfig = getEvacuationRoutePreviewConfig();
+    if (!previewConfig || !select) return false;
+    const collection = previewConfig.adminPlanning === true
+      ? state.adminEvacuationCenterReferenceFeatureCollection
+      : state.evacuationCenterFeatureCollection;
+    if (!collection) return false;
 
-    const features = state.evacuationCenterFeatureCollection.features.slice().sort(function (first, second) {
+    const features = collection.features.slice().sort(function (first, second) {
       return first.properties.name.localeCompare(second.properties.name);
     });
     if (features.length !== 15) return false;
@@ -3394,14 +3465,21 @@
     state.routeCentersById = new Map();
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = 'Select a development center';
+    placeholder.textContent = previewConfig.adminPlanning === true
+      ? 'Select an unverified center reference'
+      : 'Select a development center';
     select.replaceChildren(placeholder);
 
     features.forEach(function (feature) {
-      const id = feature.properties.evacuation_center_id;
+      const id = previewConfig.adminPlanning === true
+        ? feature.properties.reference_id
+        : feature.properties.evacuation_center_id;
+      const barangayName = previewConfig.adminPlanning === true
+        ? feature.properties.barangay_display_location
+        : feature.properties.barangay_name;
       const option = document.createElement('option');
       option.value = id;
-      option.textContent = feature.properties.name + ' \u2014 ' + feature.properties.barangay_name;
+      option.textContent = feature.properties.name + ' \u2014 ' + barangayName;
       state.routeCentersById.set(id, feature);
       select.appendChild(option);
     });
@@ -3543,6 +3621,42 @@
     return payload;
   }
 
+  function assertAdminPlanningRoutePreviewResponse(payload, destinationName) {
+    const allowedKeys = [
+      'destination_name',
+      'distance_meters',
+      'duration_seconds',
+      'geometry',
+      'status'
+    ];
+    const keys = payload && typeof payload === 'object' ? Object.keys(payload).sort() : [];
+    const requiredKeys = ['destination_name', 'distance_meters', 'geometry', 'status'];
+    if (!payload || payload.status !== 'ADMIN_PLANNING_PREVIEW'
+      || requiredKeys.some(function (key) { return !keys.includes(key); })
+      || keys.some(function (key) { return !allowedKeys.includes(key); })
+      || payload.destination_name !== destinationName
+      || typeof payload.distance_meters !== 'number'
+      || !Number.isFinite(payload.distance_meters) || payload.distance_meters < 0
+      || (payload.duration_seconds !== undefined
+        && (typeof payload.duration_seconds !== 'number'
+          || !Number.isFinite(payload.duration_seconds) || payload.duration_seconds < 0))
+      || !payload.geometry || payload.geometry.type !== 'LineString'
+      || !Array.isArray(payload.geometry.coordinates) || payload.geometry.coordinates.length < 2) {
+      throw new Error('Invalid admin planning route response.');
+    }
+
+    payload.geometry.coordinates.forEach(function (position) {
+      if (!Array.isArray(position) || position.length < 2
+        || !Number.isFinite(Number(position[0])) || !Number.isFinite(Number(position[1]))
+        || Number(position[0]) < -180 || Number(position[0]) > 180
+        || Number(position[1]) < -90 || Number(position[1]) > 90) {
+        throw new Error('Invalid admin planning route coordinate.');
+      }
+    });
+
+    return payload;
+  }
+
   function formatRouteDistance(distanceMeters) {
     return (distanceMeters / 1000).toFixed(distanceMeters >= 10000 ? 1 : 2) + ' km';
   }
@@ -3565,11 +3679,35 @@
     container.appendChild(row);
   }
 
-  function renderRouteResult(route, analysis, destination, alternativeCount, allAlternativesExposed) {
+  function renderRouteResult(
+    route,
+    analysis,
+    destination,
+    alternativeCount,
+    allAlternativesExposed,
+    adminPlanning
+  ) {
     const result = document.getElementById('routeResultContent');
     if (!result) return;
 
     const title = document.createElement('strong');
+    if (adminPlanning === true) {
+      const disclosure = document.createElement('p');
+      title.textContent = 'Admin Planning Preview';
+      disclosure.className = 'civ-route-result-warning';
+      disclosure.textContent = 'Planning preview only. The selected center is unverified and the route is not an approved evacuation route. Actual road and hazard conditions may differ during an emergency.';
+      result.replaceChildren(title);
+      appendRouteResultRow(result, 'From', 'Selected map location');
+      appendRouteResultRow(result, 'To', destination.name);
+      appendRouteResultRow(result, 'Distance', formatRouteDistance(route.distance_meters));
+      if (typeof route.duration_seconds === 'number' && Number.isFinite(route.duration_seconds)) {
+        appendRouteResultRow(result, 'Estimated road travel', formatRouteDuration(route.duration_seconds));
+      }
+      result.appendChild(disclosure);
+      result.hidden = false;
+      return;
+    }
+
     title.textContent = 'Development Recommended Route';
     const reason = document.createElement('p');
     reason.textContent = 'Reason: Lowest mapped flood/landslide exposure among ' + alternativeCount
@@ -3602,13 +3740,17 @@
     result.hidden = false;
   }
 
-  function renderRecommendedRoute(route, destination) {
+  function renderRecommendedRoute(route, destination, adminPlanning) {
     const routeGroup = state.layerGroups.evacuationRoutes;
     const destinationCoordinates = destination.geometry.coordinates;
 
     state.routeGeometryLayer = L.geoJSON({
       type: 'Feature',
-      properties: { presentation: 'Development Recommended Route' },
+      properties: {
+        presentation: adminPlanning === true
+          ? 'Admin Planning Preview'
+          : 'Development Recommended Route'
+      },
       geometry: route.geometry
     }, {
       pane: 'routeOverlayPane',
@@ -3626,6 +3768,9 @@
       }
     ).bindTooltip(destination.name + ' — destination', { direction: 'top', opacity: 0.96 });
     state.routeDestinationMarker.addTo(routeGroup);
+    state.routePresentationMode = adminPlanning === true
+      ? 'ADMIN_PLANNING_PREVIEW'
+      : 'DEVELOPMENT_PREVIEW';
     state.routeGeometryRendered = true;
 
     const bounds = state.routeGeometryLayer.getBounds();
@@ -3638,7 +3783,10 @@
   async function findDevelopmentEvacuationRoute() {
     const previewConfig = getEvacuationRoutePreviewConfig();
     const selectedCenterId = state.selectedEvacuationCenterId;
-    if (!previewConfig || !state.routeOrigin || !selectedCenterId || state.routeRequestPending) return;
+    const selectedCenter = selectedCenterId ? state.routeCentersById.get(selectedCenterId) : null;
+    const adminPlanning = Boolean(previewConfig && previewConfig.adminPlanning === true);
+    if (!previewConfig || !state.routeOrigin || !selectedCenterId
+      || !selectedCenter || state.routeRequestPending) return;
 
     setRouteOriginSelectionActive(false);
     state.routeRequestPending = true;
@@ -3650,47 +3798,90 @@
     const clearOriginButton = document.getElementById('clearRouteOriginButton');
     const centerSelect = document.getElementById('routeCenterSelect');
     if (button) button.classList.add('is-loading');
-    if (buttonLabel) buttonLabel.textContent = 'Evaluating Routes...';
+    if (buttonLabel) {
+      buttonLabel.textContent = adminPlanning ? 'Previewing Route...' : 'Evaluating Routes...';
+    }
     if (setOriginButton) setOriginButton.disabled = true;
     if (clearOriginButton) clearOriginButton.disabled = true;
     if (centerSelect) centerSelect.disabled = true;
-    setStatus('routeRequestStatus', 'Loading mapped hazards and road-route alternatives...');
+    setStatus(
+      'routeRequestStatus',
+      adminPlanning
+        ? 'Requesting a road-route planning preview...'
+        : 'Loading mapped hazards and road-route alternatives...'
+    );
 
     try {
-      const hazardAvailability = await Promise.all([
-        loadDraftFloodPreview(),
-        loadDraftLandslidePreview()
-      ]);
-      if (!hazardAvailability[0] || !hazardAvailability[1]
-        || !state.floodPreviewFeatureCollection || !state.landslidePreviewFeatureCollection) {
-        throw new Error('Hazard-aware route analysis is unavailable.');
+      if (!adminPlanning) {
+        const hazardAvailability = await Promise.all([
+          loadDraftFloodPreview(),
+          loadDraftLandslidePreview()
+        ]);
+        if (!hazardAvailability[0] || !hazardAvailability[1]
+          || !state.floodPreviewFeatureCollection || !state.landslidePreviewFeatureCollection) {
+          throw new Error('Hazard-aware route analysis is unavailable.');
+        }
       }
 
       state.routingFetchCount += 1;
+      const requestHeaders = {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      };
+      if (adminPlanning) {
+        requestHeaders['X-CSRF-Token'] = previewConfig.csrfToken;
+      }
       const response = await window.fetch(previewConfig.endpoint, {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          origin: state.routeOrigin,
-          evacuation_center_id: selectedCenterId
-        })
+        headers: requestHeaders,
+        body: JSON.stringify(adminPlanning
+          ? {
+              origin: state.routeOrigin,
+              evacuation_center_reference_id: selectedCenterId
+            }
+          : {
+              origin: state.routeOrigin,
+              evacuation_center_id: selectedCenterId
+            })
       });
       const body = await response.json().catch(function () { return null; });
       if (!response.ok || !body || body.success !== true) {
-        const safeMessages = [
+        const allowedMessages = [
           'Starting location must be inside Caloocan City.',
           'No routable road path was found for the selected locations.',
           'Road routing service is temporarily unavailable.'
         ];
-        const message = body && safeMessages.includes(body.message)
+        const message = body && allowedMessages.includes(body.message)
           ? body.message
           : 'Road routing service is temporarily unavailable.';
         throw new Error(message);
+      }
+
+      if (adminPlanning) {
+        const centerProperties = selectedCenter.properties;
+        const preview = assertAdminPlanningRoutePreviewResponse(body.data, centerProperties.name);
+        const route = {
+          geometry: preview.geometry,
+          distance_meters: preview.distance_meters,
+          duration_seconds: preview.duration_seconds === undefined
+            ? undefined
+            : preview.duration_seconds
+        };
+        const destination = {
+          name: centerProperties.name,
+          geometry: selectedCenter.geometry
+        };
+        state.routeAlternativesReceived = 1;
+        state.routeDistanceMeters = route.distance_meters;
+        state.routeDurationSeconds = route.duration_seconds;
+        renderRecommendedRoute(route, destination, true);
+        renderRouteResult(route, null, destination, 1, false, true);
+        const clearButton = document.getElementById('clearRouteButton');
+        if (clearButton) clearButton.hidden = false;
+        setStatus('routeRequestStatus', 'Admin planning route preview displayed.');
+        return;
       }
 
       const routeResponse = assertRoutePreviewResponse(body.data, selectedCenterId);
@@ -3736,7 +3927,9 @@
     } finally {
       state.routeRequestPending = false;
       if (button) button.classList.remove('is-loading');
-      if (buttonLabel) buttonLabel.textContent = 'Find Safe Route';
+      if (buttonLabel) {
+        buttonLabel.textContent = adminPlanning ? 'Preview Route' : 'Find Safe Route';
+      }
       if (setOriginButton) setOriginButton.disabled = false;
       if (clearOriginButton) clearOriginButton.disabled = false;
       if (centerSelect) centerSelect.disabled = !state.routeCenterOptionsLoaded;
@@ -3793,11 +3986,15 @@
       }).addTo(routeGroup);
       state.operationalRouteFeatureCount = collection.features.length;
       state.operationalRouteStatus = collection.features.length === 0 ? 'EMPTY' : 'LOADED';
+      state.routePresentationMode = collection.features.length === 0
+        ? 'NONE'
+        : 'CIVENTRAL_OPERATIONAL';
       state.routeGeometryRendered = collection.features.length > 0;
       return true;
     } catch (error) {
       routeGroup.clearLayers();
       state.routeGeometryLayer = null;
+      state.routePresentationMode = 'NONE';
       state.operationalRouteFeatureCount = 0;
       state.operationalRouteStatus = 'ERROR';
       state.routeGeometryRendered = false;
@@ -3805,11 +4002,61 @@
     }
   }
 
+  function configureAdminPlanningRouteUi() {
+    clearRenderedRoute(false);
+    state.routeCenterOptionsLoaded = false;
+    state.selectedEvacuationCenterId = null;
+    state.routeCentersById = new Map();
+
+    const routePanel = document.getElementById('evacuationRoutePanel');
+    const setOriginButton = document.getElementById('setRouteOriginButton');
+    const clearOriginButton = document.getElementById('clearRouteOriginButton');
+    const centerSelect = document.getElementById('routeCenterSelect');
+    const previewButton = document.getElementById('findSafeRouteButton');
+    const previewButtonLabel = previewButton ? previewButton.querySelector('span') : null;
+    const startInput = document.getElementById('routeStartInput');
+    const centerHelper = document.getElementById('routeCenterHelper');
+    const disclosure = document.getElementById('routeDisclosure');
+    const connectionStatus = document.getElementById('preparednessConnectionStatus');
+
+    if (routePanel) routePanel.dataset.routeMode = 'ADMIN_PLANNING_PREVIEW';
+    if (setOriginButton) setOriginButton.disabled = false;
+    if (clearOriginButton) clearOriginButton.hidden = !state.routeOrigin;
+    if (startInput) {
+      startInput.value = state.routeOrigin
+        ? state.routeOrigin.latitude.toFixed(6) + ', ' + state.routeOrigin.longitude.toFixed(6)
+        : 'No starting point selected';
+    }
+    if (centerSelect) {
+      centerSelect.disabled = true;
+      centerSelect.replaceChildren(new Option('Loading unverified center references...', ''));
+    }
+    if (previewButton) previewButton.disabled = true;
+    if (previewButtonLabel) previewButtonLabel.textContent = 'Preview Route';
+    if (centerHelper) {
+      centerHelper.textContent = 'Choose from the 15 unverified admin-reference evacuation centers.';
+    }
+    if (disclosure) {
+      disclosure.textContent = 'Planning preview only. The selected center is unverified and the route is not an approved evacuation route. Actual road and hazard conditions may differ during an emergency.';
+    }
+    if (connectionStatus) {
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-route';
+      icon.setAttribute('aria-hidden', 'true');
+      connectionStatus.replaceChildren(icon, document.createTextNode(' ADMIN PLANNING PREVIEW'));
+    }
+    setStatus('routeOriginStatus', state.routeOrigin
+      ? 'Exact map location selected inside Caloocan City.'
+      : 'Choose an exact point inside Caloocan City.');
+    setStatus('routeRequestStatus', 'Select a starting point and unverified center reference.');
+  }
+
   async function initializeOperationalEvacuationRoutes() {
     const setOriginButton = document.getElementById('setRouteOriginButton');
     const clearOriginButton = document.getElementById('clearRouteOriginButton');
     const centerSelect = document.getElementById('routeCenterSelect');
     const findButton = document.getElementById('findSafeRouteButton');
+    const findButtonLabel = findButton ? findButton.querySelector('span') : null;
     const startInput = document.getElementById('routeStartInput');
     const routePanel = document.getElementById('evacuationRoutePanel');
     if (!setOriginButton || !centerSelect || !findButton || !state.map) return false;
@@ -3819,6 +4066,8 @@
     centerSelect.disabled = true;
     findButton.disabled = true;
     if (startInput) startInput.value = 'Stored approved routes only';
+    if (routePanel) routePanel.dataset.routeMode = 'CIVENTRAL_OPERATIONAL_DATA';
+    if (findButtonLabel) findButtonLabel.textContent = 'Stored Operational Routes';
     setStatus('routeOriginStatus', 'Operational mode displays stored approved routes; route generation is unavailable.');
     centerSelect.replaceChildren(new Option('Loading approved routes...', ''));
 
@@ -3845,7 +4094,7 @@
       connectionStatus.replaceChildren(icon, document.createTextNode(
         loaded
           ? (state.operationalRouteFeatureCount > 0
-              ? ' Operational Data'
+              ? ' CIVENTRAL OPERATIONAL DATA'
               : ' No Published Operational Routes')
           : ' Route Data Unavailable'
       ));
@@ -3875,8 +4124,15 @@
   }
 
   async function initializeEvacuationRouteTool() {
-    if (getOperationalEvacuationRouteConfig()) return initializeOperationalEvacuationRoutes();
     const config = getEvacuationRoutePreviewConfig();
+    if (getOperationalEvacuationRouteConfig()) {
+      const operationalLoaded = await initializeOperationalEvacuationRoutes();
+      if (!operationalLoaded || state.operationalRouteFeatureCount > 0
+        || !config || config.adminPlanning !== true) {
+        return operationalLoaded;
+      }
+      configureAdminPlanningRouteUi();
+    }
     const setOriginButton = document.getElementById('setRouteOriginButton');
     const clearOriginButton = document.getElementById('clearRouteOriginButton');
     const clearRouteButton = document.getElementById('clearRouteButton');
@@ -3898,8 +4154,14 @@
       setStatus(
         'routeRequestStatus',
         state.selectedEvacuationCenterId
-          ? (state.routeOrigin ? 'Ready to request route alternatives.' : 'Select an exact starting point on the map.')
-          : 'Select a starting point and evacuation center.'
+          ? (state.routeOrigin
+              ? (config.adminPlanning === true
+                  ? 'Ready to preview a road route.'
+                  : 'Ready to request route alternatives.')
+              : 'Select an exact starting point on the map.')
+          : (config.adminPlanning === true
+              ? 'Select a starting point and unverified center reference.'
+              : 'Select a starting point and evacuation center.')
       );
       updateFindRouteButton();
     });
@@ -3908,15 +4170,27 @@
       setOriginButton.disabled = true;
       centerSelect.disabled = true;
       centerSelect.replaceChildren(new Option('Route preview unavailable', ''));
-      setStatus('routeRequestStatus', 'Hazard-aware route analysis is unavailable.');
+      setStatus(
+        'routeRequestStatus',
+        config && config.adminPlanning === true
+          ? 'Admin planning route preview is unavailable.'
+          : 'Hazard-aware route analysis is unavailable.'
+      );
       return false;
     }
 
-    const centersLoaded = await loadDraftEvacuationCenterPreview();
+    const centersLoaded = config.adminPlanning === true
+      ? Boolean(await loadAdminEvacuationCenterReference())
+      : await loadDraftEvacuationCenterPreview();
     if (!centersLoaded || !populateRouteCenterOptions()) {
       setOriginButton.disabled = true;
       centerSelect.disabled = true;
-      centerSelect.replaceChildren(new Option('Development centers unavailable', ''));
+      centerSelect.replaceChildren(new Option(
+        config.adminPlanning === true
+          ? 'Center references unavailable'
+          : 'Development centers unavailable',
+        ''
+      ));
       setStatus('routeRequestStatus', 'Evacuation-center options could not be loaded.');
       return false;
     }
@@ -3926,9 +4200,19 @@
       const icon = document.createElement('i');
       icon.className = 'fa-solid fa-route';
       icon.setAttribute('aria-hidden', 'true');
-      connectionStatus.replaceChildren(icon, document.createTextNode(' Route Preview'));
+      connectionStatus.replaceChildren(
+        icon,
+        document.createTextNode(config.adminPlanning === true
+          ? ' ADMIN PLANNING PREVIEW'
+          : ' Route Preview')
+      );
     }
-    setStatus('routeRequestStatus', 'Select a starting point and evacuation center.');
+    setStatus(
+      'routeRequestStatus',
+      config.adminPlanning === true
+        ? 'Select a starting point and unverified center reference.'
+        : 'Select a starting point and evacuation center.'
+    );
     return true;
   }
 
@@ -4889,16 +5173,9 @@
   }
 
   async function initializeMapContext() {
-    const operationalRouteInitialization = getOperationalEvacuationRouteConfig()
-      ? initializeEvacuationRouteTool()
-      : null;
     await loadCaloocanCityContext();
     await loadDraftBarangayPreview();
-    if (operationalRouteInitialization) {
-      await operationalRouteInitialization;
-    } else {
-      await initializeEvacuationRouteTool();
-    }
+    await initializeEvacuationRouteTool();
     await initializeFloodForecastTool();
   }
 

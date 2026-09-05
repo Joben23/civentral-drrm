@@ -271,8 +271,9 @@ $routeLoaderSource = $routeLoaderStart !== false && $routeLoaderEnd !== false
     ? substr($mapSource, $routeLoaderStart, $routeLoaderEnd - $routeLoaderStart)
     : '';
 assertAdminCenterReference(
-    'ReferenceCentersCannotPopulateOperationalRouteSelector',
-    str_contains($routeSelectorSource, 'if (isOperationalMode()')
+    'ReferenceCentersRemainSeparateForAdminPlanningSelector',
+    str_contains($routeSelectorSource, 'state.adminEvacuationCenterReferenceFeatureCollection')
+    && str_contains($routeSelectorSource, 'previewConfig.adminPlanning === true')
     && str_contains($routeLoaderSource, 'state.operationalEvacuationCenterFeatureCollection')
     && !str_contains($routeLoaderSource, 'state.evacuationCenterFeatureCollection')
 );

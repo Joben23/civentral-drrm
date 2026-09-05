@@ -180,6 +180,8 @@ function resetCenterState() {
   state.evacuationCenterPreviewLayer = null;
   state.evacuationCenterFeatureCollection = null;
   state.operationalEvacuationCenterFeatureCollection = null;
+  state.adminEvacuationCenterReferenceFeatureCollection = null;
+  state.adminEvacuationCenterReferenceLoadPromise = null;
   state.evacuationCenterLoadPromise = null;
   state.evacuationCenterFetchCount = 0;
   state.evacuationCenterSourceMode = 'NOT_ACTIVE';

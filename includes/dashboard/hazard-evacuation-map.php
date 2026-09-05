@@ -238,7 +238,7 @@
             <span class="civ-map-card-icon"><i class="fa-solid fa-kit-medical" aria-hidden="true"></i></span>
             <h2 id="preparednessToolsTitle">Preparedness Tools</h2>
           </div>
-          <span id="preparednessConnectionStatus" class="civ-tool-connection-status"><i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> <?php echo !empty($draftBarangayPreviewEnabled) ? 'Not Connected' : 'Loading Operational Data'; ?></span>
+          <span id="preparednessConnectionStatus" class="civ-tool-connection-status"><i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> <?php echo !empty($draftBarangayPreviewEnabled) ? 'Not Connected' : (!empty($stagingAdminRoutePreviewEnabled) ? 'Checking Operational Routes' : 'Loading Operational Data'); ?></span>
         </div>
 
         <div class="civ-preparedness-tabs mt-3" role="tablist" aria-label="Preparedness tools">
@@ -286,20 +286,20 @@
             <div>
               <label for="routeCenterSelect" class="civ-map-label">Evacuation Center</label>
               <select id="routeCenterSelect" class="civ-map-input mt-1.5 w-full px-3 py-2.5 text-xs" disabled>
-                <option value=""><?php echo !empty($draftBarangayPreviewEnabled) ? 'Loading development centers...' : 'Loading approved routes...'; ?></option>
+                <option value=""><?php echo !empty($draftBarangayPreviewEnabled) ? 'Loading development centers...' : (!empty($stagingAdminRoutePreviewEnabled) ? 'Checking operational routes...' : 'Loading approved routes...'); ?></option>
               </select>
-              <p class="civ-map-helper mt-1.5"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development-preview locations are pending LGU verification.' : 'Only stored approved routes returned by the operational API are shown.'; ?></p>
+              <p id="routeCenterHelper" class="civ-map-helper mt-1.5"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development-preview locations are pending LGU verification.' : (!empty($stagingAdminRoutePreviewEnabled) ? 'Checking for stored approved routes before enabling the admin planning center references.' : 'Only stored approved routes returned by the operational API are shown.'); ?></p>
             </div>
             <button id="findSafeRouteButton" type="button" class="civ-route-button w-full" disabled>
               <i class="fa-solid fa-route" aria-hidden="true"></i>
-              <span>Find Safe Route</span>
+              <span><?php echo !empty($stagingAdminRoutePreviewEnabled) ? 'Preview Route' : 'Find Safe Route'; ?></span>
             </button>
             <div class="flex items-start justify-between gap-2">
               <p id="routeRequestStatus" class="civ-map-helper" role="status" aria-live="polite">Select a starting point and evacuation center.</p>
               <button id="clearRouteButton" type="button" class="civ-route-text-button" hidden>Clear route</button>
             </div>
             <div id="routeResultContent" class="civ-route-result" aria-live="polite" hidden></div>
-            <p class="civ-map-helper"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development decision support only. Any recommended route is pending LGU verification; road and hazard conditions may change during an actual emergency.' : 'Published routes remain subject to current road, hazard, and official emergency instructions.'; ?></p>
+            <p id="routeDisclosure" class="civ-map-helper"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development decision support only. Any recommended route is pending LGU verification; road and hazard conditions may change during an actual emergency.' : (!empty($stagingAdminRoutePreviewEnabled) ? 'Planning preview only. The selected center is unverified and the route is not an approved evacuation route. Actual road and hazard conditions may differ during an emergency.' : 'Published routes remain subject to current road, hazard, and official emergency instructions.'); ?></p>
           </div>
         </div>
 

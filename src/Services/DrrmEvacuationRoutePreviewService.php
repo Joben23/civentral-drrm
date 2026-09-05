@@ -9,7 +9,7 @@ use JsonException;
 use RuntimeException;
 
 /**
- * Controlled development-only route request coordinator.
+ * Controlled read-only route request coordinator.
  *
  * Destination coordinates are resolved from the fixed 15-center projection;
  * they are never accepted from the browser. The origin is independently
@@ -23,10 +23,10 @@ final class DrrmEvacuationRoutePreviewService
         private readonly DrrmDraftEvacuationCenterPreviewService $centerService,
         private readonly OsrmRoutingClient $routingClient,
         private readonly string $cityBoundaryPath,
-        bool $localDevelopmentPreviewAllowed
+        bool $routePreviewAllowed
     ) {
-        if (!$localDevelopmentPreviewAllowed) {
-            throw new RuntimeException('The development route preview is unavailable.');
+        if (!$routePreviewAllowed) {
+            throw new RuntimeException('The route preview is unavailable.');
         }
     }
 
@@ -35,17 +35,7 @@ final class DrrmEvacuationRoutePreviewService
      */
     public function route(float $latitude, float $longitude, string $evacuationCenterId): array
     {
-        if (!is_finite($latitude) || !is_finite($longitude)
-            || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
-            throw new InvalidArgumentException('The origin coordinate is invalid.');
-        }
-
-        $cityGeometry = $this->loadCityGeometry();
-        if (!$this->pointInGeometry($longitude, $latitude, $cityGeometry)) {
-            throw new InvalidArgumentException('The starting location must be inside Caloocan City.');
-        }
-
-        $center = $this->findCenter($evacuationCenterId);
+        $center = $this->validatedCenter($latitude, $longitude, $evacuationCenterId);
         $coordinates = $center['geometry']['coordinates'];
         $routes = $this->routingClient->drivingAlternatives(
             ['latitude' => $latitude, 'longitude' => $longitude],
@@ -68,6 +58,56 @@ final class DrrmEvacuationRoutePreviewService
             ],
             'routes' => $routes,
         ];
+    }
+
+    /**
+     * Return the single road route needed by the staging admin planning UI.
+     *
+     * Destination coordinates are resolved from the controlled center set and
+     * deliberately omitted from this response. No route is persisted.
+     *
+     * @return array<string, mixed>
+     */
+    public function adminPlanningRoute(
+        float $latitude,
+        float $longitude,
+        string $evacuationCenterReferenceId
+    ): array {
+        $center = $this->validatedCenter($latitude, $longitude, $evacuationCenterReferenceId);
+        $coordinates = $center['geometry']['coordinates'];
+        $routes = $this->routingClient->drivingAlternatives(
+            ['latitude' => $latitude, 'longitude' => $longitude],
+            ['latitude' => (float) $coordinates[1], 'longitude' => (float) $coordinates[0]],
+            1
+        );
+        $route = $routes[0] ?? null;
+        if (!is_array($route)) {
+            throw new RuntimeException('The routing service did not return a road route.');
+        }
+
+        return [
+            'status' => 'ADMIN_PLANNING_PREVIEW',
+            'geometry' => $route['geometry'],
+            'distance_meters' => $route['distance_meters'],
+            'duration_seconds' => $route['duration_seconds'],
+            'destination_name' => $center['properties']['name'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function validatedCenter(float $latitude, float $longitude, string $evacuationCenterId): array
+    {
+        if (!is_finite($latitude) || !is_finite($longitude)
+            || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+            throw new InvalidArgumentException('The origin coordinate is invalid.');
+        }
+
+        $cityGeometry = $this->loadCityGeometry();
+        if (!$this->pointInGeometry($longitude, $latitude, $cityGeometry)) {
+            throw new InvalidArgumentException('The starting location must be inside Caloocan City.');
+        }
+
+        return $this->findCenter($evacuationCenterId);
     }
 
     /** @return array<string, mixed> */

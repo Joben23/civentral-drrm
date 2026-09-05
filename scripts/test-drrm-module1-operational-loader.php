@@ -337,12 +337,14 @@ assertModule1Loader('CityFitFocusControlsAndMapDimensionsRemainStable',
     && str_contains($css, 'height: 27rem')
     && str_contains($css, 'height: 23rem'));
 assertModule1Loader('ReferenceCentersAreIsolatedFromOperationalRouting',
-    str_contains($map, 'if (isOperationalMode() || !getEvacuationRoutePreviewConfig()')
+    str_contains($map, 'state.adminEvacuationCenterReferenceFeatureCollection')
+    && str_contains($map, 'previewConfig.adminPlanning === true')
     && str_contains($map, 'state.operationalEvacuationCenterFeatureCollection')
     && !str_contains($adminCenterService, 'evacuation_center_id\' =>'));
 assertModule1Loader('PreparednessOperationalLabelRequiresPublishedRoute',
     str_contains($map, 'state.operationalRouteFeatureCount > 0')
-    && str_contains($map, "' Operational Data'")
+    && str_contains($map, "' CIVENTRAL OPERATIONAL DATA'")
+    && str_contains($map, "routePanel.dataset.routeMode = 'CIVENTRAL_OPERATIONAL_DATA'")
     && str_contains($map, "' No Published Operational Routes'"));
 assertModule1Loader('CitizenApiCannotExposeAdminCenterReference',
     !str_contains($citizenReadService, "'evacuation-centers'")

@@ -166,7 +166,7 @@ async function run() {
   assert.equal(state.draftPreviewFeatureCount, 187);
   assert.equal(state.searchableBarangays.length, 187);
   assert.equal(state.layerGroups.barangays.getLayers().length, 1);
-  assert.equal(tooltipCount, 0);
+  assert.equal(tooltipCount, 187);
   assert.equal(state.searchableBarangays.some(record => record.properties.name === 'Barangay 131'), true);
 
   const matches = hooks.renderSearch('Barangay 131');
