@@ -34,7 +34,7 @@ final class OsrmRoutingClient
     /**
      * @param array{latitude: float, longitude: float} $origin
      * @param array{latitude: float, longitude: float} $destination
-     * @return list<array{route_index: int, distance_meters: float, duration_seconds: float, geometry: array{type: string, coordinates: list<array{0: float, 1: float}>}}>
+     * @return list<array{route_index: int, distance_meters: float, duration_seconds?: float, geometry: array{type: string, coordinates: list<array{0: float, 1: float}>}}>
      */
     public function drivingAlternatives(array $origin, array $destination, int $alternatives = 3): array
     {
@@ -46,13 +46,16 @@ final class OsrmRoutingClient
         }
 
         $coordinates = $this->coordinatePair($origin) . ';' . $this->coordinatePair($destination);
-        $query = http_build_query([
-            'alternatives' => $alternatives,
-            'steps' => 'true',
+        $query = [
             'geometries' => 'geojson',
             'overview' => 'full',
-        ], '', '&', PHP_QUERY_RFC3986);
-        $url = $this->config->baseUrl() . '/route/v1/driving/' . $coordinates . '?' . $query;
+        ];
+        if ($alternatives > 1) {
+            $query['alternatives'] = $alternatives;
+            $query['steps'] = 'true';
+        }
+        $queryString = http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+        $url = $this->config->baseUrl() . '/route/v1/driving/' . $coordinates . '?' . $queryString;
 
         $handle = curl_init();
         if ($handle === false) {
@@ -80,8 +83,10 @@ final class OsrmRoutingClient
         $body = curl_exec($handle);
         if ($body === false) {
             $code = curl_errno($handle);
+            $error = curl_error($handle);
             curl_close($handle);
-            throw new OsrmRoutingException('The routing request failed at the network layer (cURL code ' . $code . ').');
+            error_log('OSRM route request failed: curl_errno=' . $code . ' error=' . substr($error, 0, 200));
+            throw new OsrmRoutingException('The routing request failed at the network layer.');
         }
 
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
@@ -110,21 +115,24 @@ final class OsrmRoutingClient
 
         $routes = [];
         foreach ($sourceRoutes as $index => $route) {
-            if (!is_array($route) || !is_numeric($route['distance'] ?? null) || !is_numeric($route['duration'] ?? null)) {
+            if (!is_array($route) || !is_numeric($route['distance'] ?? null)) {
                 throw new OsrmRoutingException('The routing service returned invalid route metrics.');
             }
 
             $distance = (float) $route['distance'];
-            $duration = (float) $route['duration'];
+            $duration = isset($route['duration']) && is_numeric($route['duration'])
+                ? (float) $route['duration']
+                : null;
             $geometry = $this->normalizeLineString($route['geometry'] ?? null);
-            if (!is_finite($distance) || !is_finite($duration) || $distance < 0 || $duration < 0) {
+            if (!is_finite($distance) || ($duration !== null && !is_finite($duration))
+                || $distance < 0 || ($duration !== null && $duration < 0)) {
                 throw new OsrmRoutingException('The routing service returned invalid route metrics.');
             }
 
             $routes[] = [
                 'route_index' => (int) $index,
                 'distance_meters' => $distance,
-                'duration_seconds' => $duration,
+                ...($duration === null ? [] : ['duration_seconds' => $duration]),
                 'geometry' => $geometry,
             ];
         }
@@ -149,7 +157,7 @@ final class OsrmRoutingClient
     private function normalizeLineString(mixed $geometry): array
     {
         if (!is_array($geometry) || ($geometry['type'] ?? null) !== 'LineString'
-            || !is_array($geometry['coordinates'] ?? null) || count($geometry['coordinates']) < 2) {
+            || !is_array($geometry['coordinates'] ?? null) || $geometry['coordinates'] === []) {
             throw new OsrmRoutingException('The routing service did not return a valid road geometry.');
         }
 

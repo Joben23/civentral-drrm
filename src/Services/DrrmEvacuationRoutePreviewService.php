@@ -85,13 +85,16 @@ final class DrrmEvacuationRoutePreviewService
             throw new RuntimeException('The routing service did not return a road route.');
         }
 
-        return [
+        $result = [
             'status' => 'ADMIN_PLANNING_PREVIEW',
             'geometry' => $route['geometry'],
             'distance_meters' => $route['distance_meters'],
-            'duration_seconds' => $route['duration_seconds'],
-            'destination_name' => $center['properties']['name'],
         ];
+        if (isset($route['duration_seconds'])) {
+            $result['duration_seconds'] = $route['duration_seconds'];
+        }
+        $result['destination_name'] = $center['properties']['name'];
+        return $result;
     }
 
     /** @return array<string, mixed> */

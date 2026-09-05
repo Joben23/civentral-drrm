@@ -199,11 +199,40 @@ assertAdminRoutePreview(
     && str_contains($serviceSource, 'drivingAlternatives(')
 );
 assertAdminRoutePreview(
+    'AdminOsrmRequestMatchesKnownGoodSingleRouteUrl',
+    str_contains($osrmSource, "'geometries' => 'geojson'")
+    && str_contains($osrmSource, "'overview' => 'full'")
+    && str_contains($osrmSource, 'if ($alternatives > 1)')
+    && str_contains($osrmSource, "CURLOPT_USERAGENT => 'CIVENTRAL-DRRM/1.0'")
+    && str_contains($osrmSource, 'CURLOPT_CONNECTTIMEOUT')
+    && str_contains($osrmSource, 'CURLOPT_TIMEOUT')
+);
+assertAdminRoutePreview(
+    'OsrmResponseValidationAcceptsOptionalStepsAndDuration',
+    str_contains($osrmSource, '($duration === null ? [] : [\'duration_seconds\' => $duration])')
+    && str_contains($osrmSource, '$geometry[\'coordinates\'] === []')
+    && !str_contains($osrmSource, "!is_numeric(\$route['duration'] ?? null)")
+);
+assertAdminRoutePreview(
+    'OsrmFailuresCaptureSanitizedServerDiagnostics',
+    str_contains($osrmSource, 'curl_errno=')
+    && str_contains($osrmSource, 'curl_error')
+    && str_contains($osrmSource, 'The routing request failed at the network layer.')
+);
+assertAdminRoutePreview(
+    'OsrmRejectsMalformedAndUnsuccessfulResponses',
+    str_contains($osrmSource, 'JSON_THROW_ON_ERROR')
+    && str_contains($osrmSource, '$status < 200 || $status >= 300')
+    && str_contains($osrmSource, '($payload[\'code\'] ?? null) !== \'Ok\'')
+    && str_contains($osrmSource, 'OsrmNoRouteException')
+    && str_contains($osrmSource, 'normalizeLineString')
+);
+assertAdminRoutePreview(
     'StagingResponseProjectionIsMinimal',
     str_contains($serviceSource, '\'status\' => \'ADMIN_PLANNING_PREVIEW\'')
     && str_contains($serviceSource, '\'geometry\' => $route[\'geometry\']')
     && str_contains($serviceSource, '\'distance_meters\' => $route[\'distance_meters\']')
-    && str_contains($serviceSource, '\'destination_name\' => $center[\'properties\'][\'name\']')
+    && str_contains($serviceSource, '$result[\'destination_name\'] = $center[\'properties\'][\'name\']')
     && !str_contains($endpointSource, '\'routes\' =>')
 );
 assertAdminRoutePreview(
