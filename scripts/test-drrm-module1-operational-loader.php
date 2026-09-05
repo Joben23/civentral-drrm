@@ -106,6 +106,9 @@ assertModule1Loader('AdminReferenceEndpointIsSeparatelyPermissionGated',
     && str_contains($adminCenterEndpoint, 'AppEnvironment::isStaging')
     && str_contains($adminCenterEndpoint, 'isLoggedIn()')
     && str_contains($adminCenterEndpoint, 'canView()'));
+assertModule1Loader('MapBundlesUseContentVersioning',
+    str_contains($page, '$operationalMapDataVersion = hash_file(\'sha256\', $operationalMapDataFile);')
+    && str_contains($page, '$hazardMapJsVersion = hash_file(\'sha256\', $hazardMapJsFile);'));
 assertModule1Loader('OperationalZeroRowsUseExplicitAdminReferenceResolver',
     str_contains($adapter, 'async function resolveEvacuationCenterSource')
     && str_contains($map, 'adapter.resolveEvacuationCenterSource')
