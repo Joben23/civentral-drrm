@@ -22,11 +22,14 @@ $css = file_get_contents($root . '/assets/css/hazard-evacuation-map.css');
 $readService = file_get_contents($root . '/src/Services/DrrmMapReadService.php');
 $adminCenterEndpoint = file_get_contents($root . '/api/drrm/admin-evacuation-center-reference.php');
 $adminCenterService = file_get_contents($root . '/src/Services/DrrmAdminEvacuationCenterReferenceService.php');
+$adminBarangayEndpoint = file_get_contents($root . '/api/drrm/admin-barangay-reference.php');
+$adminBarangayService = file_get_contents($root . '/src/Services/DrrmAdminBarangayReferenceService.php');
 $mapAuthorization = file_get_contents($root . '/src/Services/DrrmMapAuthorizationService.php');
 $citizenReadService = file_get_contents($root . '/src/Services/DrrmCitizenHazardMapReadService.php');
 
 foreach ([$page, $map, $adapter, $mgbReference, $phivolcsReference, $markup, $css, $readService,
-    $adminCenterEndpoint, $adminCenterService, $mapAuthorization, $citizenReadService] as $source) {
+    $adminCenterEndpoint, $adminCenterService, $adminBarangayEndpoint, $adminBarangayService,
+    $mapAuthorization, $citizenReadService] as $source) {
     if (!is_string($source)) {
         fwrite(STDERR, 'A Module 1 loader contract source could not be read.' . PHP_EOL);
         exit(1);
@@ -106,6 +109,22 @@ assertModule1Loader('AdminReferenceEndpointIsSeparatelyPermissionGated',
     && str_contains($adminCenterEndpoint, 'AppEnvironment::isStaging')
     && str_contains($adminCenterEndpoint, 'isLoggedIn()')
     && str_contains($adminCenterEndpoint, 'canView()'));
+assertModule1Loader('AdminBarangayReferenceEndpointIsSeparatelyPermissionGated',
+    str_contains($page, '$stagingAdminBarangayReferenceEnabled')
+    && str_contains($page, 'api/drrm/admin-barangay-reference.php')
+    && str_contains($adminBarangayEndpoint, 'AppEnvironment::isStaging')
+    && str_contains($adminBarangayEndpoint, 'isLoggedIn()')
+    && str_contains($adminBarangayEndpoint, 'canView()')
+    && str_contains($adminBarangayEndpoint, "REQUEST_METHOD")
+    && str_contains($adminBarangayService, 'DrrmDraftBarangayPreviewService'));
+assertModule1Loader('BarangayReferenceNeverUsesDevelopmentEndpoint',
+    !str_contains($page, 'admin-barangay-reference.php') || !str_contains($page, 'api/drrm/dev/barangays-draft.php')
+    || str_contains($page, '$draftBarangayPreviewEnabled ? $basePath'));
+assertModule1Loader('OperationalBarangaysResolveReferenceOnlyWhenEmpty',
+    str_contains($adapter, 'resolveBarangaySource')
+    && str_contains($map, 'resolveBarangaySource')
+    && str_contains($map, 'INCOMPLETE_ADMIN_REFERENCE')
+    && str_contains($map, 'getAdminBarangayReferenceConfig'));
 assertModule1Loader('MapBundlesUseContentVersioning',
     str_contains($page, '$operationalMapDataVersion = hash_file(\'sha256\', $operationalMapDataFile);')
     && str_contains($page, '$hazardMapJsVersion = hash_file(\'sha256\', $hazardMapJsFile);'));

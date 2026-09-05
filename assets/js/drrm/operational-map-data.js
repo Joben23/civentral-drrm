@@ -287,6 +287,33 @@
     });
   }
 
+  async function resolveBarangaySource(operationalCollection, loadAdminReference) {
+    if (!operationalCollection || operationalCollection.type !== 'FeatureCollection'
+      || !Array.isArray(operationalCollection.features)) {
+      throw new Error('Operational barangay collection is invalid.');
+    }
+
+    if (operationalCollection.features.length > 0 || typeof loadAdminReference !== 'function') {
+      return Object.freeze({
+        featureCollection: operationalCollection,
+        sourceMode: 'CIVENTRAL_OPERATIONAL',
+        adminReferenceAttempted: false
+      });
+    }
+
+    const referenceCollection = await loadAdminReference();
+    if (!referenceCollection || referenceCollection.type !== 'FeatureCollection'
+      || !Array.isArray(referenceCollection.features)) {
+      throw new Error('Admin barangay reference collection is invalid.');
+    }
+
+    return Object.freeze({
+      featureCollection: referenceCollection,
+      sourceMode: 'INCOMPLETE_ADMIN_REFERENCE',
+      adminReferenceAttempted: true
+    });
+  }
+
   function centerNamesById(centerCollection) {
     const result = new Map();
     if (!centerCollection || !Array.isArray(centerCollection.features)) return result;
@@ -334,6 +361,7 @@
     mapFaults: mapFaults,
     mapEvacuationCenters: mapEvacuationCenters,
     resolveEvacuationCenterSource: resolveEvacuationCenterSource,
+    resolveBarangaySource: resolveBarangaySource,
     mapEvacuationRoutes: mapEvacuationRoutes
   });
 });

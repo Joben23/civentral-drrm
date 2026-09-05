@@ -284,7 +284,50 @@ async function runEvacuationCenterSourceTests() {
   });
 }
 
-runEvacuationCenterSourceTests().then(function () {
+async function runBarangaySourceTests() {
+  const emptyOperational = adapter.mapBarangays({ success: true, data: [] });
+  const operational = adapter.mapBarangays(barangayPayload);
+  const references = {
+    type: 'FeatureCollection',
+    features: Array.from({ length: 187 }, function (_, index) {
+      return {
+        type: 'Feature',
+        geometry: polygon,
+        properties: {
+          name: 'Barangay ' + (index + 1),
+          barangay_code: '1380100' + String(index + 1).padStart(3, '0'),
+          reference_status: 'INCOMPLETE ADMIN REFERENCE'
+        }
+      };
+    })
+  };
+
+  await checkAsync('OperationalZeroRowsTriggerBarangayReferenceFallback', async function () {
+    let requests = 0;
+    const selection = await adapter.resolveBarangaySource(emptyOperational, async function () {
+      requests += 1;
+      return references;
+    });
+    assert.equal(requests, 1);
+    assert.equal(selection.sourceMode, 'INCOMPLETE_ADMIN_REFERENCE');
+    assert.strictEqual(selection.featureCollection, references);
+    assert.equal(selection.featureCollection.features.length, 187);
+  });
+
+  await checkAsync('PublishedOperationalBarangaysRetainPriority', async function () {
+    let requests = 0;
+    const selection = await adapter.resolveBarangaySource(operational, async function () {
+      requests += 1;
+      return references;
+    });
+    assert.equal(requests, 0);
+    assert.equal(selection.sourceMode, 'CIVENTRAL_OPERATIONAL');
+    assert.strictEqual(selection.featureCollection, operational);
+  });
+}
+
+runEvacuationCenterSourceTests()
+  .then(runBarangaySourceTests).then(function () {
   process.stdout.write('OperationalMapDataAssertions=' + assertions + '\n');
   process.stdout.write('DrrmOperationalMapData=PASS\n');
 }).catch(function (error) {

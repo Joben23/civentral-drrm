@@ -22,6 +22,8 @@ $stagingReferenceModeEnabled = AppEnvironment::isStaging(__DIR__ . '/../../.env'
 $module1Authorization = \App\Services\DrrmMapAuthorizationService::fromTrustedSession($headerUser);
 $stagingAdminCenterReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
+$stagingAdminBarangayReferenceEnabled = $stagingReferenceModeEnabled
+    && $module1Authorization->canView();
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
 $operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
 $mgbLiveReferenceRelativePath = 'assets/js/drrm/mgb-live-reference.js';
@@ -179,6 +181,15 @@ include '../../includes/sidebar.php';
       endpoint: <?php echo json_encode(
           $stagingAdminCenterReferenceEnabled
               ? $basePath . 'api/drrm/admin-evacuation-center-reference.php'
+              : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    adminBarangayReference: Object.freeze({
+      enabled: <?php echo $stagingAdminBarangayReferenceEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $stagingAdminBarangayReferenceEnabled
+              ? $basePath . 'api/drrm/admin-barangay-reference.php'
               : null,
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>

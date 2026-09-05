@@ -62,6 +62,13 @@
             Clear selection
           </button>
         </div>
+        <div id="adminBarangayReferenceNotice" class="civ-mgb-reference-notice civ-center-reference-notice mt-3" role="status" aria-live="polite" hidden>
+          <div class="civ-mgb-reference-heading">
+            <span class="civ-mgb-reference-badge">INCOMPLETE ADMIN REFERENCE</span>
+            <strong>Barangay boundary planning reference</strong>
+          </div>
+          <p>187 validated barangay boundaries are shown for administrative planning. Barangays 176-A through 176-F remain pending authoritative GIS boundaries. These records are not yet published as the complete operational 193-barangay catalog.</p>
+        </div>
       </section>
 
       <section class="civ-map-card" aria-labelledby="hazardLayersTitle">

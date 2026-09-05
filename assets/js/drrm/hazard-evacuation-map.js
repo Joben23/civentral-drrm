@@ -40,6 +40,7 @@
     resizeFrame: null,
     draftPreviewLoaded: false,
     barangayDataStatus: 'NOT_LOADED',
+    barangaySourceMode: 'NOT_ACTIVE',
     operationalBarangayCollection: null,
     draftPreviewFeatureCount: 0,
     draftPreviewBounds: null,
@@ -216,6 +217,8 @@
       (runtimeConfig.phivolcsLiveReference && runtimeConfig.phivolcsLiveReference.enabled === true) ||
       (runtimeConfig.adminEvacuationCenterReference
         && runtimeConfig.adminEvacuationCenterReference.enabled === true)
+      || (runtimeConfig.adminBarangayReference
+        && runtimeConfig.adminBarangayReference.enabled === true)
     );
     setStatus('mapDataStatusText', hasReferenceMode
       ? 'Map Data Status: Operational + Reference'
@@ -260,6 +263,21 @@
   function getAdminEvacuationCenterReferenceConfig() {
     const runtimeConfig = window.CiventralDrrmMapConfig;
     const config = runtimeConfig && runtimeConfig.adminEvacuationCenterReference;
+    if (
+      !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
+      !config || config.enabled !== true ||
+      typeof config.endpoint !== 'string' || config.endpoint === '' ||
+      config.endpoint.includes('/api/drrm/dev/')
+    ) {
+      return null;
+    }
+
+    return config;
+  }
+
+  function getAdminBarangayReferenceConfig() {
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.adminBarangayReference;
     if (
       !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
       !config || config.enabled !== true ||
@@ -898,9 +916,24 @@
     const previewNotice = document.getElementById('draftBarangayPreviewNotice');
     const statusBadge = document.getElementById('mapDataStatusBadge');
     if (previewNotice) previewNotice.classList.add('hidden');
+    renderAdminBarangayReferenceNotice();
     if (baselineNotice) baselineNotice.classList.remove('hidden');
 
     state.barangayDataStatus = status;
+    if (status === 'REFERENCE') {
+      const message = '187 validated reference barangays available for search. Source: INCOMPLETE ADMIN REFERENCE.';
+      if (statusBadge) {
+        statusBadge.title = 'Published operational barangays are unavailable; this incomplete reference is restricted to authorized staging administrators.';
+      }
+      setStatus('mapDataStatusText', 'Map Data Status: Operational + Reference');
+      setStatus('barangaySearchStatus', message);
+      if (baselineNotice) {
+        const baselineMessage = baselineNotice.querySelector('p');
+        if (baselineMessage) baselineMessage.textContent = message;
+      }
+      renderAdminBarangayReferenceNotice();
+      return;
+    }
     if (status === 'ERROR') {
       if (statusBadge) statusBadge.title = 'The operational barangay endpoint could not be reached.';
       setStatus('mapDataStatusText', 'Map Data Status: Operational Endpoint Unavailable');
@@ -930,6 +963,9 @@
   function barangayAvailabilityMessage() {
     if (isOperationalMode()) {
       if (state.barangayDataStatus === 'ERROR') return 'Barangay operational data could not be loaded.';
+      if (state.barangaySourceMode === 'INCOMPLETE_ADMIN_REFERENCE') {
+        return '187 validated reference barangays available for search. Source: INCOMPLETE ADMIN REFERENCE.';
+      }
       if (state.barangayDataStatus === 'EMPTY') return 'Barangay operational data is not yet published.';
       return state.searchableBarangays.length + (state.searchableBarangays.length === 1
         ? ' published barangay available for search.'
@@ -1045,9 +1081,11 @@
 
     if (!visibleMatches.length) {
       hideBarangaySuggestions();
-      setStatus('barangaySearchStatus', isOperationalMode()
-        ? 'No published barangay matches that search.'
-        : 'No validated draft barangay matches that search.');
+      setStatus('barangaySearchStatus', state.barangaySourceMode === 'INCOMPLETE_ADMIN_REFERENCE'
+        ? 'No reference barangay matches that search. Source: INCOMPLETE ADMIN REFERENCE.'
+        : (isOperationalMode()
+          ? 'No published barangay matches that search.'
+          : 'No validated draft barangay matches that search.'));
       return [];
     }
 
@@ -1366,6 +1404,12 @@
     element.dataset.mode = mode;
   }
 
+  function setBarangaySourceMode(mode) {
+    state.barangaySourceMode = mode;
+    const element = document.getElementById('barangaySearchStatus');
+    if (element) element.dataset.sourceMode = mode;
+  }
+
   function phivolcsReferenceIsActive() {
     return Boolean(
       state.map && state.layerGroups &&
@@ -1387,6 +1431,12 @@
       state.map.hasLayer(state.layerGroups.evacuationCenters) &&
       state.evacuationCenterSourceMode === 'UNVERIFIED_ADMIN_REFERENCE'
     );
+  }
+
+  function renderAdminBarangayReferenceNotice() {
+    const notice = document.getElementById('adminBarangayReferenceNotice');
+    if (!notice) return;
+    notice.hidden = state.barangaySourceMode !== 'INCOMPLETE_ADMIN_REFERENCE';
   }
 
   function liveReferenceIsActive(hazard) {
@@ -4098,6 +4148,8 @@
     setHazardSourceMode('landslide', 'NOT_ACTIVE');
     setFaultSourceMode('NOT_ACTIVE');
     setEvacuationCenterSourceMode('NOT_ACTIVE');
+    setBarangaySourceMode('NOT_ACTIVE');
+    renderAdminBarangayReferenceNotice();
     renderHazardSourceUi();
     renderPhivolcsReferenceNotice();
     renderAdminCenterReferenceNotice();
@@ -4244,7 +4296,7 @@
 
     name.textContent = properties.name;
     code.textContent = 'PSGC code: ' + properties.barangay_code;
-    status.textContent = properties.display_status || 'Draft boundary preview';
+    status.textContent = properties.reference_status || properties.display_status || 'Draft boundary preview';
     content.append(name, code, status);
 
     return content;
@@ -4260,7 +4312,7 @@
 
     name.textContent = properties.name;
     code.textContent = 'PSGC code: ' + properties.barangay_code;
-    status.textContent = properties.display_status || 'Draft boundary preview';
+    status.textContent = properties.reference_status || properties.display_status || 'Draft boundary preview';
     details.replaceChildren(name, code, status);
   }
 
@@ -4338,7 +4390,9 @@
 
       if (
         !feature || feature.type !== 'Feature' ||
-        !properties || properties.preview_status !== 'DRAFT_INCOMPLETE' ||
+        !properties ||
+        (properties.preview_status !== 'DRAFT_INCOMPLETE'
+          && properties.reference_status !== 'INCOMPLETE ADMIN REFERENCE') ||
         typeof properties.name !== 'string' || typeof properties.barangay_code !== 'string' ||
         !geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type) ||
         !Array.isArray(geometry.coordinates) || geometry.coordinates.length === 0
@@ -4352,6 +4406,16 @@
     });
 
     return payload;
+  }
+
+  function assertAdminBarangayReferenceFeatureCollection(payload) {
+    const collection = assertDraftFeatureCollection(payload);
+    collection.features.forEach(function (feature) {
+      if (feature.properties.reference_status !== 'INCOMPLETE ADMIN REFERENCE') {
+        throw new Error('Invalid admin barangay reference status.');
+      }
+    });
+    return collection;
   }
 
   async function loadDraftBarangayPreview() {
@@ -4369,13 +4433,42 @@
       if (!response.ok) throw new Error('Barangay data request failed.');
       const payload = await response.json();
       const adapter = getOperationalAdapter();
-      const featureCollection = previewConfig.operational === true
-        ? (adapter && typeof adapter.mapBarangays === 'function'
-          ? adapter.mapBarangays(payload)
-          : null)
-        : assertDraftFeatureCollection(payload);
+      let featureCollection;
+      let sourceMode;
+      if (previewConfig.operational === true) {
+        if (!adapter || typeof adapter.mapBarangays !== 'function'
+          || typeof adapter.resolveBarangaySource !== 'function') {
+          throw new Error('Operational barangay adapter is unavailable.');
+        }
+        const operationalCollection = adapter.mapBarangays(payload);
+        state.operationalBarangayCollection = operationalCollection;
+        const adminReferenceConfig = getAdminBarangayReferenceConfig();
+        const loadAdminReference = adminReferenceConfig
+          ? async function () {
+              const referenceResponse = await window.fetch(adminReferenceConfig.endpoint, {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { Accept: 'application/geo+json, application/json' }
+              });
+              if (!referenceResponse.ok) {
+                throw new Error('Admin barangay reference request failed.');
+              }
+              return assertAdminBarangayReferenceFeatureCollection(await referenceResponse.json());
+            }
+          : null;
+        const selection = await adapter.resolveBarangaySource(
+          operationalCollection,
+          loadAdminReference
+        );
+        featureCollection = selection.featureCollection;
+        sourceMode = selection.sourceMode;
+      } else {
+        featureCollection = assertDraftFeatureCollection(payload);
+        sourceMode = 'DEVELOPMENT_PREVIEW';
+      }
       if (!featureCollection) throw new Error('Operational barangay adapter is unavailable.');
-      state.operationalBarangayCollection = previewConfig.operational === true ? featureCollection : null;
+      setBarangaySourceMode(sourceMode);
       state.searchableBarangays = [];
       clearDraftBarangaySelection();
       const previewLayer = L.geoJSON(featureCollection, {
@@ -4391,6 +4484,14 @@
           });
           state.searchableBarangays.push(record);
           layer.bindPopup(createDraftPopup(feature.properties));
+          if (typeof layer.bindTooltip === 'function') {
+            layer.bindTooltip(feature.properties.name, {
+              direction: 'center',
+              permanent: true,
+              opacity: 0.8,
+              className: 'civ-barangay-label'
+            });
+          }
           layer.on('mouseover', function () {
             if (state.selectedBarangayLayer !== layer) layer.setStyle(draftBarangayHoverStyle());
             if (typeof layer.bringToFront === 'function') layer.bringToFront();
@@ -4443,7 +4544,9 @@
       state.draftPreviewFeatureCount = featureCollection.features.length;
       if (previewConfig.operational === true) {
         setOperationalBarangayUi(
-          featureCollection.features.length === 0 ? 'EMPTY' : 'LOADED',
+          sourceMode === 'INCOMPLETE_ADMIN_REFERENCE'
+            ? 'REFERENCE'
+            : (featureCollection.features.length === 0 ? 'EMPTY' : 'LOADED'),
           featureCollection.features.length
         );
       } else {
@@ -4458,6 +4561,8 @@
       state.draftPreviewBounds = null;
       state.draftPreviewLoaded = false;
       state.draftPreviewFeatureCount = 0;
+      setBarangaySourceMode('BARANGAY_REFERENCE_UNAVAILABLE');
+      renderAdminBarangayReferenceNotice();
       if (previewConfig.operational === true) {
         setOperationalBarangayUi('ERROR', 0);
       } else {
