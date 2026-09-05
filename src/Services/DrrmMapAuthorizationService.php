@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
 namespace App\Services;
 
 /**
@@ -47,17 +46,21 @@ final class DrrmMapAuthorizationService
         if (is_array($permissionMap)) {
             foreach ($permissionMap as $resource => $actions) {
                 if (!is_string($resource)
-                    || !in_array(strtolower(trim($resource)), self::RESOURCES, true)) {
+                    || !in_array(self::normalizeResource($resource), self::RESOURCES, true)) {
                     continue;
                 }
                 if (is_array($actions)) {
-                    $resourceActions = array_values($actions);
+                    $resourceActions = array_merge($resourceActions, $actions);
                 }
-                break;
             }
         }
 
         return new self($resourceActions);
+    }
+
+    private static function normalizeResource(string $resource): string
+    {
+        return (string) preg_replace('/\s+/', ' ', strtolower(trim($resource)));
     }
 
     public function canView(): bool

@@ -93,6 +93,11 @@ assertAdminCenterReference(
     'LegacyModuleOneViewPermissionRemainsAccepted',
     DrrmMapAuthorizationService::fromTrustedSession()->canView()
 );
+$_SESSION['user_permissions_map'] = ['  HAZARD &   EVACUATION  MAP  ' => [' view ']];
+assertAdminCenterReference(
+    'ModuleOneViewPermissionNormalizesCaseAndSpacing',
+    DrrmMapAuthorizationService::fromTrustedSession()->canView()
+);
 $_SESSION = [
     'user_id' => 'admin-reference-test',
     'current_user_details' => ['is_superadmin' => true],
