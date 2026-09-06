@@ -74,16 +74,7 @@ final class DrrmEvacuationRoutePreviewService
         string $evacuationCenterReferenceId
     ): array {
         $center = $this->validatedCenter($latitude, $longitude, $evacuationCenterReferenceId);
-        $coordinates = $center['geometry']['coordinates'];
-        $routes = $this->routingClient->drivingAlternatives(
-            ['latitude' => $latitude, 'longitude' => $longitude],
-            ['latitude' => (float) $coordinates[1], 'longitude' => (float) $coordinates[0]],
-            1
-        );
-        $route = $routes[0] ?? null;
-        if (!is_array($route)) {
-            throw new RuntimeException('The routing service did not return a road route.');
-        }
+        $route = $this->singleRoute($latitude, $longitude, $center);
 
         $result = [
             'status' => 'ADMIN_PLANNING_PREVIEW',
@@ -95,6 +86,54 @@ final class DrrmEvacuationRoutePreviewService
         }
         $result['destination_name'] = $center['properties']['name'];
         return $result;
+    }
+
+    /**
+     * Return the minimized public staging planning preview projection.
+     *
+     * @return array<string, mixed>
+     */
+    public function citizenPlanningRoute(
+        float $latitude,
+        float $longitude,
+        string $centerReferenceId
+    ): array {
+        $center = $this->validatedCenter($latitude, $longitude, $centerReferenceId);
+        $route = $this->singleRoute($latitude, $longitude, $center);
+
+        $result = [
+            'status' => 'DEVELOPMENT_PLANNING_PREVIEW',
+            'route' => $route['geometry'],
+            'distance_meters' => $route['distance_meters'],
+            'destination' => [
+                'reference_id' => $center['properties']['evacuation_center_id'],
+                'name' => $center['properties']['name'],
+                'barangay_name' => $center['properties']['barangay_name'],
+            ],
+            'disclaimer' => 'Planning preview only. The selected evacuation center is an unverified reference and this road route is not an approved evacuation route. Actual road and hazard conditions may differ during an emergency.',
+        ];
+        if (isset($route['duration_seconds'])) {
+            $result['duration_seconds'] = $route['duration_seconds'];
+        }
+
+        return $result;
+    }
+
+    /** @param array<string, mixed> $center @return array<string, mixed> */
+    private function singleRoute(float $latitude, float $longitude, array $center): array
+    {
+        $coordinates = $center['geometry']['coordinates'];
+        $routes = $this->routingClient->drivingAlternatives(
+            ['latitude' => $latitude, 'longitude' => $longitude],
+            ['latitude' => (float) $coordinates[1], 'longitude' => (float) $coordinates[0]],
+            1
+        );
+        $route = $routes[0] ?? null;
+        if (!is_array($route)) {
+            throw new RuntimeException('The routing service did not return a road route.');
+        }
+
+        return $route;
     }
 
     /** @return array<string, mixed> */
