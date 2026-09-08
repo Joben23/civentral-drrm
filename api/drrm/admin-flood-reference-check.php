@@ -31,6 +31,7 @@ require_once __DIR__ . '/../../src/Services/DrrmMapAuthorizationService.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapCsrfService.php';
 require_once __DIR__ . '/../../src/Services/DrrmCaloocanBoundaryService.php';
 require_once __DIR__ . '/../../src/Services/DrrmDraftFloodPreviewService.php';
+require_once __DIR__ . '/../../src/Services/DrrmFloodReferenceEvaluatorService.php';
 require_once __DIR__ . '/../../src/Services/DrrmAdminFloodReferenceCheckService.php';
 
 drrmApiSendHeaders();

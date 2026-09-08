@@ -11,6 +11,7 @@ use App\Config\SupabaseConfig;
 use App\Services\DrrmAdminFloodReferenceCheckService;
 use App\Services\DrrmCaloocanBoundaryService;
 use App\Services\DrrmDraftFloodPreviewService;
+use App\Services\DrrmFloodReferenceEvaluatorService;
 use App\Services\DrrmMapAuthorizationService;
 use App\Services\SupabaseRestClient;
 
@@ -20,6 +21,7 @@ require_once $root . '/src/Services/SupabaseRestClient.php';
 require_once $root . '/src/Services/DrrmMapAuthorizationService.php';
 require_once $root . '/src/Services/DrrmCaloocanBoundaryService.php';
 require_once $root . '/src/Services/DrrmDraftFloodPreviewService.php';
+require_once $root . '/src/Services/DrrmFloodReferenceEvaluatorService.php';
 require_once $root . '/src/Services/DrrmAdminFloodReferenceCheckService.php';
 
 $failures = [];
@@ -112,11 +114,12 @@ function syntheticFloodReference(): array
 
 $endpointSource = file_get_contents($root . '/api/drrm/admin-flood-reference-check.php');
 $serviceSource = file_get_contents($root . '/src/Services/DrrmAdminFloodReferenceCheckService.php');
+$evaluatorSource = file_get_contents($root . '/src/Services/DrrmFloodReferenceEvaluatorService.php');
 $draftSource = file_get_contents($root . '/src/Services/DrrmDraftFloodPreviewService.php');
 $pageSource = file_get_contents($root . '/pages/drrm/hazard-evacuation-map.php');
 $mapSource = file_get_contents($root . '/assets/js/drrm/hazard-evacuation-map.js');
 $markupSource = file_get_contents($root . '/includes/dashboard/hazard-evacuation-map.php');
-foreach ([$endpointSource, $serviceSource, $draftSource, $pageSource, $mapSource, $markupSource] as $source) {
+foreach ([$endpointSource, $serviceSource, $evaluatorSource, $draftSource, $pageSource, $mapSource, $markupSource] as $source) {
     if (!is_string($source)) {
         throw new RuntimeException('A flood reference test source could not be read.');
     }
@@ -146,21 +149,22 @@ assertAdminFloodCheck(
     && str_contains($draftSource, 'EXPECTED_FEATURE_COUNT = 15')
     && str_contains($draftSource, "'review_status' => 'eq.DRAFT'")
     && str_contains($draftSource, "'record_status' => 'eq.INACTIVE'")
-    && str_contains($serviceSource, 'DrrmDraftFloodPreviewService::EXPECTED_FEATURE_COUNT')
+    && str_contains($evaluatorSource, 'DrrmDraftFloodPreviewService::EXPECTED_FEATURE_COUNT')
+    && str_contains($serviceSource, 'DrrmFloodReferenceEvaluatorService')
 );
 assertAdminFloodCheck(
     'CheckIsReadOnlyAndHasNoPersistenceOrPublication',
-    preg_match('/->(?:post|patch|delete|rpc)\s*\(/i', $endpointSource . $serviceSource . $draftSource) !== 1
-    && !str_contains($endpointSource . $serviceSource, 'publication_status')
-    && !str_contains($endpointSource . $serviceSource, 'INSERT')
-    && !str_contains($endpointSource . $serviceSource, 'UPDATE')
+    preg_match('/->(?:post|patch|delete|rpc)\s*\(/i', $endpointSource . $serviceSource . $evaluatorSource . $draftSource) !== 1
+    && !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'publication_status')
+    && !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'INSERT')
+    && !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'UPDATE')
 );
 assertAdminFloodCheck(
     'TensorFlowAndForecastInputsAreNotUsed',
-    !str_contains($endpointSource . $serviceSource, 'DrrmFloodRiskAi')
-    && !str_contains($endpointSource . $serviceSource, 'probability')
-    && !str_contains($endpointSource . $serviceSource, 'confidence')
-    && !str_contains($endpointSource . $serviceSource, 'rainfall')
+    !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'DrrmFloodRiskAi')
+    && !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'probability')
+    && !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'confidence')
+    && !str_contains($endpointSource . $serviceSource . $evaluatorSource, 'rainfall')
     && str_contains($markupSource, 'TensorFlow prediction is unavailable until a governed model and validated forecast inputs are ready.')
 );
 assertAdminFloodCheck(
@@ -248,8 +252,8 @@ assertAdminFloodCheck(
 );
 assertAdminFloodCheck(
     'WholeBarangayInferenceIsNotUsed',
-    !str_contains(strtolower($serviceSource), 'barangay')
-    && str_contains($serviceSource, 'geometryCoversPoint')
+    !str_contains(strtolower($serviceSource . $evaluatorSource), 'barangay')
+    && str_contains($evaluatorSource, 'geometryCoversPoint')
 );
 
 $wrongCount = $reference;
