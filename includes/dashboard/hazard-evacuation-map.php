@@ -306,68 +306,42 @@
         <div id="floodForecastPanel" class="civ-preparedness-panel" role="tabpanel" aria-labelledby="floodForecastTab" hidden>
           <div class="flex items-center justify-between gap-2">
             <h3 id="floodForecastTitle" class="text-[11px] font-black text-slate-700 dark:text-slate-200">Flood Risk Check</h3>
-            <span id="floodForecastConnectionStatus" class="civ-model-status"><?php echo !empty($draftBarangayPreviewEnabled) ? 'Development Preview' : 'Unavailable'; ?></span>
+            <span id="floodForecastConnectionStatus" class="civ-model-status"><?php echo !empty($stagingAdminFloodReferenceCheckEnabled) ? 'DRAFT ADMIN REFERENCE' : 'Unavailable'; ?></span>
           </div>
 
           <div class="mt-3 space-y-3">
             <section class="civ-forecast-section" aria-labelledby="forecastLocationTitle">
-              <h4 id="forecastLocationTitle" class="civ-forecast-section-title">Assessment Location</h4>
-              <label class="sr-only" for="forecastLocationInput">Selected assessment location</label>
-              <input id="forecastLocationInput" type="text" value="No assessment location selected" class="civ-map-input mt-2 w-full px-3 py-2.5 text-xs" readonly>
+              <h4 id="forecastLocationTitle" class="civ-forecast-section-title">FLOOD RISK LOCATION</h4>
+              <label class="sr-only" for="forecastLocationInput">Selected flood reference check location</label>
+              <input id="forecastLocationInput" type="text" value="No location selected" class="civ-map-input mt-2 w-full px-3 py-2.5 text-xs" readonly>
               <div class="civ-forecast-actions mt-2">
                 <button id="setForecastLocationButton" type="button" class="civ-route-secondary-button">
                   <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
-                  <span>Choose Assessment Location</span>
-                </button>
-                <button
-                  id="useRouteOriginForForecastButton"
-                  type="button"
-                  class="civ-route-secondary-button is-disabled"
-                  data-action="use-route-origin"
-                  aria-disabled="true"
-                >
-                  <i class="fa-solid fa-share-from-square" aria-hidden="true"></i>
-                  <span>Use Evacuation Starting Point</span>
+                  <span>Set Location on Map</span>
                 </button>
               </div>
               <div class="mt-1.5 flex items-start justify-between gap-2">
-                <p id="forecastLocationStatus" class="civ-map-helper" role="status" aria-live="polite">Flood Risk Check evaluates the selected exact location.</p>
-                <button id="clearForecastLocationButton" type="button" class="civ-route-text-button" hidden>Clear</button>
+                <p id="forecastLocationStatus" class="civ-map-helper" role="status" aria-live="polite">Select an exact point inside Caloocan City.</p>
+                <button id="clearForecastLocationButton" type="button" class="civ-route-text-button" hidden>Clear Flood Check</button>
               </div>
-              <p class="civ-map-helper mt-1.5">Use Evacuation Starting Point copies the current Evacuation Route starting location into the Flood Risk Check.</p>
             </section>
 
-            <section class="civ-forecast-section" aria-labelledby="pagasaOutlookTitle">
+            <button id="checkFloodReferenceButton" type="button" class="civ-route-button w-full" disabled>
+              <i class="fa-solid fa-water" aria-hidden="true"></i>
+              <span>Check Flood Reference</span>
+            </button>
+            <p id="floodReferenceCheckStatus" class="civ-map-helper" role="status" aria-live="polite">Select a location before checking the controlled flood reference.</p>
+            <div id="floodReferenceCheckResult" class="civ-route-result civ-flood-check-result" aria-live="polite" hidden></div>
+
+            <section class="civ-forecast-section" aria-labelledby="floodAiAvailabilityTitle">
               <div class="flex items-start justify-between gap-2">
-                <h4 id="pagasaOutlookTitle" class="civ-forecast-section-title">PAGASA Weather Outlook</h4>
-                <span id="pagasaForecastStatusBadge" class="civ-model-status">Checking</span>
+                <h4 id="floodAiAvailabilityTitle" class="civ-forecast-section-title">AI Flood Prediction</h4>
+                <span class="civ-model-status">Not available</span>
               </div>
-              <div id="pagasaForecastContent" class="civ-forecast-content mt-2" role="status" aria-live="polite">
-                PAGASA detailed forecast requires API access.
-              </div>
-              <div id="pagasaForecastEntries" class="civ-forecast-entries mt-2" hidden></div>
-              <details id="pagasaFullForecastDetails" class="civ-forecast-full-outlook mt-2" hidden>
-                <summary>View Full 10-Day Outlook</summary>
-                <div id="pagasaFullForecastEntries" class="civ-forecast-entries mt-2"></div>
-              </details>
+              <p class="civ-forecast-content mt-2">TensorFlow prediction is unavailable until a governed model and validated forecast inputs are ready.</p>
             </section>
 
-            <section class="civ-forecast-section" aria-labelledby="mappedFloodSusceptibilityTitle">
-              <h4 id="mappedFloodSusceptibilityTitle" class="civ-forecast-section-title">Mapped Flood Susceptibility</h4>
-              <div id="mappedFloodSusceptibilityContent" class="civ-forecast-content mt-2" aria-live="polite">
-                <?php echo !empty($draftBarangayPreviewEnabled) ? 'DENR-MGB mapped flood susceptibility is currently available.' : 'Published mapped flood susceptibility loads from the operational hazard layer.'; ?>
-              </div>
-            </section>
-
-            <section class="civ-forecast-section" aria-labelledby="aiFloodPredictionTitle">
-              <div class="flex items-start justify-between gap-2">
-                <h4 id="aiFloodPredictionTitle" class="civ-forecast-section-title">TensorFlow AI Prediction</h4>
-                <span id="floodModelStatus" class="civ-model-status">Pending</span>
-              </div>
-              <p id="floodForecastContent" class="civ-forecast-content mt-2">TensorFlow AI prediction is not yet connected.</p>
-            </section>
-
-            <p class="civ-map-helper">Flood Risk Check evaluates the selected exact location. DENR-MGB mapped flood susceptibility is currently available. PAGASA detailed forecast requires API access. TensorFlow AI prediction is not yet connected.</p>
+            <p class="civ-map-helper">This checks the selected point against controlled draft GIS polygons. It is not an AI prediction, real-time flood forecast, or official emergency guidance.</p>
           </div>
         </div>
       </section>

@@ -10,6 +10,11 @@
     routeSampleIntervalMeters: 50,
     referenceLoadTimeoutMilliseconds: 12000
   });
+  const MAP_SELECTION_MODES = Object.freeze({
+    NONE: 'NONE',
+    ROUTE_ORIGIN_SELECTION: 'ROUTE_ORIGIN_SELECTION',
+    FLOOD_CHECK_LOCATION_SELECTION: 'FLOOD_CHECK_LOCATION_SELECTION'
+  });
 
   const DEFAULT_LOCATION_DETAILS = 'Select a barangay, hazard area, or evacuation center from the map to view information.';
   const FLOOD_CLASSIFICATIONS = Object.freeze({
@@ -126,7 +131,7 @@
     routeOriginLastAttemptLat: null,
     routeOriginLastAttemptLng: null,
     routeOriginLastResult: 'NOT_USED',
-    routeOriginSelectionActive: false,
+    mapSelectionMode: MAP_SELECTION_MODES.NONE,
     routeOrigin: null,
     routeOriginMarker: null,
     routeDestinationMarker: null,
@@ -145,9 +150,10 @@
     routeFloodExposure: null,
     routeLandslideExposure: null,
     routeGeometryRendered: false,
-    forecastLocationSelectionActive: false,
     forecastLocation: null,
     forecastLocationMarker: null,
+    floodReferenceCheckPending: false,
+    floodReferenceCheckResult: null,
     forecastUsesRouteOrigin: false,
     useRouteOriginHandlerBound: false,
     useRouteOriginClickCount: 0,
@@ -172,7 +178,7 @@
       earthquakeFaults: L.layerGroup(),
       evacuationCenters: L.layerGroup(),
       evacuationRoutes: L.layerGroup(),
-      forecastLocations: L.layerGroup(),
+      floodCheckLocations: L.layerGroup(),
       riskPredictions: L.layerGroup()
     });
   }
@@ -495,6 +501,23 @@
     }
 
     return previewConfig;
+  }
+
+  function getAdminFloodReferenceCheckConfig() {
+    const runtimeConfig = window.CiventralDrrmMapConfig;
+    const config = runtimeConfig && runtimeConfig.adminFloodReferenceCheck;
+    if (
+      !runtimeConfig || runtimeConfig.dataMode !== 'operational' ||
+      !config || config.enabled !== true ||
+      typeof config.endpoint !== 'string' || config.endpoint === '' ||
+      !config.endpoint.includes('/api/drrm/admin-flood-reference-check.php') ||
+      typeof config.csrfToken !== 'string' || config.csrfToken === '' ||
+      config.endpoint.includes('/api/drrm/dev/')
+    ) {
+      return null;
+    }
+
+    return config;
   }
 
   function isDarkMode() {
@@ -3193,18 +3216,26 @@
     });
   }
 
+  function routeOriginSelectionIsActive() {
+    return state.mapSelectionMode === MAP_SELECTION_MODES.ROUTE_ORIGIN_SELECTION;
+  }
+
+  function floodCheckLocationSelectionIsActive() {
+    return state.mapSelectionMode === MAP_SELECTION_MODES.FLOOD_CHECK_LOCATION_SELECTION;
+  }
+
   function mapPointSelectionActive() {
-    return state.routeOriginSelectionActive || state.forecastLocationSelectionActive;
+    return state.mapSelectionMode !== MAP_SELECTION_MODES.NONE;
   }
 
   function handleMapPointSelection(event, clickSource) {
     if (!mapPointSelectionActive() || !event || !event.latlng) return false;
 
-    if (state.routeOriginSelectionActive) {
+    if (routeOriginSelectionIsActive()) {
       return handleRouteOriginPoint(event.latlng, clickSource || 'MAP');
     }
 
-    if (state.forecastLocationSelectionActive) {
+    if (floodCheckLocationSelectionIsActive()) {
       const latitude = Number(event.latlng.lat);
       const longitude = Number(event.latlng.lng);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
@@ -3249,7 +3280,7 @@
   }
 
   function setRouteOriginSelectionActive(active) {
-    if (active === true && state.forecastLocationSelectionActive) {
+    if (active === true && floodCheckLocationSelectionIsActive()) {
       setForecastLocationSelectionActive(false);
       setStatus(
         'forecastLocationStatus',
@@ -3258,15 +3289,19 @@
           : 'Select an exact point inside Caloocan City.'
       );
     }
-    state.routeOriginSelectionActive = active === true;
+    if (active === true) {
+      state.mapSelectionMode = MAP_SELECTION_MODES.ROUTE_ORIGIN_SELECTION;
+    } else if (routeOriginSelectionIsActive()) {
+      state.mapSelectionMode = MAP_SELECTION_MODES.NONE;
+    }
     const container = document.getElementById(CONFIG.containerId);
     const button = document.getElementById('setRouteOriginButton');
 
-    if (container) container.classList.toggle('is-selecting-route-origin', state.routeOriginSelectionActive);
+    if (container) container.classList.toggle('is-selecting-route-origin', routeOriginSelectionIsActive());
     if (button) {
-      button.setAttribute('aria-pressed', state.routeOriginSelectionActive ? 'true' : 'false');
+      button.setAttribute('aria-pressed', routeOriginSelectionIsActive() ? 'true' : 'false');
       const label = button.querySelector('span');
-      if (label) label.textContent = state.routeOriginSelectionActive ? 'Click Inside Caloocan' : 'Set Location on Map';
+      if (label) label.textContent = routeOriginSelectionIsActive() ? 'Click Inside Caloocan' : 'Set Location on Map';
     }
   }
 
@@ -3414,7 +3449,7 @@
       state.routeOriginMapClickCount += 1;
     }
 
-    if (!state.routeOriginSelectionActive) {
+    if (!routeOriginSelectionIsActive()) {
       state.routeOriginLastResult = 'MODE_NOT_ACTIVE';
       return false;
     }
@@ -4227,7 +4262,7 @@
   }
 
   function setForecastLocationSelectionActive(active) {
-    if (active === true && state.routeOriginSelectionActive) {
+    if (active === true && routeOriginSelectionIsActive()) {
       setRouteOriginSelectionActive(false);
       setStatus(
         'routeOriginStatus',
@@ -4236,17 +4271,21 @@
           : 'Choose an exact point inside Caloocan City.'
       );
     }
-    state.forecastLocationSelectionActive = active === true;
+    if (active === true) {
+      state.mapSelectionMode = MAP_SELECTION_MODES.FLOOD_CHECK_LOCATION_SELECTION;
+    } else if (floodCheckLocationSelectionIsActive()) {
+      state.mapSelectionMode = MAP_SELECTION_MODES.NONE;
+    }
     const container = document.getElementById(CONFIG.containerId);
     const button = document.getElementById('setForecastLocationButton');
 
     if (container) {
-      container.classList.toggle('is-selecting-forecast-location', state.forecastLocationSelectionActive);
+      container.classList.toggle('is-selecting-flood-check-location', floodCheckLocationSelectionIsActive());
     }
     if (button) {
-      button.setAttribute('aria-pressed', state.forecastLocationSelectionActive ? 'true' : 'false');
+      button.setAttribute('aria-pressed', floodCheckLocationSelectionIsActive() ? 'true' : 'false');
       const label = button.querySelector('span');
-      if (label) label.textContent = state.forecastLocationSelectionActive ? 'Click Inside Caloocan' : 'Choose Assessment Location';
+      if (label) label.textContent = floodCheckLocationSelectionIsActive() ? 'Click Inside Caloocan' : 'Set Location on Map';
     }
   }
 
@@ -4305,91 +4344,218 @@
     }) || null;
   }
 
+  function clearFloodReferenceCheckResult() {
+    state.floodReferenceCheckResult = null;
+    state.mappedFloodSusceptibility = null;
+    const result = document.getElementById('floodReferenceCheckResult');
+    if (result) {
+      result.replaceChildren();
+      result.hidden = true;
+      result.removeAttribute('data-classification');
+    }
+    setStatus(
+      'floodReferenceCheckStatus',
+      state.forecastLocation
+        ? 'Location changed. Check the controlled flood reference again.'
+        : 'Select a location before checking the controlled flood reference.'
+    );
+  }
+
   function clearForecastLocation() {
     setForecastLocationSelectionActive(false);
     if (state.layerGroups && state.forecastLocationMarker) {
-      state.layerGroups.forecastLocations.removeLayer(state.forecastLocationMarker);
+      state.layerGroups.floodCheckLocations.removeLayer(state.forecastLocationMarker);
     }
     state.forecastLocation = null;
     state.forecastLocationMarker = null;
     state.forecastUsesRouteOrigin = false;
-    state.mappedFloodSusceptibility = null;
+    clearFloodReferenceCheckResult();
 
     const input = document.getElementById('forecastLocationInput');
     const clearButton = document.getElementById('clearForecastLocationButton');
-    if (input) input.value = 'No assessment location selected';
+    const checkButton = document.getElementById('checkFloodReferenceButton');
+    if (input) input.value = 'No location selected';
     if (clearButton) clearButton.hidden = true;
+    if (checkButton) checkButton.disabled = true;
     setStatus('forecastLocationStatus', 'Select an exact point inside Caloocan City.');
-    setStatus(
-      'mappedFloodSusceptibilityContent',
-      'Flood Risk Check evaluates the selected exact location against DENR-MGB mapped flood susceptibility.'
-    );
   }
 
-  async function evaluateMappedFloodSusceptibility() {
-    const content = document.getElementById('mappedFloodSusceptibilityContent');
-    if (!state.forecastLocation || !content) return false;
-
-    content.textContent = 'Checking the selected point against DENR-MGB flood susceptibility...';
-    const loaded = await loadDraftFloodPreview();
-    if (!loaded || !state.floodPreviewFeatureCollection || !pointSelectionToolsAvailable()) {
-      state.mappedFloodSusceptibility = 'UNAVAILABLE';
-      content.textContent = 'Mapped flood susceptibility is unavailable for this development preview.';
-      return false;
+  function assertFloodReferenceCheckResponse(payload) {
+    const classifications = ['LOW', 'MODERATE', 'HIGH', 'VERY HIGH'];
+    if (!payload || payload.success !== true || typeof payload.intersection !== 'boolean'
+      || !payload.location || !Number.isFinite(payload.location.latitude)
+      || !Number.isFinite(payload.location.longitude)
+      || !payload.reference || payload.reference.hazard_type !== 'FLOOD'
+      || payload.reference.source_status !== 'DRAFT_ADMIN_REFERENCE'
+      || payload.reference.source_organization !== 'DENR-MGB') {
+      throw new Error('Invalid flood reference check response.');
     }
-
-    const point = window.turf.point([
-      state.forecastLocation.longitude,
-      state.forecastLocation.latitude
-    ]);
-    let highest = null;
-
-    state.floodPreviewFeatureCollection.features.forEach(function (feature) {
-      const properties = feature.properties || {};
-      const weight = ROUTE_HAZARD_WEIGHTS[properties.display_risk_label];
-      if (!Number.isFinite(weight)) return;
-      if (!window.turf.booleanPointInPolygon(point, feature, { ignoreBoundary: false })) return;
-      if (!highest || weight > highest.weight) {
-        highest = {
-          weight: weight,
-          displayLabel: properties.display_risk_label,
-          code: properties.mgb_code,
-          source: properties.source_agency
-        };
+    if (payload.intersection === false) {
+      if (payload.status !== 'NO_MAPPED_REFERENCE_INTERSECTION'
+        || Object.prototype.hasOwnProperty.call(payload, 'classification')) {
+        throw new Error('Invalid no-intersection flood reference response.');
       }
-    });
+      return payload;
+    }
+    if (payload.status !== 'DRAFT_ADMIN_REFERENCE'
+      || !classifications.includes(payload.classification)
+      || !Number.isInteger(payload.risk_rank)
+      || payload.risk_rank !== classifications.indexOf(payload.classification) + 1
+      || !Number.isInteger(payload.overlap_count) || payload.overlap_count < 1
+      || typeof payload.multiple_reference_polygons !== 'boolean'
+      || payload.multiple_reference_polygons !== (payload.overlap_count > 1)) {
+      throw new Error('Invalid intersecting flood reference response.');
+    }
+    return payload;
+  }
 
-    if (!highest) {
-      state.mappedFloodSusceptibility = 'NONE_MAPPED';
-      const heading = document.createElement('strong');
-      const description = document.createElement('span');
-      const source = document.createElement('span');
-      heading.textContent = 'No mapped susceptibility polygon';
-      description.textContent = 'No mapped flood susceptibility polygon at the selected point in the current development dataset.';
-      source.textContent = 'Source checked: DENR-MGB';
-      content.replaceChildren(heading, description, source);
-      return true;
+  function appendFloodReferenceResultLine(container, label, value) {
+    const line = document.createElement('div');
+    const term = document.createElement('span');
+    const detail = document.createElement('span');
+    term.className = 'civ-route-result-label';
+    term.textContent = label;
+    detail.textContent = value;
+    line.append(term, detail);
+    container.appendChild(line);
+  }
+
+  function renderFloodReferenceCheckResult(payload) {
+    const result = document.getElementById('floodReferenceCheckResult');
+    if (!result) return false;
+
+    const title = document.createElement('strong');
+    const interpretation = document.createElement('p');
+    const disclaimer = document.createElement('p');
+    const coordinates = payload.location.latitude.toFixed(6)
+      + ', ' + payload.location.longitude.toFixed(6);
+    const selectedLocation = state.forecastLocation && state.forecastLocation.barangayName
+      ? state.forecastLocation.barangayName + ' • ' + coordinates
+      : coordinates;
+
+    title.textContent = 'Flood Reference Check';
+    result.replaceChildren(title);
+    if (payload.intersection === true) {
+      const displayLabels = {
+        LOW: 'LOW',
+        MODERATE: 'MODERATE',
+        HIGH: 'HIGH',
+        'VERY HIGH': 'VERY HIGH'
+      };
+      result.dataset.classification = payload.classification;
+      appendFloodReferenceResultLine(result, 'Reference Classification', displayLabels[payload.classification]);
+      appendFloodReferenceResultLine(result, 'Source Status', 'DRAFT ADMIN REFERENCE');
+      appendFloodReferenceResultLine(result, 'Selected Location', selectedLocation);
+      appendFloodReferenceResultLine(result, 'Reference Source', 'DENR-MGB');
+      interpretation.textContent = 'The selected point intersects a '
+        + displayLabels[payload.classification].toLowerCase()
+        + ' flood susceptibility reference polygon.';
+      if (payload.multiple_reference_polygons) {
+        const overlap = document.createElement('p');
+        overlap.className = 'civ-route-result-warning';
+        overlap.textContent = payload.overlap_count
+          + ' controlled reference polygons overlap this point; the highest existing severity is shown.';
+        result.appendChild(overlap);
+      }
+      state.mappedFloodSusceptibility = payload.classification;
+    } else {
+      result.dataset.classification = 'NONE';
+      appendFloodReferenceResultLine(result, 'Status', 'NO MAPPED REFERENCE INTERSECTION');
+      appendFloodReferenceResultLine(result, 'Source Status', 'DRAFT ADMIN REFERENCE');
+      appendFloodReferenceResultLine(result, 'Selected Location', selectedLocation);
+      appendFloodReferenceResultLine(result, 'Reference Source', 'DENR-MGB');
+      interpretation.textContent = 'No mapped flood susceptibility polygon intersects this selected location in the current controlled draft reference dataset.';
+      state.mappedFloodSusceptibility = 'NO_MAPPED_REFERENCE_INTERSECTION';
     }
 
-    state.mappedFloodSusceptibility = highest.displayLabel;
-    const heading = document.createElement('strong');
-    const classification = document.createElement('span');
-    const source = document.createElement('span');
-    heading.textContent = highest.displayLabel;
-    classification.textContent = 'MGB Classification: ' + highest.code;
-    source.textContent = 'Source: ' + highest.source;
-    content.replaceChildren(heading, classification, source);
+    interpretation.className = 'civ-flood-check-interpretation';
+    disclaimer.className = 'civ-route-result-warning';
+    disclaimer.textContent = payload.intersection
+      ? 'This is a planning reference based on controlled draft GIS data. It is not a TensorFlow prediction, real-time flood forecast, or official emergency advisory.'
+      : 'This does not mean the location is flood-safe. The current reference dataset is incomplete/draft and does not replace official advisories.';
+    result.append(interpretation, disclaimer);
+    result.hidden = false;
     return true;
+  }
+
+  async function checkFloodReference() {
+    const config = getAdminFloodReferenceCheckConfig();
+    const location = state.forecastLocation;
+    const button = document.getElementById('checkFloodReferenceButton');
+    const buttonLabel = button ? button.querySelector('span') : null;
+    if (!config || !location || state.floodReferenceCheckPending) return false;
+
+    state.floodReferenceCheckPending = true;
+    if (button) button.disabled = true;
+    if (buttonLabel) buttonLabel.textContent = 'Checking Reference';
+    setStatus('floodReferenceCheckStatus', 'Checking the selected point against the controlled flood reference...');
+
+    try {
+      const response = await window.fetch(config.endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': config.csrfToken
+        },
+        body: JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude
+        })
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        throw new Error('Invalid flood reference check response.');
+      }
+      if (!response.ok) {
+        const message = response.status === 422
+          ? 'Please select a location inside Caloocan City.'
+          : 'The controlled flood reference check is temporarily unavailable.';
+        setStatus('floodReferenceCheckStatus', message);
+        return false;
+      }
+
+      payload = assertFloodReferenceCheckResponse(payload);
+      if (!state.forecastLocation
+        || state.forecastLocation.latitude !== location.latitude
+        || state.forecastLocation.longitude !== location.longitude
+        || payload.location.latitude !== location.latitude
+        || payload.location.longitude !== location.longitude) {
+        setStatus('floodReferenceCheckStatus', 'Location changed. Check the controlled flood reference again.');
+        return false;
+      }
+
+      state.floodReferenceCheckResult = payload;
+      renderFloodReferenceCheckResult(payload);
+      setStatus(
+        'floodReferenceCheckStatus',
+        payload.intersection
+          ? 'Controlled flood reference check complete.'
+          : 'No mapped reference intersection found; review the draft-data limitation below.'
+      );
+      return true;
+    } catch (error) {
+      setStatus('floodReferenceCheckStatus', 'The controlled flood reference check is temporarily unavailable.');
+      return false;
+    } finally {
+      state.floodReferenceCheckPending = false;
+      if (buttonLabel) buttonLabel.textContent = 'Check Flood Reference';
+      if (button) button.disabled = !state.forecastLocation;
+    }
   }
 
   async function setForecastLocation(latitude, longitude, sourceLabel) {
     if (!state.map || !state.layerGroups || !routePointIsInsideCaloocan(latitude, longitude)) {
-      setStatus('forecastLocationStatus', 'Choose a point inside the validated Caloocan boundary.');
+      setStatus('forecastLocationStatus', 'Please select a location inside Caloocan City.');
       return false;
     }
 
     if (state.forecastLocationMarker) {
-      state.layerGroups.forecastLocations.removeLayer(state.forecastLocationMarker);
+      state.layerGroups.floodCheckLocations.removeLayer(state.forecastLocationMarker);
     }
 
     const barangay = findBarangayAtPoint(latitude, longitude);
@@ -4398,28 +4564,26 @@
       longitude: longitude,
       barangayName: barangay ? barangay.properties.name : null
     });
-    state.forecastUsesRouteOrigin = sourceLabel === 'ROUTE_ORIGIN';
+    state.forecastUsesRouteOrigin = false;
+    clearFloodReferenceCheckResult();
     state.forecastLocationMarker = L.marker([latitude, longitude], {
       pane: 'selectionOverlayPane',
       icon: forecastLocationMarkerIcon(),
       keyboard: true,
       title: 'Selected flood risk check location'
     }).bindTooltip('Flood risk check location', { direction: 'top', opacity: 0.96 });
-    state.forecastLocationMarker.addTo(state.layerGroups.forecastLocations);
+    state.forecastLocationMarker.addTo(state.layerGroups.floodCheckLocations);
 
     const input = document.getElementById('forecastLocationInput');
     const clearButton = document.getElementById('clearForecastLocationButton');
+    const checkButton = document.getElementById('checkFloodReferenceButton');
     const coordinateLabel = latitude.toFixed(6) + ', ' + longitude.toFixed(6);
-    if (input) input.value = barangay ? barangay.properties.name + ' — ' + coordinateLabel : coordinateLabel;
     if (clearButton) clearButton.hidden = false;
-    setStatus(
-      'forecastLocationStatus',
-      sourceLabel === 'ROUTE_ORIGIN'
-        ? 'Using the current Evacuation Route starting location in the Flood Risk Check.'
-        : 'Flood Risk Check evaluates this exact location inside Caloocan City.'
-    );
+    if (input) input.value = 'Location selected';
+    if (checkButton) checkButton.disabled = false;
+    setStatus('forecastLocationStatus', (barangay ? barangay.properties.name + ' • ' : '') + coordinateLabel);
+    setStatus('floodReferenceCheckStatus', 'Location selected. Check the controlled flood reference.');
     setForecastLocationSelectionActive(false);
-    await evaluateMappedFloodSusceptibility();
     return true;
   }
 
@@ -4669,44 +4833,38 @@
   }
 
   async function initializeFloodForecastTool() {
-    const config = getFloodForecastPreviewConfig();
+    const config = getAdminFloodReferenceCheckConfig();
     const setButton = document.getElementById('setForecastLocationButton');
-    const useRouteButton = document.getElementById('useRouteOriginForForecastButton');
     const clearButton = document.getElementById('clearForecastLocationButton');
-    if (!setButton || !useRouteButton || !clearButton || !state.map) return false;
+    const checkButton = document.getElementById('checkFloodReferenceButton');
+    if (!setButton || !clearButton || !checkButton || !state.map) return false;
     if (setButton.dataset.forecastToolBound === 'true') return Boolean(config);
     setButton.dataset.forecastToolBound = 'true';
 
     setButton.addEventListener('click', function () {
       if (!config || !pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) return;
-      setForecastLocationSelectionActive(!state.forecastLocationSelectionActive);
+      setForecastLocationSelectionActive(!floodCheckLocationSelectionIsActive());
       setStatus(
         'forecastLocationStatus',
-        state.forecastLocationSelectionActive
+        floodCheckLocationSelectionIsActive()
           ? 'Click an exact point inside the Caloocan boundary.'
-          : (state.forecastLocation ? 'Exact forecast point selected inside Caloocan City.' : 'Select an exact point inside Caloocan City.')
+          : (state.forecastLocation ? 'Location selected.' : 'Select an exact point inside Caloocan City.')
       );
     });
     clearButton.addEventListener('click', clearForecastLocation);
+    checkButton.addEventListener('click', function () {
+      void checkFloodReference();
+    });
     if (!config || !pointSelectionToolsAvailable() || !state.cityBoundaryFeatureCollection) {
       setButton.disabled = true;
-      useRouteButton.disabled = true;
+      checkButton.disabled = true;
       setStatus('floodForecastConnectionStatus', 'Unavailable');
-      setStatus('pagasaForecastContent', 'PAGASA detailed forecast requires API access.');
-      setStatus('mappedFloodSusceptibilityContent', 'Mapped flood susceptibility is not available in this environment.');
+      setStatus('floodReferenceCheckStatus', 'The controlled flood reference check is unavailable in this environment.');
       return false;
     }
 
-    updateForecastRouteOriginButton();
-    await loadPagasaForecastPreview();
-    const connectionStatus = document.getElementById('preparednessConnectionStatus');
-    if (connectionStatus) {
-      const icon = document.createElement('i');
-      icon.className = 'fa-solid fa-flask';
-      icon.setAttribute('aria-hidden', 'true');
-      connectionStatus.replaceChildren(icon, document.createTextNode(' Development Preview'));
-    }
-    setStatus('floodForecastConnectionStatus', 'Development Preview');
+    setStatus('floodForecastConnectionStatus', 'DRAFT ADMIN REFERENCE');
+    setStatus('floodReferenceCheckStatus', 'Select a location before checking the controlled flood reference.');
     return true;
   }
 
@@ -4778,6 +4936,11 @@
     });
 
     function activateTab(activeTab, moveFocus) {
+      if (activeTab.id === 'floodForecastTab' && routeOriginSelectionIsActive()) {
+        setRouteOriginSelectionActive(false);
+      } else if (activeTab.id === 'evacuationRouteTab' && floodCheckLocationSelectionIsActive()) {
+        setForecastLocationSelectionActive(false);
+      }
       tabs.forEach(function (tab) {
         const isActive = tab === activeTab;
         const panelId = tab.getAttribute('aria-controls');
@@ -5188,7 +5351,7 @@
       earthquakeFaults: 'operationalLinePane',
       evacuationRoutes: 'routeOverlayPane',
       evacuationCenters: 'markerPane',
-      forecastLocations: 'selectionOverlayPane'
+      floodCheckLocations: 'selectionOverlayPane'
     };
 
     return paneByLayer[layerKey] || 'hazardPolygonPane';
@@ -5328,7 +5491,7 @@
       routeOriginSetButtonHandlerBound: state.routeOriginSetButtonHandlerBound,
       routeOriginSetButtonClickCount: state.routeOriginSetButtonClickCount,
       routeOriginSelected: Boolean(currentRouteOrigin),
-      routeOriginSelectionMode: state.routeOriginSelectionActive,
+      routeOriginSelectionMode: routeOriginSelectionIsActive(),
       routeOriginMapClickCount: state.routeOriginMapClickCount,
       routeOriginFeatureClickCount: state.routeOriginFeatureClickCount,
       routeOriginSelectionAttemptCount: state.routeOriginSelectionAttemptCount,
@@ -5353,7 +5516,8 @@
       operationalRouteFetchCount: state.operationalRouteFetchCount,
       routeSampleIntervalMeters: CONFIG.routeSampleIntervalMeters,
       forecastLocationSelected: Boolean(state.forecastLocation),
-      forecastLocationSelectionMode: state.forecastLocationSelectionActive,
+      forecastLocationSelectionMode: floodCheckLocationSelectionIsActive(),
+      mapSelectionMode: state.mapSelectionMode,
       forecastLocationLat: state.forecastLocation ? state.forecastLocation.latitude : null,
       forecastLocationLng: state.forecastLocation ? state.forecastLocation.longitude : null,
       forecastUsesRouteOrigin: state.forecastUsesRouteOrigin,
@@ -5437,7 +5601,7 @@
     state.mapPointSelectionHandlerBound = true;
     state.layerGroups.barangays.addTo(state.map);
     state.layerGroups.evacuationRoutes.addTo(state.map);
-    state.layerGroups.forecastLocations.addTo(state.map);
+    state.layerGroups.floodCheckLocations.addTo(state.map);
     state.layerGroups.riskPredictions.addTo(state.map);
 
     bindBarangaySearch();
@@ -5463,7 +5627,7 @@
         buttonFound: Boolean(document.getElementById('setRouteOriginButton')),
         handlerBound: state.routeOriginSetButtonHandlerBound,
         buttonClickCount: state.routeOriginSetButtonClickCount,
-        selectionMode: state.routeOriginSelectionActive,
+        selectionMode: routeOriginSelectionIsActive(),
         mapClickCount: state.routeOriginMapClickCount,
         featureClickCount: state.routeOriginFeatureClickCount,
         selectionAttemptCount: state.routeOriginSelectionAttemptCount,

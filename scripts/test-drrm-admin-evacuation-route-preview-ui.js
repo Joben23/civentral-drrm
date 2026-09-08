@@ -8,6 +8,8 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const mapPath = path.join(root, 'assets/js/drrm/hazard-evacuation-map.js');
 const originalSource = fs.readFileSync(mapPath, 'utf8');
+const pageSource = fs.readFileSync(path.join(root, 'pages/drrm/hazard-evacuation-map.php'), 'utf8');
+const markupSource = fs.readFileSync(path.join(root, 'includes/dashboard/hazard-evacuation-map.php'), 'utf8');
 const exportPoint = 'window.CiventralHazardMap = Object.freeze(publicApi);';
 const testExport = [
   'publicApi.__test = Object.freeze({',
@@ -18,7 +20,13 @@ const testExport = [
   '  handleMapPointSelection: handleMapPointSelection,',
   '  findDevelopmentEvacuationRoute: findDevelopmentEvacuationRoute,',
   '  initializeEvacuationRouteTool: initializeEvacuationRouteTool,',
-  '  configureAdminPlanningRouteUi: configureAdminPlanningRouteUi',
+  '  configureAdminPlanningRouteUi: configureAdminPlanningRouteUi,',
+  '  getAdminFloodReferenceCheckConfig: getAdminFloodReferenceCheckConfig,',
+  '  initializeFloodForecastTool: initializeFloodForecastTool,',
+  '  setForecastLocationSelectionActive: setForecastLocationSelectionActive,',
+  '  setForecastLocation: setForecastLocation,',
+  '  checkFloodReference: checkFloodReference,',
+  '  clearForecastLocation: clearForecastLocation',
   '});',
   exportPoint
 ].join('\n');
@@ -95,6 +103,8 @@ function element(id) {
 
 const previewButton = element('findSafeRouteButton');
 previewButton.labelElement = new FakeElement('span');
+element('setForecastLocationButton').labelElement = new FakeElement('span');
+element('checkFloodReferenceButton').labelElement = new FakeElement('span');
 element('routeCenterSelect').parentElement = new FakeElement();
 
 const document = {
@@ -190,6 +200,11 @@ const window = {
       enabled: true,
       endpoint: '../../api/drrm/admin-evacuation-route-preview.php',
       csrfToken: 'module-1-route-csrf-test-token'
+    },
+    adminFloodReferenceCheck: {
+      enabled: true,
+      endpoint: '../../api/drrm/admin-flood-reference-check.php',
+      csrfToken: 'module-1-flood-csrf-test-token'
     }
   },
   CiventralDrrmOperationalData: {
@@ -238,7 +253,8 @@ const state = hooks.state;
 state.map = fakeMap;
 state.layerGroups = {
   evacuationCenters: createLayerGroup(),
-  evacuationRoutes: createLayerGroup()
+  evacuationRoutes: createLayerGroup(),
+  floodCheckLocations: createLayerGroup()
 };
 state.cityBoundaryFeatureCollection = {
   type: 'FeatureCollection',
@@ -312,16 +328,16 @@ async function run() {
   assert.equal(state.routeCentersById.has(references.features[0].properties.reference_id), true);
 
   assert.equal(hooks.activateRouteOriginSelectionMode(), true);
-  assert.equal(state.routeOriginSelectionActive, true);
+  assert.equal(state.mapSelectionMode, 'ROUTE_ORIGIN_SELECTION');
   assert.equal(hooks.handleMapPointSelection({ latlng: { lat: 100, lng: 121.02 } }, 'MAP'), false);
   assert.equal(state.routeOriginLastResult, 'INVALID_COORDINATES');
-  assert.equal(state.routeOriginSelectionActive, true);
+  assert.equal(state.mapSelectionMode, 'ROUTE_ORIGIN_SELECTION');
 
   assert.equal(
     hooks.handleMapPointSelection({ latlng: { lat: 14.7663938, lng: 121.0607398 } }, 'MAP'),
     true
   );
-  assert.equal(state.routeOriginSelectionActive, false);
+  assert.equal(state.mapSelectionMode, 'NONE');
   assert.equal(state.routeOriginLastResult, 'POINT_ACCEPTED');
   assert.equal(state.routeOriginMarker !== null, true);
   assert.equal(element('routeStartInput').value, '14.766394, 121.060740');
@@ -403,6 +419,142 @@ async function run() {
   assert.match(resultText, /selected center is unverified/);
   assert.doesNotMatch(resultText, /Find Safe Route|Recommended Official Route|Development Recommended Route/);
 
+  const floodConfig = hooks.getAdminFloodReferenceCheckConfig();
+  assert.equal(floodConfig.endpoint, '../../api/drrm/admin-flood-reference-check.php');
+  assert.equal(floodConfig.csrfToken, 'module-1-flood-csrf-test-token');
+  assert.equal(floodConfig.endpoint.includes('/api/drrm/dev/'), false);
+  assert.equal(await hooks.initializeFloodForecastTool(), true);
+
+  const floodSetButton = element('setForecastLocationButton');
+  floodSetButton.listeners.get('click')({ preventDefault: function () {} });
+  assert.equal(state.mapSelectionMode, 'FLOOD_CHECK_LOCATION_SELECTION');
+  assert.equal(floodSetButton.labelElement.textContent, 'Click Inside Caloocan');
+
+  assert.equal(
+    hooks.handleMapPointSelection({ latlng: { lat: 100, lng: 121.06 } }, 'MAP'),
+    true
+  );
+  assert.equal(state.mapSelectionMode, 'FLOOD_CHECK_LOCATION_SELECTION');
+  assert.equal(
+    element('forecastLocationStatus').textContent,
+    'Please select a location inside Caloocan City.'
+  );
+
+  assert.equal(
+    hooks.handleMapPointSelection({ latlng: { lat: 14.766, lng: 121.064 } }, 'MAP'),
+    true
+  );
+  assert.equal(state.mapSelectionMode, 'NONE');
+  assert.equal(state.forecastLocation.latitude, 14.766);
+  assert.equal(state.forecastLocation.longitude, 121.064);
+  assert.equal(state.forecastLocationMarker !== null, true);
+  assert.equal(state.layerGroups.floodCheckLocations.getLayers().length, 1);
+  assert.equal(element('forecastLocationInput').value, 'Location selected');
+  assert.equal(element('checkFloodReferenceButton').disabled, false);
+  assert.equal(
+    hooks.handleMapPointSelection({ latlng: { lat: 14.767, lng: 121.065 } }, 'MAP'),
+    false
+  );
+
+  const routeLayerCountBeforeFloodCheck = state.layerGroups.evacuationRoutes.getLayers().length;
+  const routeOriginBeforeFloodCheck = state.routeOrigin;
+  const floodRequests = [];
+  window.fetch = async function (url, options) {
+    floodRequests.push({ url: url, options: options });
+    return {
+      ok: true,
+      status: 200,
+      json: async function () {
+        return {
+          success: true,
+          status: 'DRAFT_ADMIN_REFERENCE',
+          intersection: true,
+          classification: 'HIGH',
+          risk_rank: 3,
+          overlap_count: 2,
+          multiple_reference_polygons: true,
+          location: { latitude: 14.766, longitude: 121.064 },
+          reference: {
+            hazard_type: 'FLOOD',
+            source_status: 'DRAFT_ADMIN_REFERENCE',
+            source_organization: 'DENR-MGB'
+          }
+        };
+      }
+    };
+  };
+
+  assert.equal(await hooks.checkFloodReference(), true);
+  assert.equal(floodRequests.length, 1);
+  assert.equal(floodRequests[0].url, '../../api/drrm/admin-flood-reference-check.php');
+  assert.equal(floodRequests[0].options.method, 'POST');
+  assert.equal(floodRequests[0].options.credentials, 'same-origin');
+  assert.equal(floodRequests[0].options.headers['Content-Type'], 'application/json');
+  assert.equal(
+    floodRequests[0].options.headers['X-CSRF-Token'],
+    'module-1-flood-csrf-test-token'
+  );
+  const floodBody = JSON.parse(floodRequests[0].options.body);
+  assert.deepEqual(Object.keys(floodBody).sort(), ['latitude', 'longitude']);
+  assert.equal(floodBody.latitude, 14.766);
+  assert.equal(floodBody.longitude, 121.064);
+  assert.equal(Object.prototype.hasOwnProperty.call(floodBody, 'classification'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(floodBody, 'polygon'), false);
+
+  const floodResult = element('floodReferenceCheckResult');
+  assert.equal(floodResult.hidden, false);
+  assert.equal(floodResult.dataset.classification, 'HIGH');
+  assert.match(floodResult.textContent, /Flood Reference Check/);
+  assert.match(floodResult.textContent, /Reference ClassificationHIGH/);
+  assert.match(floodResult.textContent, /DRAFT ADMIN REFERENCE/);
+  assert.match(floodResult.textContent, /DENR-MGB/);
+  assert.match(floodResult.textContent, /2 controlled reference polygons overlap/);
+  assert.match(floodResult.textContent, /not a TensorFlow prediction/);
+  assert.strictEqual(state.routeOrigin, routeOriginBeforeFloodCheck);
+  assert.equal(state.layerGroups.evacuationRoutes.getLayers().length, routeLayerCountBeforeFloodCheck);
+
+  await hooks.setForecastLocation(14.770, 121.06074, 'MAP_CLICK');
+  assert.equal(floodResult.hidden, true);
+  assert.equal(state.floodReferenceCheckResult, null);
+  assert.strictEqual(state.routeOrigin, routeOriginBeforeFloodCheck);
+  window.fetch = async function () {
+    return {
+      ok: true,
+      status: 200,
+      json: async function () {
+        return {
+          success: true,
+          status: 'NO_MAPPED_REFERENCE_INTERSECTION',
+          intersection: false,
+          location: { latitude: 14.770, longitude: 121.06074 },
+          reference: {
+            hazard_type: 'FLOOD',
+            source_status: 'DRAFT_ADMIN_REFERENCE',
+            source_organization: 'DENR-MGB'
+          }
+        };
+      }
+    };
+  };
+  assert.equal(await hooks.checkFloodReference(), true);
+  assert.match(floodResult.textContent, /NO MAPPED REFERENCE INTERSECTION/);
+  assert.match(floodResult.textContent, /No mapped flood susceptibility polygon intersects/);
+  assert.match(floodResult.textContent, /does not mean the location is flood-safe/);
+  assert.doesNotMatch(floodResult.textContent, /LOW RISK/);
+
+  const selectedBarangaySentinel = { properties: { name: 'Barangay sentinel' } };
+  state.selectedBarangayRecord = selectedBarangaySentinel;
+  hooks.clearForecastLocation();
+  assert.equal(state.forecastLocation, null);
+  assert.equal(state.forecastLocationMarker, null);
+  assert.equal(state.layerGroups.floodCheckLocations.getLayers().length, 0);
+  assert.equal(floodResult.hidden, true);
+  assert.equal(element('forecastLocationInput').value, 'No location selected');
+  assert.equal(element('checkFloodReferenceButton').disabled, true);
+  assert.strictEqual(state.routeOrigin, routeOriginBeforeFloodCheck);
+  assert.strictEqual(state.selectedBarangayRecord, selectedBarangaySentinel);
+  assert.equal(state.layerGroups.evacuationRoutes.getLayers().length, routeLayerCountBeforeFloodCheck);
+
   const centerHandlerStart = originalSource.indexOf(
     'onEachFeature: function (feature, layer) {',
     originalSource.indexOf('async function loadDraftEvacuationCenterPreview')
@@ -418,8 +570,27 @@ async function run() {
   assert.ok(barangayHandler.includes('selectDraftBarangay(record);'));
   assert.ok(originalSource.includes('layer.bindTooltip(feature.properties.name'));
   assert.ok(originalSource.includes('state.map.on(\'click\''));
+  const floodRequestStart = originalSource.indexOf('async function checkFloodReference()');
+  const floodRequestEnd = originalSource.indexOf('async function setForecastLocation', floodRequestStart);
+  const floodRequestSource = originalSource.slice(floodRequestStart, floodRequestEnd);
+  assert.ok(floodRequestSource.includes('admin-flood-reference-check.php') === false);
+  assert.ok(floodRequestSource.includes('booleanPointInPolygon') === false);
+  assert.ok(floodRequestSource.includes("'X-CSRF-Token'"));
+  assert.ok(originalSource.includes('FLOOD_CHECK_LOCATION_SELECTION'));
+  assert.ok(originalSource.includes('handleFloodControl(control)'));
+  assert.ok(originalSource.includes('handleLandslideControl(control)'));
+  assert.ok(originalSource.includes('handleFaultInformationControl(control)'));
+  assert.ok(markupSource.includes('Check Flood Reference'));
+  assert.ok(markupSource.includes('NO MAPPED REFERENCE INTERSECTION') === false);
+  assert.ok(markupSource.includes('AI Flood Prediction'));
+  assert.ok(markupSource.includes('Not available'));
+  assert.ok(markupSource.includes('runFloodAiPredictionButton') === false);
+  assert.ok(pageSource.includes('runtimeConfig.adminFloodReferenceCheck.enabled === true'));
+  assert.ok(pageSource.indexOf('runtimeConfig.adminFloodReferenceCheck.enabled === true')
+    < pageSource.indexOf('if (state.initialized || !enhancePredictionSection()) return;'));
 
   process.stdout.write('AdminEvacuationRoutePreviewUiAssertions=PASS\n');
+  process.stdout.write('AdminFloodReferenceCheckUiAssertions=PASS\n');
   process.stdout.write('DrrmAdminEvacuationRoutePreviewUi=PASS\n');
 }
 

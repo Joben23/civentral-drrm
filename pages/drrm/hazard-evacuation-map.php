@@ -5,16 +5,9 @@ $basePath = '../../';
 
 require_once __DIR__ . '/../../config/app_environment.php';
 require_once __DIR__ . '/../../src/bootstrap.php';
-require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningAuthorizationService.php';
-require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningCsrfService.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapAuthorizationService.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapCsrfService.php';
 
-$aiAuthorization = \App\Services\DrrmEarlyWarningAuthorizationService::fromTrustedSession($headerUser);
-$aiViewAuthorized = $aiAuthorization->canView();
-$aiCsrfToken = $aiViewAuthorized
-    ? (new \App\Services\DrrmEarlyWarningCsrfService())->token()
-    : null;
 $draftBarangayPreviewEnabled = AppEnvironment::allowsLocalDevelopmentRequest(
     __DIR__ . '/../../.env',
     $_SERVER
@@ -27,9 +20,14 @@ $stagingAdminBarangayReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
 $stagingAdminHazardReferenceEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
+$stagingAdminFloodReferenceCheckEnabled = $stagingReferenceModeEnabled
+    && $module1Authorization->canView();
 $stagingAdminRoutePreviewEnabled = $stagingReferenceModeEnabled
     && $module1Authorization->canView();
 $stagingAdminRoutePreviewCsrfToken = $stagingAdminRoutePreviewEnabled
+    ? (new \App\Services\DrrmMapCsrfService())->token()
+    : null;
+$stagingAdminFloodReferenceCheckCsrfToken = $stagingAdminFloodReferenceCheckEnabled
     ? (new \App\Services\DrrmMapCsrfService())->token()
     : null;
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
@@ -139,7 +137,7 @@ include '../../includes/sidebar.php';
   src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   crossorigin=""
 ></script>
-<?php if ($draftBarangayPreviewEnabled || $stagingAdminRoutePreviewEnabled): ?>
+<?php if ($draftBarangayPreviewEnabled || $stagingAdminRoutePreviewEnabled || $stagingAdminFloodReferenceCheckEnabled): ?>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js"></script>
 <?php endif; ?>
 <script src='<?php echo htmlspecialchars($operationalMapDataUrl, ENT_QUOTES, 'UTF-8'); ?>'></script>
@@ -190,6 +188,19 @@ include '../../includes/sidebar.php';
           $stagingAdminHazardReferenceEnabled
               ? $basePath . 'api/drrm/admin-hazard-reference.php'
               : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
+    adminFloodReferenceCheck: Object.freeze({
+      enabled: <?php echo $stagingAdminFloodReferenceCheckEnabled ? 'true' : 'false'; ?>,
+      endpoint: <?php echo json_encode(
+          $stagingAdminFloodReferenceCheckEnabled
+              ? $basePath . 'api/drrm/admin-flood-reference-check.php'
+              : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      csrfToken: <?php echo json_encode(
+          $stagingAdminFloodReferenceCheckCsrfToken,
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     }),
@@ -276,21 +287,6 @@ include '../../includes/sidebar.php';
     cityBoundary: Object.freeze({
       endpoint: <?php echo json_encode(
           $basePath . 'data/import/caloocan-city-boundary.geojson',
-          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-      ); ?>
-    }),
-    aiIntegration: Object.freeze({
-      authorized: <?php echo $aiViewAuthorized ? 'true' : 'false'; ?>,
-      statusEndpoint: <?php echo json_encode(
-          $basePath . 'api/drrm/ai-status.php',
-          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-      ); ?>,
-      predictionEndpoint: <?php echo json_encode(
-          $basePath . 'api/drrm/flood-risk-prediction.php',
-          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-      ); ?>,
-      csrfToken: <?php echo json_encode(
-          $aiCsrfToken,
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     })
@@ -720,6 +716,10 @@ include '../../includes/sidebar.php';
   }
 
   function initialize() {
+    if (runtimeConfig.adminFloodReferenceCheck
+      && runtimeConfig.adminFloodReferenceCheck.enabled === true) {
+      return;
+    }
     if (state.initialized || !enhancePredictionSection()) return;
     state.initialized = true;
     const refresh = document.getElementById('refreshFloodAiStatusButton');

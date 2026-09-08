@@ -612,10 +612,34 @@
   font-weight: 700;
 }
 
+.civ-hazard-map-module .civ-flood-check-result > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.5rem;
+}
+
+.civ-hazard-map-module .civ-flood-check-result[data-classification="LOW"] > strong {
+  color: #16a34a;
+}
+
+.civ-hazard-map-module .civ-flood-check-result[data-classification="MODERATE"] > strong {
+  color: #eab308;
+}
+
+.civ-hazard-map-module .civ-flood-check-result[data-classification="HIGH"] > strong {
+  color: #f97316;
+}
+
+.civ-hazard-map-module .civ-flood-check-result[data-classification="VERY HIGH"] > strong {
+  color: #dc2626;
+}
+
 .civ-hazard-map-module #civentralHazardMap.is-selecting-route-origin,
 .civ-hazard-map-module #civentralHazardMap.is-selecting-route-origin .leaflet-interactive,
 .civ-hazard-map-module #civentralHazardMap.is-selecting-forecast-location,
-.civ-hazard-map-module #civentralHazardMap.is-selecting-forecast-location .leaflet-interactive {
+.civ-hazard-map-module #civentralHazardMap.is-selecting-forecast-location .leaflet-interactive,
+.civ-hazard-map-module #civentralHazardMap.is-selecting-flood-check-location,
+.civ-hazard-map-module #civentralHazardMap.is-selecting-flood-check-location .leaflet-interactive {
   cursor: crosshair;
 }
 
