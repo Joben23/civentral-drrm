@@ -90,11 +90,13 @@
       "barangay_psgc": null,
       "latitude": null,
       "longitude": null,
-      "source_ids": ["ndrrmc_ulysses_sitreps_2020", "dswd_dromic_ulysses_terminal_2021_11_13"],
+      "source_ids": ["ndrrmc_ulysses_sitreps_2020", "dswd_dromic_ulysses_reports_3_4_2020_11_12", "dswd_dromic_ulysses_terminal_2021_11_13"],
       "source_document_refs": [
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-3-on-Typhoon-ULYSSES-as-of-12-November-2020-6AM-1.docx",
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-4-on-Typhoon-ULYSSES-as-of-12-November-2020-6PM-1.docx",
         "ml/flood-risk/data/raw/event-evidence/index.pdf"
       ],
-      "evidence_summary": "NDRRMC discovery metadata lists flooding in six numbered Caloocan barangays on 12 November 2020 but its PDFs remain externally inaccessible. The acquired DSWD terminal report independently identifies Caloocan City with 23 affected barangays, 243 families, and 926 persons, plus cumulative evacuation-center figures; it does not state a Caloocan flood onset, depth, road condition, or named barangay.",
+      "evidence_summary": "NDRRMC discovery metadata lists flooding in six numbered Caloocan barangays on 12 November 2020 but its PDFs remain externally inaccessible. Acquired DSWD Report #3 has no Caloocan entry; Report #4 identifies Caloocan with 15 affected barangays, 94 families, and 436 persons and matching evacuation figures as of its 6PM report snapshot. The acquired terminal report later lists 23 affected barangays, 243 families, and 926 persons. None establishes a Caloocan onset or cessation time.",
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
@@ -102,7 +104,7 @@
       "reviewed_at": null,
       "leakage_review_status": "NOT_REVIEWED",
       "training_eligible": false,
-      "exclusion_reason": "HUMAN_REVIEW_REQUIRED_NDRRMC_SOURCE_NOT_ACQUIRED_DROMIC_AFFECTED_POPULATION_DOES_NOT_ESTABLISH_FLOOD_ONSET",
+      "exclusion_reason": "DATE_ONLY_EVIDENCE_HUMAN_REVIEW_REQUIRED_NDRRMC_SOURCE_NOT_ACQUIRED_NO_CALOOCAN_ONSET_OR_CESSATION",
       "candidate_windows": []
     },
     {

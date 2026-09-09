@@ -43,7 +43,8 @@
     "human_approved": {"const": false},
     "training_eligible": {"const": false},
     "candidate_windows": {"type": "array", "maxItems": 0},
-    "imerg_acquired_for_candidate": {"const": false}
+    "imerg_acquired_for_candidate": {"const": false},
+    "phase_3b3c1_temporal_assessment": {"$ref": "#/$defs/temporal_assessment"}
   },
   "$defs": {
     "discovery_source": {
@@ -94,6 +95,61 @@
         "evidence_status": {"enum": ["EXPLICITLY_STATED", "DOCUMENT_SEARCH_RESULT", "UNKNOWN"]},
         "source_artifact_id": {"type": ["string", "null"]},
         "page_number": {"type": ["integer", "null"], "minimum": 1}
+      }
+    },
+    "temporal_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase", "temporal_quality", "official_source_searches", "acquired_artifact_refs",
+        "source_evidence", "candidate_event_time_start", "candidate_event_time_end",
+        "prediction_cutoff", "timezone_status", "location_specificity",
+        "general_metro_manila_timing_is_caloocan_event_timing",
+        "affected_population_establishes_onset", "human_review_required",
+        "conflicts_between_report_revisions", "remaining_uncertainties",
+        "recommended_human_review_questions"
+      ],
+      "properties": {
+        "phase": {"const": "PHASE_3B3C1_ULYSSES_TEMPORAL_EVIDENCE"},
+        "temporal_quality": {"enum": ["DEFENSIBLE_EVENT_TIME_ENVELOPE_FOUND", "DATE_ONLY_EVIDENCE", "TEMPORAL_EVIDENCE_INSUFFICIENT"]},
+        "official_source_searches": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/source_search"}},
+        "acquired_artifact_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "source_evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/temporal_evidence"}},
+        "candidate_event_time_start": {"type": ["string", "null"], "minLength": 1},
+        "candidate_event_time_end": {"type": ["string", "null"], "minLength": 1},
+        "prediction_cutoff": {"type": "null"},
+        "timezone_status": {"const": "TIMEZONE_REQUIRES_HUMAN_REVIEW"},
+        "location_specificity": {"type": "string", "minLength": 1},
+        "general_metro_manila_timing_is_caloocan_event_timing": {"const": false},
+        "affected_population_establishes_onset": {"const": false},
+        "human_review_required": {"const": true},
+        "conflicts_between_report_revisions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "remaining_uncertainties": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "recommended_human_review_questions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "source_search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "access_status", "result"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "access_status": {"enum": ["ACQUIRED", "EXTERNAL_ACCESS_REQUIRED", "NOT_FOUND"]},
+        "result": {"type": "string", "minLength": 1}
+      }
+    },
+    "temporal_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_type", "source_id", "source_artifact_id", "source_text", "caloocan_specific", "access_status", "interpretation"],
+      "properties": {
+        "evidence_type": {"enum": ["EVENT_OCCURRENCE_TIME", "REPORT_ISSUE_TIME", "WEATHER_BULLETIN_TIME", "RESPONSE_ACTION_TIME", "DOCUMENT_RETRIEVAL_TIME"]},
+        "source_id": {"type": "string", "minLength": 1},
+        "source_artifact_id": {"type": ["string", "null"]},
+        "source_text": {"type": "string", "minLength": 1},
+        "caloocan_specific": {"type": "boolean"},
+        "access_status": {"enum": ["ACQUIRED", "DISCOVERY_METADATA_ONLY", "EXTERNAL_ACCESS_REQUIRED"]},
+        "interpretation": {"type": "string", "minLength": 1}
       }
     }
   }

@@ -45,13 +45,17 @@ DISCOVERY_IDS = {
 ACQUISITION_IDS = {
     "dswd_dromic_florita_2022_08_25",
     "dswd_dromic_enteng_2024_reports_1_3",
+    "dswd_dromic_ulysses_reports_3_4_2020_11_12",
     "dswd_dromic_ulysses_terminal_2021_11_13",
 }
 
 
-def acquired_artifacts():
+def acquired_pdf_artifacts():
     for source_id in sorted(ACQUISITION_IDS):
-        yield from SOURCES[source_id]["artifacts"]
+        yield from (
+            artifact for artifact in SOURCES[source_id]["artifacts"]
+            if artifact["media_type"] == "application/pdf"
+        )
 
 
 def pdf_text(artifact):
@@ -64,7 +68,7 @@ def issue_codes(issues):
 
 
 def test_all_five_real_pdf_artifacts_pass_integrity_validation():
-    artifacts = list(acquired_artifacts())
+    artifacts = list(acquired_pdf_artifacts())
     assert len(artifacts) == 5
     for artifact in artifacts:
         assert validate_pdf_artifact(artifact) == []
@@ -90,7 +94,7 @@ def test_html_renamed_as_pdf_is_rejected(tmp_path):
 
 
 def test_checksum_is_required_and_mismatch_fails():
-    artifact = copy.deepcopy(next(acquired_artifacts()))
+    artifact = copy.deepcopy(next(acquired_pdf_artifacts()))
     artifact["sha256"] = None
     assert "CHECKSUM_REQUIRED" in issue_codes(validate_pdf_artifact(artifact))
     artifact["sha256"] = "0" * 64
@@ -150,9 +154,9 @@ def test_ulysses_population_data_does_not_create_onset_or_flood_depth():
     worksheet = read_json(MANIFESTS / "phase-3b3b-ulysses-2020-review.json")
     event = EVENTS[worksheet["event_id"]]
     assert worksheet["caloocan_evidence_status"] == "EXPLICIT_AFFECTED_POPULATION_ONLY"
-    assert "243 affected families" in worksheet["affected_population_evidence"][0]["statement"]
+    assert any("243 affected families" in item["statement"] for item in worksheet["affected_population_evidence"])
     assert event["event_start"] is None and event["event_end"] is None
-    assert worksheet["occurrence_time_evidence"] == []
+    assert all(item["evidence_status"] != "EXPLICITLY_STATED" for item in worksheet["occurrence_time_evidence"])
     assert worksheet["flood_passability_depth_evidence"] == []
 
 
@@ -210,7 +214,7 @@ def test_all_flood_risk_json_files_parse():
 
 
 def test_raw_evidence_files_remain_gitignored():
-    for artifact in acquired_artifacts():
+    for artifact in acquired_pdf_artifacts():
         result = subprocess.run(
             ["git", "check-ignore", "-q", "--", artifact["local_file"]],
             cwd=REPO_ROOT, check=False,
