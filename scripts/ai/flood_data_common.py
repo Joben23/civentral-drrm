@@ -51,11 +51,39 @@ APPROVED_SOURCE_STATUS = "APPROVED_FOR_GOVERNED_USE"
 ALLOWED_SOURCE_TYPES = {
     "GIS_COVARIATE", "SPATIAL_REFERENCE", "FORECAST_API", "FORECAST_ARCHIVE",
     "OBSERVED_WEATHER", "WEATHER_BUNDLE", "INCIDENT_REPORT", "MONITORING_LOG",
-    "SATELLITE_DERIVED",
+    "SATELLITE_DERIVED", "REANALYSIS",
 }
 ALLOWED_SOURCE_REVIEW = {
     "APPROVED_FOR_GOVERNED_USE", "REQUIRES_HUMAN_REVIEW", "ACCESS_PENDING",
     "METADATA_PENDING", "REJECTED",
+}
+PILOT_SOURCE_ROLES = {
+    "STATIC_GIS_COVARIATE",
+    "SPATIAL_REFERENCE",
+    "OBSERVED_PRECIPITATION",
+    "FORECAST_PRECIPITATION",
+    "FLOOD_EVENT_EVIDENCE",
+    "NEGATIVE_EVENT_EVIDENCE",
+    "OPTIONAL_PRECIPITATION_CROSS_CHECK",
+}
+PILOT_SOURCE_STATUSES = {
+    "PROPOSED", "ACQUIRED", "VALIDATED", "APPROVED_FOR_PILOT", "REJECTED", "RETIRED",
+}
+PILOT_AVAILABILITY_STATUSES = {
+    "ACQUIRED", "NOT_ACQUIRED", "PAGASA_DATA_NOT_ACQUIRED",
+}
+PILOT_USAGE_STATUSES = {
+    "PENDING_REVIEW", "PERMITTED_FOR_GOVERNED_USE", "PERMITTED_FOR_PILOT",
+    "RESTRICTED", "UNKNOWN",
+}
+PILOT_ROLE_SOURCE_TYPES = {
+    "STATIC_GIS_COVARIATE": {"GIS_COVARIATE"},
+    "SPATIAL_REFERENCE": {"SPATIAL_REFERENCE"},
+    "OBSERVED_PRECIPITATION": {"OBSERVED_WEATHER", "SATELLITE_DERIVED"},
+    "FORECAST_PRECIPITATION": {"FORECAST_API", "FORECAST_ARCHIVE"},
+    "FLOOD_EVENT_EVIDENCE": {"INCIDENT_REPORT", "MONITORING_LOG", "SATELLITE_DERIVED"},
+    "NEGATIVE_EVENT_EVIDENCE": {"INCIDENT_REPORT", "MONITORING_LOG"},
+    "OPTIONAL_PRECIPITATION_CROSS_CHECK": {"OBSERVED_WEATHER", "SATELLITE_DERIVED", "REANALYSIS"},
 }
 REQUIRED_WEATHER_UNITS = {
     "forecast_rainfall_24h_mm": "mm",
@@ -282,8 +310,8 @@ def load_barangay_reference(path: Path = DEFAULT_BARANGAYS) -> Dict[str, str]:
 
 def load_manifest(path: Path = DEFAULT_MANIFEST) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
     payload = read_json(path)
-    if not isinstance(payload, dict) or payload.get("manifest_version") != "1.0.0":
-        raise ValueError("Provenance manifest_version must be 1.0.0.")
+    if not isinstance(payload, dict) or payload.get("manifest_version") not in {"1.0.0", "1.1.0"}:
+        raise ValueError("Provenance manifest_version must be 1.0.0 or 1.1.0.")
     sources = payload.get("sources")
     if not isinstance(sources, list):
         raise ValueError("Provenance manifest sources must be an array.")
@@ -302,12 +330,25 @@ def validate_manifest(
     manifest: Mapping[str, Any], repo_root: Path = REPO_ROOT
 ) -> List[ValidationIssue]:
     issues: List[ValidationIssue] = []
-    required = {
+    base_required = {
         "source_id", "source_name", "agency", "source_type", "official_reference",
         "local_file", "retrieved_at", "coverage", "time_range", "units",
         "accumulation_semantics", "version", "license_usage_notes", "sha256",
         "review_status", "review_notes",
     }
+    pilot_required = {
+        "source_role", "product_name", "product_version", "temporal_resolution",
+        "spatial_resolution", "citation", "availability_status",
+        "license_or_usage_status", "status",
+    }
+    manifest_version = manifest.get("manifest_version")
+    if manifest_version not in {"1.0.0", "1.1.0"}:
+        issues.append(ValidationIssue(
+            "manifest", 0, None, "INVALID_MANIFEST_VERSION",
+            "manifest_version must be 1.0.0 or 1.1.0.",
+        ))
+    required = base_required | (pilot_required if manifest_version == "1.1.0" else set())
+    allowed = base_required | pilot_required
     seen: set[str] = set()
     sources = manifest.get("sources", [])
     for index, source in enumerate(sources, start=1):
@@ -319,7 +360,7 @@ def validate_manifest(
         missing = sorted(required - set(source))
         if missing:
             issues.append(ValidationIssue("manifest", index, prefix, "MISSING_MANIFEST_FIELDS", f"Missing fields: {', '.join(missing)}"))
-        extras = sorted(set(source) - required)
+        extras = sorted(set(source) - allowed)
         if extras:
             issues.append(ValidationIssue("manifest", index, prefix, "UNEXPECTED_MANIFEST_FIELDS", f"Unexpected fields: {', '.join(extras)}"))
         sensitive_names = [key for key in source if re.search(r"token|password|secret|credential|api[_-]?key", key, re.IGNORECASE)]
@@ -338,6 +379,34 @@ def validate_manifest(
             issues.append(ValidationIssue("manifest", index, prefix, "INVALID_SOURCE_TYPE", "source_type is not allowed."))
         if source.get("review_status") not in tuple(ALLOWED_SOURCE_REVIEW):
             issues.append(ValidationIssue("manifest", index, prefix, "INVALID_SOURCE_REVIEW_STATUS", "review_status is not allowed."))
+        if manifest_version == "1.1.0":
+            if source.get("source_role") not in PILOT_SOURCE_ROLES:
+                issues.append(ValidationIssue("manifest", index, prefix, "INVALID_SOURCE_ROLE", "source_role is not allowed."))
+            elif source.get("source_type") not in PILOT_ROLE_SOURCE_TYPES[source["source_role"]]:
+                issues.append(ValidationIssue("manifest", index, prefix, "SOURCE_ROLE_TYPE_MISMATCH", "source_role is incompatible with source_type."))
+            if source.get("status") not in PILOT_SOURCE_STATUSES:
+                issues.append(ValidationIssue("manifest", index, prefix, "INVALID_PILOT_SOURCE_STATUS", "status is not an allowed pilot source lifecycle state."))
+            if source.get("availability_status") not in PILOT_AVAILABILITY_STATUSES:
+                issues.append(ValidationIssue("manifest", index, prefix, "INVALID_AVAILABILITY_STATUS", "availability_status is not allowed."))
+            if source.get("license_or_usage_status") not in PILOT_USAGE_STATUSES:
+                issues.append(ValidationIssue("manifest", index, prefix, "INVALID_USAGE_STATUS", "license_or_usage_status is not allowed."))
+            for field in ("product_name", "product_version", "temporal_resolution", "spatial_resolution"):
+                value = source.get(field)
+                if value is not None and (not isinstance(value, str) or not value.strip()):
+                    issues.append(ValidationIssue("manifest", index, prefix, "INVALID_PILOT_SOURCE_METADATA", f"{field} must be a non-empty string or null."))
+            if not isinstance(source.get("citation"), str) or not source.get("citation", "").strip():
+                issues.append(ValidationIssue("manifest", index, prefix, "MISSING_CITATION", "citation must be documented."))
+            if source.get("availability_status") == "ACQUIRED":
+                if not isinstance(source.get("retrieved_at"), str) or not source.get("retrieved_at", "").strip():
+                    issues.append(ValidationIssue("manifest", index, prefix, "MISSING_ACQUISITION_TIMESTAMP", "An acquired source requires retrieved_at."))
+                if source.get("local_file") is None or source.get("sha256") is None:
+                    issues.append(ValidationIssue("manifest", index, prefix, "ACQUIRED_SOURCE_MISSING_ARTIFACT", "An acquired source requires a local file and checksum."))
+            if source.get("status") == "APPROVED_FOR_PILOT" and (
+                source.get("availability_status") != "ACQUIRED"
+                or source.get("license_or_usage_status") != "PERMITTED_FOR_PILOT"
+                or source.get("review_status") != "APPROVED_FOR_GOVERNED_USE"
+            ):
+                issues.append(ValidationIssue("manifest", index, prefix, "INVALID_PILOT_APPROVAL", "Pilot approval requires acquired data, governed review, and permitted usage."))
         if not isinstance(source.get("coverage"), str) or not source.get("coverage", "").strip():
             issues.append(ValidationIssue("manifest", index, prefix, "MISSING_COVERAGE", "coverage must be documented."))
         if not isinstance(source.get("license_usage_notes"), str) or not source.get("license_usage_notes", "").strip():

@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["manifest_version", "sources"],
   "properties": {
-    "manifest_version": {"const": "1.0.0"},
+    "manifest_version": {"enum": ["1.0.0", "1.1.0"]},
     "sources": {
       "type": "array",
       "items": {
@@ -17,7 +17,7 @@
           "source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
           "source_name": {"type": "string", "minLength": 1},
           "agency": {"type": "string", "minLength": 1},
-          "source_type": {"enum": ["GIS_COVARIATE", "SPATIAL_REFERENCE", "FORECAST_API", "FORECAST_ARCHIVE", "OBSERVED_WEATHER", "WEATHER_BUNDLE", "INCIDENT_REPORT", "MONITORING_LOG", "SATELLITE_DERIVED"]},
+          "source_type": {"enum": ["GIS_COVARIATE", "SPATIAL_REFERENCE", "FORECAST_API", "FORECAST_ARCHIVE", "OBSERVED_WEATHER", "WEATHER_BUNDLE", "INCIDENT_REPORT", "MONITORING_LOG", "SATELLITE_DERIVED", "REANALYSIS"]},
           "official_reference": {"type": "string", "format": "uri", "pattern": "^https://"},
           "local_file": {"type": ["string", "null"]},
           "retrieved_at": {"type": ["string", "null"]},
@@ -29,9 +29,36 @@
           "license_usage_notes": {"type": "string", "minLength": 1},
           "sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
           "review_status": {"enum": ["APPROVED_FOR_GOVERNED_USE", "REQUIRES_HUMAN_REVIEW", "ACCESS_PENDING", "METADATA_PENDING", "REJECTED"]},
-          "review_notes": {"type": "string"}
+          "review_notes": {"type": "string"},
+          "source_role": {"enum": ["STATIC_GIS_COVARIATE", "SPATIAL_REFERENCE", "OBSERVED_PRECIPITATION", "FORECAST_PRECIPITATION", "FLOOD_EVENT_EVIDENCE", "NEGATIVE_EVENT_EVIDENCE", "OPTIONAL_PRECIPITATION_CROSS_CHECK"]},
+          "product_name": {"type": ["string", "null"], "minLength": 1},
+          "product_version": {"type": ["string", "null"], "minLength": 1},
+          "temporal_resolution": {"type": ["string", "null"], "minLength": 1},
+          "spatial_resolution": {"type": ["string", "null"], "minLength": 1},
+          "citation": {"type": "string", "minLength": 1},
+          "availability_status": {"enum": ["ACQUIRED", "NOT_ACQUIRED", "PAGASA_DATA_NOT_ACQUIRED"]},
+          "license_or_usage_status": {"enum": ["PENDING_REVIEW", "PERMITTED_FOR_GOVERNED_USE", "PERMITTED_FOR_PILOT", "RESTRICTED", "UNKNOWN"]},
+          "status": {"enum": ["PROPOSED", "ACQUIRED", "VALIDATED", "APPROVED_FOR_PILOT", "REJECTED", "RETIRED"]}
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"manifest_version": {"const": "1.1.0"}}, "required": ["manifest_version"]},
+      "then": {
+        "properties": {
+          "sources": {
+            "items": {
+              "required": [
+                "source_role", "product_name", "product_version", "temporal_resolution",
+                "spatial_resolution", "citation", "availability_status",
+                "license_or_usage_status", "status"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
 }

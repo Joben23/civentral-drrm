@@ -91,7 +91,8 @@ def build_readiness_report(
     required_negative_events = int(policy.get("minimum_negative_events", 2))
     authorization_approved = authorization.get("status") == "APPROVED_FOR_PHASE_7C_DATA_USE"
     gates = {
-        "real_records_present": len(records) > 0,
+        "real_records_present": counts_are_real_observations and len(records) > 0,
+        "test_fixture_data_excluded": counts_are_real_observations,
         "both_verified_labels_present": bool(positives) and bool(negatives),
         "multiple_independent_events": len(events) >= required_events,
         "positive_event_representation": len(positive_events) >= required_positive_events,

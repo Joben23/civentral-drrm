@@ -1,0 +1,53 @@
+{
+  "protocol_version": "1.0.0",
+  "status": "DRAFT_NOT_APPROVED",
+  "target_definition_status": "PENDING",
+  "allowed_label_states": ["FLOOD_CONFIRMED", "NO_FLOOD_CONFIRMED", "UNKNOWN"],
+  "training_label_states": ["FLOOD_CONFIRMED", "NO_FLOOD_CONFIRMED"],
+  "negative_label_policy": {
+    "requires_affirmative_evidence": true,
+    "allowed_evidence_basis": [
+      "EXPLICIT_LGU_MONITORING_NO_FLOOD",
+      "EXPLICIT_AUTHORITATIVE_SITUATION_LOG_NO_FLOOD",
+      "HUMAN_REVIEWED_AUTHORITATIVE_MONITORING_NO_FLOOD"
+    ],
+    "prohibited_basis": [
+      "NO_REPORT_FOUND",
+      "NO_CITIZEN_REPORT",
+      "NO_DROMIC_ENTRY",
+      "NO_NDRRMC_ENTRY",
+      "MISSING_RECORD"
+    ],
+    "rule": "Absence of a flood report never establishes NO_FLOOD_CONFIRMED."
+  },
+  "event_review": {
+    "required_review_status": "REVIEWED",
+    "requires_named_reviewer": true,
+    "requires_review_timestamp": true,
+    "requires_source_document_reference": true,
+    "requires_leakage_review_passed": true
+  },
+  "forecast_horizon_status": "NOT_FINALIZED",
+  "candidate_forecast_horizon_hours": [1, 3, 6, 12, 24],
+  "candidate_antecedent_window_hours": [1, 3, 6, 12, 24, 72],
+  "temporal_rules": {
+    "prediction_cutoff_must_precede_target_window_start": true,
+    "antecedent_observations_must_end_at_or_before_prediction_cutoff": true,
+    "post_cutoff_evidence_may_support_the_label_but_never_an_input_feature": true,
+    "forecast_features_require_archived_as_issued_forecasts": true
+  },
+  "precipitation_data_types": ["OBSERVED_PRECIPITATION", "FORECAST_PRECIPITATION"],
+  "observation_forecast_substitution_prohibited": true,
+  "forecast_features_status": "NOT_AVAILABLE_FOR_TRAINING",
+  "allowed_spatial_mapping_methods": [
+    "POINT_CONTAINING_CELL",
+    "NEAREST_VALID_CELL",
+    "AREA_WEIGHTED_POLYGON"
+  ],
+  "spatial_mapping_selection_status": "REQUIRES_EXPLICIT_SELECTION_PER_SOURCE_AND_WINDOW",
+  "raw_source_immutability_required": true,
+  "missing_rainfall_imputation": "PROHIBITED",
+  "fixture_markers": ["TEST_ONLY", "SYNTHETIC", "NOT_FOR_TRAINING"],
+  "training_authorization_default": "NOT_APPROVED",
+  "scientific_sufficiency_note": "A mechanically valid pilot row or tiny pilot dataset does not establish training readiness or authorize model training."
+}

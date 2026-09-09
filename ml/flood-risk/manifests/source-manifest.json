@@ -1,5 +1,5 @@
 {
-  "manifest_version": "1.0.0",
+  "manifest_version": "1.1.0",
   "sources": [
     {
       "source_id": "denr_mgb_caloocan_flood_susceptibility_2026-08-19",
@@ -17,7 +17,16 @@
       "license_usage_notes": "Official public map service; preserve agency attribution. Repository report does not establish a reuse license, so publication/redistribution must be reviewed.",
       "sha256": "bf41154cf0bf408faba1b1072375800d2c507c225931c8e271283c5e53ae57ba",
       "review_status": "APPROVED_FOR_GOVERNED_USE",
-      "review_notes": "Static model feature only; never a flood outcome label."
+      "review_notes": "Static model feature only; never a flood outcome label.",
+      "source_role": "STATIC_GIS_COVARIATE",
+      "product_name": "GDI Detailed Flood Susceptibility",
+      "product_version": "retrieval-2026-08-19",
+      "temporal_resolution": null,
+      "spatial_resolution": "Source vector polygons clipped to the validated Caloocan boundary",
+      "citation": "DENR-MGB, GDI Detailed Flood Susceptibility FeatureServer, Caloocan extract retrieved 2026-08-19.",
+      "availability_status": "ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "VALIDATED"
     },
     {
       "source_id": "caloocan_unaffected_barangay_geometry_2026-08-19",
@@ -35,7 +44,16 @@
       "license_usage_notes": "Retains repository source/provenance limitations; structural validation is not an independent legal boundary survey.",
       "sha256": "09ca37029157ea8347eb571a760cf712637f6bf1938dccdf49964553ddd3093d",
       "review_status": "APPROVED_FOR_GOVERNED_USE",
-      "review_notes": "Authoritative geometry for 176-A through 176-F is not present; legacy 176 must not be used as current geometry."
+      "review_notes": "Authoritative geometry for 176-A through 176-F is not present; legacy 176 must not be used as current geometry.",
+      "source_role": "SPATIAL_REFERENCE",
+      "product_name": "Caloocan 187 unaffected barangay geometry reconciliation",
+      "product_version": "PSGC-2Q-2026-reconciliation",
+      "temporal_resolution": null,
+      "spatial_resolution": "Barangay polygons for 187 unaffected Caloocan barangays",
+      "citation": "Philippine Statistics Authority PSGC-referenced repository reconciliation, retrieved 2026-08-19.",
+      "availability_status": "ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "VALIDATED"
     },
     {
       "source_id": "pagasa_tenday_api_v1",
@@ -53,7 +71,16 @@
       "license_usage_notes": "Detailed API requires approved token access. Token and responses must remain server-side; historical forecast availability and reuse terms require confirmation.",
       "sha256": null,
       "review_status": "ACCESS_PENDING",
-      "review_notes": "Not approved for training until rainfall units, accumulation semantics, historical at-issuance availability, and usage terms are verified."
+      "review_notes": "Not approved for training until rainfall units, accumulation semantics, historical at-issuance availability, and usage terms are verified.",
+      "source_role": "FORECAST_PRECIPITATION",
+      "product_name": "PAGASA TenDay forecast API",
+      "product_version": "api-v1",
+      "temporal_resolution": null,
+      "spatial_resolution": "Municipality filter; exact forecast grid/support unverified",
+      "citation": "DOST-PAGASA TenDay forecast service; detailed data not acquired.",
+      "availability_status": "NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
     },
     {
       "source_id": "pagasa_climate_data_request_pending",
@@ -71,7 +98,16 @@
       "license_usage_notes": "Requires PAGASA request approval and compliance with supplied terms and attribution requirements.",
       "sha256": null,
       "review_status": "ACCESS_PENDING",
-      "review_notes": "No local historical rainfall file was acquired in Phase 7B."
+      "review_notes": "No local historical rainfall file was acquired in Phase 7B.",
+      "source_role": "OBSERVED_PRECIPITATION",
+      "product_name": "PAGASA customized climatological raw data",
+      "product_version": null,
+      "temporal_resolution": null,
+      "spatial_resolution": null,
+      "citation": "DOST-PAGASA Climate Data service; dataset not acquired.",
+      "availability_status": "PAGASA_DATA_NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
     },
     {
       "source_id": "pagasa_climap_v2_pending",
@@ -89,7 +125,16 @@
       "license_usage_notes": "Download requires registration and agreement to PAGASA terms/privacy conditions. Exact file metadata and permitted reuse must be retained with any acquired file.",
       "sha256": null,
       "review_status": "METADATA_PENDING",
-      "review_notes": "Potential source for observed/antecedent rainfall only. Exact temporal coverage, grid resolution, unit, accumulation definition, and training suitability must be verified from the acquired file metadata."
+      "review_notes": "Potential source for observed/antecedent rainfall only. Exact temporal coverage, grid resolution, unit, accumulation definition, and training suitability must be verified from the acquired file metadata.",
+      "source_role": "OBSERVED_PRECIPITATION",
+      "product_name": "PAGASA CliMap v2 historical climate data",
+      "product_version": "CliMap-v2",
+      "temporal_resolution": null,
+      "spatial_resolution": null,
+      "citation": "DOST-PAGASA CliMap v2; Caloocan extract not acquired.",
+      "availability_status": "PAGASA_DATA_NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
     },
     {
       "source_id": "dswd_dromic_caloocan_flood_2019-06-24",
@@ -107,7 +152,16 @@
       "license_usage_notes": "Official public incident page. Review the linked documents and applicable reuse terms before extracting evidence.",
       "sha256": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
-      "review_notes": "Candidate evidence only; not a verified label and provides no negative observations."
+      "review_notes": "Candidate evidence only; not a verified label and provides no negative observations.",
+      "source_role": "FLOOD_EVENT_EVIDENCE",
+      "product_name": "Flooding Incident in Caloocan City reports",
+      "product_version": "initial-and-terminal-reports",
+      "temporal_resolution": "Report-dependent; exact event timestamps unreviewed",
+      "spatial_resolution": "Caloocan City wording; exact location unreviewed",
+      "citation": "DSWD DROMIC, Flooding Incident in Caloocan City, 24 June 2019; linked reports not acquired.",
+      "availability_status": "NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
     },
     {
       "source_id": "ndrrmc_egay_falcon_sitrep18_2023",
@@ -125,7 +179,70 @@
       "license_usage_notes": "Official public situation report; retain report/version attribution and verify any extracted entry against the document.",
       "sha256": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
-      "review_notes": "Candidate evidence only; report wording is not automatically a barangay label or a negative observation."
+      "review_notes": "Candidate evidence only; report wording is not automatically a barangay label or a negative observation.",
+      "source_role": "FLOOD_EVENT_EVIDENCE",
+      "product_name": "NDRRMC Situation Report No. 18",
+      "product_version": "sitrep-18",
+      "temporal_resolution": "Situation-report entry time; exact event time unreviewed",
+      "spatial_resolution": "Caloocan Norte/Sur wording; exact location unreviewed",
+      "citation": "NDRRMC/OCD, Situation Report No. 18 for Southwest Monsoon enhanced by TCs Egay and Falcon, 2023.",
+      "availability_status": "NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
+    },
+    {
+      "source_id": "nasa_gpm_imerg_final_hh_v07",
+      "source_name": "GPM IMERG Final Precipitation L3 Half Hourly V07",
+      "agency": "NASA GES DISC",
+      "source_type": "SATELLITE_DERIVED",
+      "official_reference": "https://doi.org/10.5067/GPM/IMERG/3B-HH/07",
+      "local_file": null,
+      "retrieved_at": null,
+      "coverage": "Global product; only a bounded Caloocan subset and reviewed event interval may be acquired for the pilot",
+      "time_range": {"start": "1998-01-01", "end": null},
+      "units": {"native_precipitation_rate": "mm/hr"},
+      "accumulation_semantics": {"native_interval": "30-minute precipitation-rate estimate; any interval accumulation requires an explicit validated conversion"},
+      "version": "GPM_3IMERGHH.07",
+      "license_usage_notes": "NASA Earthdata/GES DISC access and reuse terms must be reviewed and recorded before pilot use. IMERG is a satellite precipitation estimate, not PAGASA ground truth.",
+      "sha256": null,
+      "review_status": "METADATA_PENDING",
+      "review_notes": "Primary historical precipitation candidate only. No data has been downloaded and no source has been approved for pilot use.",
+      "source_role": "OBSERVED_PRECIPITATION",
+      "product_name": "GPM IMERG Final Precipitation L3 Half Hourly 0.1 degree x 0.1 degree",
+      "product_version": "V07",
+      "temporal_resolution": "30 minutes",
+      "spatial_resolution": "0.1 degree x 0.1 degree regular latitude/longitude grid",
+      "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J., and Tan, J. (2023), GPM IMERG Final Precipitation L3 Half Hourly V07, NASA GES DISC, doi:10.5067/GPM/IMERG/3B-HH/07.",
+      "availability_status": "NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
+    },
+    {
+      "source_id": "ecmwf_era5_land_hourly",
+      "source_name": "ERA5-Land hourly data from 1950 to present",
+      "agency": "Copernicus Climate Change Service / ECMWF",
+      "source_type": "REANALYSIS",
+      "official_reference": "https://doi.org/10.24381/cds.e2161bac",
+      "local_file": null,
+      "retrieved_at": null,
+      "coverage": "Global reanalysis; optional bounded Caloocan comparison only",
+      "time_range": {"start": "1950-01-01", "end": null},
+      "units": {"native_total_precipitation": "m"},
+      "accumulation_semantics": {"native_interval": "Hourly accumulated total precipitation; conversion and accumulation semantics require validation from acquired metadata"},
+      "version": "ERA5-Land",
+      "license_usage_notes": "Official catalog identifies a CC-BY licence, but project-specific acquisition, attribution, and pilot-use review is still required. Never mix silently with IMERG.",
+      "sha256": null,
+      "review_status": "METADATA_PENDING",
+      "review_notes": "Optional cross-check only; no data has been acquired or approved for pilot use.",
+      "source_role": "OPTIONAL_PRECIPITATION_CROSS_CHECK",
+      "product_name": "ERA5-Land hourly data",
+      "product_version": "ERA5-Land",
+      "temporal_resolution": "1 hour",
+      "spatial_resolution": "0.1 degree x 0.1 degree regular latitude/longitude grid; native resolution approximately 9 km",
+      "citation": "Copernicus Climate Change Service Climate Data Store, ERA5-Land hourly data from 1950 to present, doi:10.24381/cds.e2161bac.",
+      "availability_status": "NOT_ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "PROPOSED"
     }
   ]
 }

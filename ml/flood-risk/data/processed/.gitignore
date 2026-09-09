@@ -1,2 +1,6 @@
 *
 !.gitignore
+!README.md
+!pilot/
+!pilot/.gitignore
+!pilot/README.md

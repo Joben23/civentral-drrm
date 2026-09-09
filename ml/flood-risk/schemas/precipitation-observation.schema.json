@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/precipitation-observation-v1.json",
+  "title": "CIVENTRAL canonical observed precipitation records",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "dataset_classification", "records"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "dataset_classification": {"enum": ["REAL_SOURCE_DATA", "TEST_ONLY_SYNTHETIC_NOT_FOR_TRAINING"]},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id", "data_type", "source_id", "product_version", "observed_at_start",
+          "observed_at_end", "latitude", "longitude", "grid_cell_id", "native_value", "native_units",
+          "precipitation_mm", "normalization_method", "quality_flag", "retrieved_at", "raw_file_reference",
+          "raw_file_checksum", "source_resolution"
+        ],
+        "properties": {
+          "observation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,159}$"},
+          "data_type": {"const": "OBSERVED_PRECIPITATION"},
+          "source_id": {"type": "string"},
+          "product_version": {"type": "string", "minLength": 1},
+          "observed_at_start": {"type": "string", "format": "date-time"},
+          "observed_at_end": {"type": "string", "format": "date-time"},
+          "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+          "longitude": {"type": "number", "minimum": -180, "maximum": 180},
+          "grid_cell_id": {"type": "string", "minLength": 1},
+          "native_value": {"type": "number"},
+          "native_units": {"type": "string", "minLength": 1},
+          "precipitation_mm": {"type": "number", "minimum": 0},
+          "normalization_method": {"enum": ["NO_CONVERSION_NATIVE_MM_ACCUMULATION", "RATE_TO_INTERVAL_ACCUMULATION", "METERS_TO_MILLIMETERS"]},
+          "quality_flag": {"enum": ["VALIDATED", "PROVISIONAL", "SUSPECT", "MISSING"]},
+          "retrieved_at": {"type": "string", "format": "date-time"},
+          "raw_file_reference": {"type": "string", "minLength": 1},
+          "raw_file_checksum": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "source_resolution": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

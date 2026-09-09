@@ -1,2 +1,9 @@
 *
 !.gitignore
+!README.md
+!events/
+!events/.gitignore
+!events/README.md
+!precipitation/
+!precipitation/.gitignore
+!precipitation/README.md

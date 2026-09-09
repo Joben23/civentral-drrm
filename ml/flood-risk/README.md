@@ -4,11 +4,13 @@ This workspace is the Phase 7B real-data foundation for the future
 **TensorFlow-based flood-risk decision-support prototype**. It does not contain
 a trained model and is not an operational warning system.
 
-## Prediction target
+## Provisional downstream target
 
-The target is the probability of at least one **verified** flood occurrence in
-one validated Caloocan spatial unit during the next 24-hour valid window, using
-only information available at forecast issuance time.
+Phase 7B/3A scaffolded the probability of at least one **verified** flood
+occurrence in one validated Caloocan spatial unit during a next-24-hour window.
+Phase 3B1 does not finalize that target or horizon. The 24-hour contract remains
+non-operational until real label and precipitation resolution support a human
+target decision.
 
 The raw labels are:
 
@@ -21,7 +23,7 @@ categories and are not fields in this training schema.
 
 ## Dataset grain
 
-Each canonical record represents:
+The existing provisional downstream record represents:
 
 ```text
 one Caloocan spatial unit
@@ -89,6 +91,19 @@ been reviewed.
    ```
 
 The scripts use only Python's standard library. They do not import TensorFlow.
+
+Phase 3B1 source, event, precipitation, mapping, and negative-label governance
+is documented in `PILOT-DATA-PROTOCOL.md`. Inspect the real-data pilot state
+without generating a dataset:
+
+```powershell
+python scripts/ai/report_flood_pilot_quality.py
+```
+
+The current result is intentionally empty and `NOT_APPROVED`. Once governed
+inputs exist, `build_flood_pilot_dataset.py` can emit a candidate CSV and
+companion manifest. An empty build returns non-zero with explicit exclusions;
+it never trains TensorFlow or changes `/ready`.
 
 Run the isolated fixture suite with:
 

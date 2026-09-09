@@ -166,6 +166,7 @@ class FloodDataToolsTest(unittest.TestCase):
         )
         self.assertFalse(report["training_ready"])
         self.assertFalse(report["counts_are_real_observations"])
+        self.assertFalse(report["gates"]["test_fixture_data_excluded"])
         self.assertFalse(report["gates"]["multiple_independent_events"])
         self.assertFalse(report["gates"]["data_governance_authorized_for_phase_7c"])
 

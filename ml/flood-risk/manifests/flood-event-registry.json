@@ -1,0 +1,32 @@
+{
+  "registry_version": "1.0.0",
+  "label_protocol_version": "1.0.0",
+  "dataset_classification": "GOVERNED_EVENT_CANDIDATES",
+  "training_authorization_status": "NOT_APPROVED",
+  "events": [
+    {
+      "event_id": "caloocan-flood-candidate-2019-06-24",
+      "candidate_reference": "candidate-dswd-dromic-2019-06-24-caloocan",
+      "hazard_type": "FLOOD",
+      "event_start": null,
+      "event_end": null,
+      "event_time_status": "UNRESOLVED",
+      "location_scope": "CITY",
+      "barangay_psgc": null,
+      "latitude": null,
+      "longitude": null,
+      "source_ids": ["dswd_dromic_caloocan_flood_2019-06-24"],
+      "source_document_refs": [],
+      "evidence_summary": "The DSWD DROMIC page title identifies a Caloocan flooding incident dated 24 June 2019, but linked source reports have not been acquired or reviewed for exact time and location evidence.",
+      "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "leakage_review_status": "NOT_REVIEWED",
+      "training_eligible": false,
+      "exclusion_reason": "SOURCE_DOCUMENTS_NOT_ACQUIRED_AND_EVENT_TIME_LOCATION_UNRESOLVED",
+      "candidate_windows": []
+    }
+  ]
+}
