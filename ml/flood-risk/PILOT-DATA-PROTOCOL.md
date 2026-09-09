@@ -221,3 +221,18 @@ issue or publication time is not an event onset, street names are not inferred
 to barangays, and legacy Barangay 176 is not remapped. Discovery does not
 authorize source download, IMERG acquisition, a training window, a positive or
 negative label, or an ML target. The target remains pending evidence review.
+
+## Phase 3B3-B evidence acquisition
+
+Phase 3B3-B preserves `DISCOVERY_SOURCE` and `ACQUISITION_SOURCE` as separate
+roles. A downloaded DROMIC artifact can be technically acquired and checksummed
+without validating the associated Caloocan candidate or superseding an
+unacquired NDRRMC discovery source. Review worksheets are governed by
+`schemas/phase-3b3b-review-worksheet.schema.json`; their current findings and
+artifact inventory are documented in `PHASE-3B3B-EVIDENCE-ACQUISITION.md`.
+
+General weather forecasts, regional flood-hazard language, and affected data
+outside Caloocan never become Caloocan positive evidence. City-level affected
+population also does not establish flood onset. Every Phase 3B3-B worksheet
+therefore remains `UNKNOWN`, `REQUIRES_HUMAN_REVIEW`, ineligible, and free of
+training windows. This phase does not acquire additional IMERG data.

@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "PHASE_3B3B_EVIDENCE_ACQUISITION",
+  "worksheet_id": "phase-3b3b-enteng-2024",
+  "event_id": "caloocan-flood-candidate-2024-09-02-enteng",
+  "hazard_type": "FLOOD",
+  "discovery_sources": [
+    {
+      "source_id": "ndrrmc_enteng_sitreps_2024",
+      "role": "DISCOVERY_SOURCE",
+      "access_status": "EXTERNAL_ACCESS_REQUIRED"
+    }
+  ],
+  "acquisition_sources": [
+    {
+      "source_id": "dswd_dromic_enteng_2024_reports_1_3",
+      "role": "ACQUISITION_SOURCE",
+      "artifact_refs": [
+        "dswd_dromic_enteng_2024_report_1",
+        "dswd_dromic_enteng_2024_report_2",
+        "dswd_dromic_enteng_2024_report_3"
+      ]
+    }
+  ],
+  "machine_validation": {
+    "validated_at_utc": "2026-09-09T15:54:04.942Z",
+    "validator_role": "MACHINE_ASSISTED_EXTRACTION_NOT_HUMAN_REVIEW",
+    "human_review_performed": false,
+    "method": "SHA-256, byte length, PDF signature/EOF, strict page parsing, internal-title extraction, and full-document Caloocan text search"
+  },
+  "report_time_evidence": [
+    {
+      "source_artifact_id": "dswd_dromic_enteng_2024_report_1",
+      "report_title": "DSWD DROMIC Report #1 on the Effects of TD Enteng and Southwest Monsoon as of 01 September 2024, 6PM",
+      "issue_time_source_text": "as of 01 September 2024, 6PM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false
+    },
+    {
+      "source_artifact_id": "dswd_dromic_enteng_2024_report_2",
+      "report_title": "DSWD DROMIC Report #2 on the Effects of Tropical Storm Enteng and Southwest Monsoon as of 02 September 2024, 6AM",
+      "issue_time_source_text": "as of 02 September 2024, 6AM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false
+    },
+    {
+      "source_artifact_id": "dswd_dromic_enteng_2024_report_3",
+      "report_title": "DSWD DROMIC Report #3 on the Effects of Tropical Storm Enteng and Southwest Monsoon as of 02 September 2024, 6PM",
+      "issue_time_source_text": "as of 02 September 2024, 6PM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false
+    }
+  ],
+  "caloocan_evidence_status": "NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC",
+  "explicit_caloocan_facts": [],
+  "occurrence_time_evidence": [],
+  "location_evidence": [],
+  "affected_population_evidence": [],
+  "evacuation_displacement_evidence": [],
+  "flood_passability_depth_evidence": [],
+  "conflicting_incomplete_facts": [
+    "Reports #1-3 contain no Caloocan reference in extracted text.",
+    "Metro Manila rainfall forecasts and statements that flooding may be likely or expected are forecasts/general hazard context, not observed Caloocan flooding.",
+    "Report #2 affected-population and displacement totals cover Regions V, VII, and VIII, not Caloocan.",
+    "The NDRRMC discovery source lists Caloocan locations, but its official attachments remain not acquired and externally inaccessible from this environment."
+  ],
+  "uncertainties": [
+    "The acquired DROMIC reports do not independently corroborate a Caloocan occurrence, onset, cessation, depth, or affected population.",
+    "The occurrence times discovered in NDRRMC metadata cannot be promoted until those source documents are acquired and reviewed."
+  ],
+  "human_review_questions": [
+    "Can the official NDRRMC Enteng SitReps be acquired through an authorized external/manual path and checksummed?",
+    "Do the NDRRMC occurrence-time entries state a timezone and distinguish continuation from recurrence?",
+    "Should all three DROMIC reports remain contextual evidence only for this Caloocan candidate?"
+  ],
+  "positive_label_supported_by_acquired_dromic": false,
+  "negative_evidence_basis": null,
+  "label_status": "UNKNOWN",
+  "review_status": "REQUIRES_HUMAN_REVIEW",
+  "reviewed_by": null,
+  "human_approved": false,
+  "training_eligible": false,
+  "candidate_windows": [],
+  "imerg_acquired_for_candidate": false
+}

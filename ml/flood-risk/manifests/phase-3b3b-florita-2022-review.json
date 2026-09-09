@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "PHASE_3B3B_EVIDENCE_ACQUISITION",
+  "worksheet_id": "phase-3b3b-florita-2022",
+  "event_id": "caloocan-flood-candidate-2022-08-23-florita",
+  "hazard_type": "FLOOD",
+  "discovery_sources": [
+    {
+      "source_id": "ndrrmc_florita_sitreps_2022",
+      "role": "DISCOVERY_SOURCE",
+      "access_status": "EXTERNAL_ACCESS_REQUIRED"
+    }
+  ],
+  "acquisition_sources": [
+    {
+      "source_id": "dswd_dromic_florita_2022_08_25",
+      "role": "ACQUISITION_SOURCE",
+      "artifact_refs": ["dswd_dromic_florita_2022_report_1"]
+    }
+  ],
+  "machine_validation": {
+    "validated_at_utc": "2026-09-09T15:54:04.942Z",
+    "validator_role": "MACHINE_ASSISTED_EXTRACTION_NOT_HUMAN_REVIEW",
+    "human_review_performed": false,
+    "method": "SHA-256, byte length, PDF signature/EOF, strict page parsing, internal-title extraction, and full-document Caloocan text search"
+  },
+  "report_time_evidence": [
+    {
+      "source_artifact_id": "dswd_dromic_florita_2022_report_1",
+      "report_title": "DSWD DROMIC Report #1 on the Effects of Southwest Monsoon enhanced by STS Florita as of 25 August 2022, 6PM",
+      "issue_time_source_text": "as of 25 August 2022, 6PM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false
+    }
+  ],
+  "caloocan_evidence_status": "NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC",
+  "explicit_caloocan_facts": [],
+  "occurrence_time_evidence": [],
+  "location_evidence": [],
+  "affected_population_evidence": [],
+  "evacuation_displacement_evidence": [],
+  "flood_passability_depth_evidence": [],
+  "conflicting_incomplete_facts": [
+    "The DROMIC situation overview mentions possible flash floods in Metro Manila, but this is general weather/hazard language rather than an observed Caloocan event.",
+    "The affected-population table reports 334 families and 1,379 persons in three barangays in Region VI/Iloilo, not Caloocan.",
+    "The NDRRMC discovery source describes Caloocan road flooding, but its official attachment remains not acquired and externally inaccessible from this environment."
+  ],
+  "uncertainties": [
+    "The acquired DROMIC report does not corroborate the Caloocan-specific discovery evidence.",
+    "No Caloocan onset, cessation, barangay, road condition, depth, family count, or evacuation fact is available from the acquired DROMIC document."
+  ],
+  "human_review_questions": [
+    "Can the official NDRRMC Florita SitReps be acquired through an authorized external/manual path and checksummed?",
+    "Do those NDRRMC documents explicitly support an event date and Caloocan locations suitable for a governed label?",
+    "Should the DROMIC report remain contextual evidence only and be excluded from Caloocan label support?"
+  ],
+  "positive_label_supported_by_acquired_dromic": false,
+  "negative_evidence_basis": null,
+  "label_status": "UNKNOWN",
+  "review_status": "REQUIRES_HUMAN_REVIEW",
+  "reviewed_by": null,
+  "human_approved": false,
+  "training_eligible": false,
+  "candidate_windows": [],
+  "imerg_acquired_for_candidate": false
+}

@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "PHASE_3B3B_EVIDENCE_ACQUISITION",
+  "worksheet_id": "phase-3b3b-ulysses-2020",
+  "event_id": "caloocan-flood-candidate-2020-11-12-ulysses",
+  "hazard_type": "FLOOD",
+  "discovery_sources": [
+    {
+      "source_id": "ndrrmc_ulysses_sitreps_2020",
+      "role": "DISCOVERY_SOURCE",
+      "access_status": "EXTERNAL_ACCESS_REQUIRED"
+    }
+  ],
+  "acquisition_sources": [
+    {
+      "source_id": "dswd_dromic_ulysses_terminal_2021_11_13",
+      "role": "ACQUISITION_SOURCE",
+      "artifact_refs": ["dswd_dromic_ulysses_terminal_2021_report"]
+    }
+  ],
+  "machine_validation": {
+    "validated_at_utc": "2026-09-09T15:54:04.942Z",
+    "validator_role": "MACHINE_ASSISTED_EXTRACTION_NOT_HUMAN_REVIEW",
+    "human_review_performed": false,
+    "method": "SHA-256, byte length, PDF signature/EOF, strict page parsing, internal-title extraction, and page-level Caloocan text review"
+  },
+  "report_time_evidence": [
+    {
+      "source_artifact_id": "dswd_dromic_ulysses_terminal_2021_report",
+      "report_title": "DSWD DROMIC Terminal Report on Typhoon ULYSSES, 13 November 2021, 6PM",
+      "issue_time_source_text": "13 November 2021, 6PM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false
+    }
+  ],
+  "caloocan_evidence_status": "EXPLICIT_AFFECTED_POPULATION_ONLY",
+  "explicit_caloocan_facts": [
+    {
+      "evidence_id": "ulysses-caloocan-affected-population",
+      "statement": "Table 1 lists Caloocan City with 23 affected barangays, 243 affected families, and 926 affected persons.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dswd_dromic_ulysses_terminal_2021_report",
+      "page_number": 1
+    },
+    {
+      "evidence_id": "ulysses-caloocan-evacuation-table",
+      "statement": "Table 2 lists Caloocan City with cumulative values of 24 evacuation centers, 243 families, and 926 persons; current-value cells display dashes.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dswd_dromic_ulysses_terminal_2021_report",
+      "page_number": 11
+    }
+  ],
+  "occurrence_time_evidence": [],
+  "location_evidence": [
+    {
+      "evidence_id": "ulysses-caloocan-city-location",
+      "statement": "Caloocan City is explicitly named in the affected-population and evacuation-center tables.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dswd_dromic_ulysses_terminal_2021_report",
+      "page_number": 1
+    }
+  ],
+  "affected_population_evidence": [
+    {
+      "evidence_id": "ulysses-caloocan-counts",
+      "statement": "Caloocan City: 23 affected barangays, 243 affected families, 926 affected persons.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dswd_dromic_ulysses_terminal_2021_report",
+      "page_number": 1
+    }
+  ],
+  "evacuation_displacement_evidence": [
+    {
+      "evidence_id": "ulysses-caloocan-cumulative-evacuation",
+      "statement": "Caloocan City row: 24 cumulative evacuation centers, 243 cumulative families, and 926 cumulative persons; current columns are shown as dashes.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dswd_dromic_ulysses_terminal_2021_report",
+      "page_number": 11
+    }
+  ],
+  "flood_passability_depth_evidence": [],
+  "conflicting_incomplete_facts": [
+    "The terminal report was issued on 13 November 2021 for the November 2020 Ulysses event; report issue time is not event onset.",
+    "The acquired DROMIC document contains Caloocan affected-population evidence but no Caloocan-specific flood, depth, road-passability, onset, or cessation statement.",
+    "The PDF footer states Page 1 of 43 while the local parser reads 41 PDF page objects; human source-completeness review is required.",
+    "The NDRRMC discovery source contains the Caloocan flood/barangay claim but its official attachments remain not acquired."
+  ],
+  "uncertainties": [
+    "The 23 affected barangays are counted but not named in the acquired DROMIC report.",
+    "Affected-population and evacuation data do not prove the time or location of flooding.",
+    "Dashes in current evacuation columns are preserved without interpreting them as numeric zero."
+  ],
+  "human_review_questions": [
+    "Can the official NDRRMC Ulysses SitReps be acquired and checksummed to review the six Caloocan flood entries?",
+    "Does authoritative evidence establish a Caloocan flood onset/cessation interval independent of report issue times?",
+    "Does the 41-versus-43 page-count discrepancy indicate omitted pages or only document pagination behavior?",
+    "Can any affected barangay names be supported without inferring them from the DROMIC count?"
+  ],
+  "positive_label_supported_by_acquired_dromic": false,
+  "negative_evidence_basis": null,
+  "label_status": "UNKNOWN",
+  "review_status": "REQUIRES_HUMAN_REVIEW",
+  "reviewed_by": null,
+  "human_approved": false,
+  "training_eligible": false,
+  "candidate_windows": [],
+  "imerg_acquired_for_candidate": false
+}

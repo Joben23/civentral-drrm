@@ -90,9 +90,11 @@
       "barangay_psgc": null,
       "latitude": null,
       "longitude": null,
-      "source_ids": ["ndrrmc_ulysses_sitreps_2020"],
-      "source_document_refs": [],
-      "evidence_summary": "Discovery-only NDRRMC metadata explicitly lists flooding in Caloocan Barangays 117, 118, 119, 120, 160, and 175 on 12 November 2020; source documents and identifier mappings await review.",
+      "source_ids": ["ndrrmc_ulysses_sitreps_2020", "dswd_dromic_ulysses_terminal_2021_11_13"],
+      "source_document_refs": [
+        "ml/flood-risk/data/raw/event-evidence/index.pdf"
+      ],
+      "evidence_summary": "NDRRMC discovery metadata lists flooding in six numbered Caloocan barangays on 12 November 2020 but its PDFs remain externally inaccessible. The acquired DSWD terminal report independently identifies Caloocan City with 23 affected barangays, 243 families, and 926 persons, plus cumulative evacuation-center figures; it does not state a Caloocan flood onset, depth, road condition, or named barangay.",
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
@@ -100,7 +102,7 @@
       "reviewed_at": null,
       "leakage_review_status": "NOT_REVIEWED",
       "training_eligible": false,
-      "exclusion_reason": "DISCOVERY_ONLY_SOURCE_NOT_ACQUIRED_ONSET_AND_CESSATION_UNRESOLVED",
+      "exclusion_reason": "HUMAN_REVIEW_REQUIRED_NDRRMC_SOURCE_NOT_ACQUIRED_DROMIC_AFFECTED_POPULATION_DOES_NOT_ESTABLISH_FLOOD_ONSET",
       "candidate_windows": []
     },
     {
@@ -114,9 +116,11 @@
       "barangay_psgc": null,
       "latitude": null,
       "longitude": null,
-      "source_ids": ["ndrrmc_florita_sitreps_2022"],
-      "source_document_refs": [],
-      "evidence_summary": "Discovery-only NDRRMC metadata explicitly lists gutter-deep flooding at five Caloocan street locations during the August 2022 Florita episode; event timing and spatial mapping await review.",
+      "source_ids": ["ndrrmc_florita_sitreps_2022", "dswd_dromic_florita_2022_08_25"],
+      "source_document_refs": [
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-1-on-the-Effects-of-Southwest-Monsoon-enhanced-by-STS-Florita-as-of-25-August-2022-6PM.pdf"
+      ],
+      "evidence_summary": "NDRRMC discovery metadata lists gutter-deep flooding at five Caloocan street locations, but its PDFs remain externally inaccessible. The acquired DSWD report contains no Caloocan reference and reports affected population only in Region VI/Iloilo; its general Metro Manila weather language is not positive Caloocan flood evidence.",
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
@@ -124,7 +128,7 @@
       "reviewed_at": null,
       "leakage_review_status": "NOT_REVIEWED",
       "training_eligible": false,
-      "exclusion_reason": "DISCOVERY_ONLY_SOURCE_NOT_ACQUIRED_EVENT_DATE_CONTEXT_AND_LOCATION_MAPPING_UNRESOLVED",
+      "exclusion_reason": "HUMAN_REVIEW_REQUIRED_NDRRMC_SOURCE_NOT_ACQUIRED_DROMIC_HAS_NO_CALOOCAN_OCCURRENCE_EVIDENCE",
       "candidate_windows": []
     },
     {
@@ -162,9 +166,13 @@
       "barangay_psgc": null,
       "latitude": null,
       "longitude": null,
-      "source_ids": ["ndrrmc_enteng_sitreps_2024"],
-      "source_document_refs": [],
-      "evidence_summary": "Discovery-only NDRRMC metadata explicitly lists eleven Caloocan flooded locations and occurrence times during 2-5 September 2024; timezone, recurrence, and spatial mappings await review.",
+      "source_ids": ["ndrrmc_enteng_sitreps_2024", "dswd_dromic_enteng_2024_reports_1_3"],
+      "source_document_refs": [
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-1-on-the-Effects-of-TD-Enteng-and-Southwest-Monsoon-as-of-01-September-2024-6PM.pdf",
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-2-on-the-Effects-of-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-02-September-2024-6AM.pdf",
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-3-on-the-Effects-of-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-02-September-2024-6PM.pdf"
+      ],
+      "evidence_summary": "NDRRMC discovery metadata lists eleven Caloocan flooded locations and occurrence times, but its PDFs remain externally inaccessible. Acquired DSWD Reports #1-3 contain no Caloocan reference; their Metro Manila rainfall and flood-hazard language is forecast/general context and cannot confirm a Caloocan flood occurrence.",
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
@@ -172,7 +180,7 @@
       "reviewed_at": null,
       "leakage_review_status": "NOT_REVIEWED",
       "training_eligible": false,
-      "exclusion_reason": "DISCOVERY_ONLY_SOURCE_NOT_ACQUIRED_TIMEZONE_RECURRENCE_AND_SPATIAL_MAPPING_UNRESOLVED",
+      "exclusion_reason": "HUMAN_REVIEW_REQUIRED_NDRRMC_SOURCE_NOT_ACQUIRED_DROMIC_HAS_NO_CALOOCAN_OCCURRENCE_EVIDENCE",
       "candidate_windows": []
     }
   ]

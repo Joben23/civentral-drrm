@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/phase-3b3b-review-worksheet-v1.json",
+  "title": "CIVENTRAL Phase 3B3-B machine-assisted evidence review worksheet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "phase", "worksheet_id", "event_id", "hazard_type",
+    "discovery_sources", "acquisition_sources", "machine_validation",
+    "report_time_evidence", "caloocan_evidence_status", "explicit_caloocan_facts",
+    "occurrence_time_evidence", "location_evidence", "affected_population_evidence",
+    "evacuation_displacement_evidence", "flood_passability_depth_evidence",
+    "conflicting_incomplete_facts", "uncertainties", "human_review_questions",
+    "positive_label_supported_by_acquired_dromic", "negative_evidence_basis",
+    "label_status", "review_status", "reviewed_by", "human_approved",
+    "training_eligible", "candidate_windows", "imerg_acquired_for_candidate"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "phase": {"const": "PHASE_3B3B_EVIDENCE_ACQUISITION"},
+    "worksheet_id": {"type": "string", "minLength": 1},
+    "event_id": {"type": "string", "minLength": 1},
+    "hazard_type": {"const": "FLOOD"},
+    "discovery_sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/discovery_source"}},
+    "acquisition_sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/acquisition_source"}},
+    "machine_validation": {"$ref": "#/$defs/machine_validation"},
+    "report_time_evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/report_time"}},
+    "caloocan_evidence_status": {"enum": ["NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC", "EXPLICIT_AFFECTED_POPULATION_ONLY"]},
+    "explicit_caloocan_facts": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "occurrence_time_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "location_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "affected_population_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "evacuation_displacement_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "flood_passability_depth_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "conflicting_incomplete_facts": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "uncertainties": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "human_review_questions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "positive_label_supported_by_acquired_dromic": {"const": false},
+    "negative_evidence_basis": {"type": "null"},
+    "label_status": {"const": "UNKNOWN"},
+    "review_status": {"const": "REQUIRES_HUMAN_REVIEW"},
+    "reviewed_by": {"type": "null"},
+    "human_approved": {"const": false},
+    "training_eligible": {"const": false},
+    "candidate_windows": {"type": "array", "maxItems": 0},
+    "imerg_acquired_for_candidate": {"const": false}
+  },
+  "$defs": {
+    "discovery_source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "role", "access_status"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "role": {"const": "DISCOVERY_SOURCE"},
+        "access_status": {"const": "EXTERNAL_ACCESS_REQUIRED"}
+      }
+    },
+    "acquisition_source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "role", "artifact_refs"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "role": {"const": "ACQUISITION_SOURCE"},
+        "artifact_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "machine_validation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["validated_at_utc", "validator_role", "human_review_performed", "method"],
+      "properties": {
+        "validated_at_utc": {"type": "string", "format": "date-time"},
+        "validator_role": {"const": "MACHINE_ASSISTED_EXTRACTION_NOT_HUMAN_REVIEW"},
+        "human_review_performed": {"const": false},
+        "method": {"type": "string", "minLength": 1}
+      }
+    },
+    "report_time": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_artifact_id", "report_title", "issue_time_source_text", "issue_timezone", "issue_time_is_event_onset"],
+      "properties": {
+        "source_artifact_id": {"type": "string", "minLength": 1},
+        "report_title": {"type": "string", "minLength": 1},
+        "issue_time_source_text": {"type": "string", "minLength": 1},
+        "issue_timezone": {"type": "null"},
+        "issue_time_is_event_onset": {"const": false}
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidence_id", "statement", "evidence_status", "source_artifact_id", "page_number"],
+      "properties": {
+        "evidence_id": {"type": "string", "minLength": 1},
+        "statement": {"type": "string", "minLength": 1},
+        "evidence_status": {"enum": ["EXPLICITLY_STATED", "DOCUMENT_SEARCH_RESULT", "UNKNOWN"]},
+        "source_artifact_id": {"type": ["string", "null"]},
+        "page_number": {"type": ["integer", "null"], "minimum": 1}
+      }
+    }
+  }
+}

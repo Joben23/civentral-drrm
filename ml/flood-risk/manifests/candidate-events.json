@@ -148,25 +148,25 @@
           "url": "https://ndrrmc.gov.ph/attachments/article/2051/SitRep_No_02_re_Effects_of_Southwest_Monsoon_Enhanced_by_Tropical_Storm_HAIKUI_as_of_7AUG2012_1700H.pdf",
           "title": "NDRRMC SitRep No. 2 re Southwest Monsoon enhanced by Tropical Storm Haikui/Gener",
           "report_issue_time_source_text": "as of 07 August 2012, 5:00 PM",
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         },
         {
           "url": "https://ndrrmc.gov.ph/attachments/article/2051/SitRep_No_03_re_Effects_of_Southwest_Monsoon_Enhanced_by_Tropical_Storm_HAIKUI_as_of_8AUG2012_0700H.pdf",
           "title": "NDRRMC SitRep No. 3 re Southwest Monsoon enhanced by Tropical Storm Haikui/Gener",
           "report_issue_time_source_text": "as of 08 August 2012, 7:00 AM",
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         }
       ],
       "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
       "source_status": "PROPOSED",
-      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "document_access_status": "EXTERNAL_ACCESS_REQUIRED",
       "location_wording": "Caloocan City: Bonifacio Monument Circle; 10 Ave bound to City Hall; Dagat-dagatan; not passable to light vehicles due to flooding",
       "supported_barangays": [],
       "location_precision": "STREET_OR_LOCALITY",
       "barangay_mapping_status": "NO_BARANGAY_INFERRED_FROM_STREET_OR_LOCALITY",
       "legacy_barangay_176_remapped": false,
-      "evidence_summary": "Official NDRRMC road-status tables explicitly place flooding at three named Caloocan locations on 7-8 August 2012.",
-      "uncertainties": ["Report as-of times are not onset or cessation times.", "No barangay identifiers or event depth are stated for the Caloocan rows."],
+      "evidence_summary": "Official NDRRMC road-status tables explicitly place flooding at three named Caloocan locations on 7-8 August 2012. The requested official downstream PDFs remain inaccessible from this environment and are preserved as EXTERNAL_ACCESS_REQUIRED rather than acquired documents.",
+      "uncertainties": ["Report as-of times are not onset or cessation times.", "No barangay identifiers or event depth are stated for the Caloocan rows.", "Official NDRRMC PDF attachment access from this environment returned HTTP 403/Cloudflare rejection, so source-document acquisition remains incomplete."],
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "spatial_mapping_status": "UNREVIEWED",
@@ -181,11 +181,11 @@
         "event_timing_available": false,
         "location_detail_available": true,
         "multiple_official_reports": true,
-        "source_documents_accessible": true,
+        "source_documents_accessible": false,
         "independent_from_june_2019": true,
         "imerg_historical_availability": true
       },
-      "priority_score": 9,
+      "priority_score": 8,
       "acquisition_priority": "HIGH_PRIORITY",
       "secondary_corroboration": [],
       "phase_3b3b_acquisition_selected": true,
@@ -212,25 +212,25 @@
           "url": "https://ndrrmc.gov.ph/attachments/article/4138/SitRep_No_4_re_Preparedness_Measures_and_Effects_for_TY_ULYSSES_as_of_14NOV2020_5PM.pdf",
           "title": "NDRRMC SitRep No. 4 re Typhoon Ulysses",
           "report_issue_time_source_text": "as of 14 November 2020, 5:00 PM",
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         },
         {
           "url": "https://ndrrmc.gov.ph/attachments/article/4138/SitRep_no_23_re_TY_Ulysses_as_of_03DEC2020.pdf",
           "title": "NDRRMC SitRep No. 23 re Typhoon Ulysses",
           "report_issue_time_source_text": "as of 03 December 2020, 8:00 AM",
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         }
       ],
       "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
       "source_status": "PROPOSED",
-      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "document_access_status": "EXTERNAL_ACCESS_REQUIRED",
       "location_wording": "Caloocan City: Barangay 120; Barangay 117; Barangay 118; Barangay 119; Barangay 160; Barangay 175; flooding on 12 November 2020; subsided",
       "supported_barangays": ["Barangay 117", "Barangay 118", "Barangay 119", "Barangay 120", "Barangay 160", "Barangay 175"],
       "location_precision": "MULTI_BARANGAY",
       "barangay_mapping_status": "EXACT_NUMBERS_RETAINED_CANONICAL_MAPPING_UNREVIEWED",
       "legacy_barangay_176_remapped": false,
-      "evidence_summary": "NDRRMC incident tables explicitly list flooding in six numbered Caloocan barangays on 12 November 2020 and later report it as subsided.",
-      "uncertainties": ["No onset or cessation time is stated for the Caloocan rows.", "Barangay identifiers require canonical PSGC review before spatial use."],
+      "evidence_summary": "NDRRMC incident tables explicitly list flooding in six numbered Caloocan barangays on 12 November 2020 and later report it as subsided. The requested official SitRep PDFs remain inaccessible from this environment and are preserved as EXTERNAL_ACCESS_REQUIRED rather than acquired documents.",
+      "uncertainties": ["No onset or cessation time is stated for the Caloocan rows.", "Barangay identifiers require canonical PSGC review before spatial use.", "Official NDRRMC PDF attachment access from this environment returned HTTP 403/Cloudflare rejection, so source-document acquisition remains incomplete."],
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "spatial_mapping_status": "UNREVIEWED",
@@ -245,11 +245,11 @@
         "event_timing_available": false,
         "location_detail_available": true,
         "multiple_official_reports": true,
-        "source_documents_accessible": true,
+        "source_documents_accessible": false,
         "independent_from_june_2019": true,
         "imerg_historical_availability": true
       },
-      "priority_score": 9,
+      "priority_score": 8,
       "acquisition_priority": "HIGH_PRIORITY",
       "secondary_corroboration": [],
       "phase_3b3b_acquisition_selected": true,
@@ -276,25 +276,25 @@
           "url": "https://ndrrmc.gov.ph/attachments/article/4194/SitRep_No_4_for_STS_Florita_2022_Update.pdf",
           "title": "NDRRMC SitRep No. 4 for STS Florita",
           "report_issue_time_source_text": null,
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         },
         {
           "url": "https://ndrrmc.gov.ph/attachments/article/4194/SitRep_No_7_for_STS_Florita_2022_Update.pdf",
           "title": "NDRRMC SitRep No. 7 for STS Florita",
           "report_issue_time_source_text": "as of 28 August 2022, 8:00 AM",
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         }
       ],
       "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
       "source_status": "PROPOSED",
-      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "document_access_status": "EXTERNAL_ACCESS_REQUIRED",
       "location_wording": "Caloocan City flooded areas (gutter deep): A. de Jesus corner 10th Ave.; 10th Ave. corner B. Serrano; 9th St. corner 8th Ave.; EDSA Balintawak southbound outer lane; 11th Ave. corner Rizal Ave.",
       "supported_barangays": [],
       "location_precision": "STREET_OR_LOCALITY",
       "barangay_mapping_status": "NO_BARANGAY_INFERRED_FROM_STREET_LOCATIONS",
       "legacy_barangay_176_remapped": false,
-      "evidence_summary": "NDRRMC preparedness/effects sections explicitly list gutter-deep flooded areas at five Caloocan street locations during the Florita episode.",
-      "uncertainties": ["The document section does not establish an exact onset or cessation time for the Caloocan entries.", "The 23 August date is episode context and requires document-level human confirmation."],
+      "evidence_summary": "NDRRMC preparedness/effects sections explicitly list gutter-deep flooded areas at five Caloocan street locations during the Florita episode. The requested official SitRep PDFs remain inaccessible from this environment and are preserved as EXTERNAL_ACCESS_REQUIRED rather than acquired documents.",
+      "uncertainties": ["The document section does not establish an exact onset or cessation time for the Caloocan entries.", "The 23 August date is episode context and requires document-level human confirmation.", "Official NDRRMC PDF attachment access from this environment returned HTTP 403/Cloudflare rejection, so source-document acquisition remains incomplete."],
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "spatial_mapping_status": "UNREVIEWED",
@@ -309,11 +309,11 @@
         "event_timing_available": false,
         "location_detail_available": true,
         "multiple_official_reports": true,
-        "source_documents_accessible": true,
+        "source_documents_accessible": false,
         "independent_from_june_2019": true,
         "imerg_historical_availability": true
       },
-      "priority_score": 9,
+      "priority_score": 8,
       "acquisition_priority": "HIGH_PRIORITY",
       "secondary_corroboration": [],
       "phase_3b3b_acquisition_selected": true,
@@ -398,25 +398,25 @@
           "url": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_02_for_the_Effects_of_TC_ENTENG_2024_and_Southwest_Monsoon.pdf",
           "title": "NDRRMC SitRep No. 2 for the Effects of TC Enteng and Southwest Monsoon",
           "report_issue_time_source_text": null,
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         },
         {
           "url": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_03_for_the_Effects_of_TC_ENTENG_and_Southwest_Monsoon_2024.pdf",
           "title": "NDRRMC SitRep No. 3 for the Effects of TC Enteng and Southwest Monsoon",
           "report_issue_time_source_text": null,
-          "access_status": "AVAILABLE_FOR_ACQUISITION"
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         }
       ],
       "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
       "source_status": "PROPOSED",
-      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "document_access_status": "EXTERNAL_ACCESS_REQUIRED",
       "location_wording": "Caloocan flooded areas: Barangay 172 North Olympus; Barangay 172 Dona Aurora; Barangay 185 Everlasting; Barangay 185 Quirino Highway Malaria; Barangay 174 1456 Camarin Road; Barangay 177 Duria Street; Corner Acacia and Santol Street; Sapang Alat Bridge; MLQ High School; Sampaguita Street; Crispulo Street",
       "supported_barangays": ["Barangay 172", "Barangay 174", "Barangay 177", "Barangay 185"],
       "location_precision": "MULTI_BARANGAY",
       "barangay_mapping_status": "EXACT_NUMBERS_RETAINED_CANONICAL_MAPPING_UNREVIEWED",
       "legacy_barangay_176_remapped": false,
-      "evidence_summary": "NDRRMC incident tables explicitly list eleven Caloocan flooded locations, including numbered barangays and occurrence times, during 2-5 September 2024.",
-      "uncertainties": ["Occurrence times have no explicit timezone in the discovered table metadata.", "Some locations lack an explicit barangay number.", "The 5 September Crispulo Street entry may be a continuation or recurrence and requires episode review."],
+      "evidence_summary": "NDRRMC incident tables explicitly list eleven Caloocan flooded locations, including numbered barangays and occurrence times, during 2-5 September 2024. The requested official SitRep PDFs remain inaccessible from this environment and are preserved as EXTERNAL_ACCESS_REQUIRED rather than acquired documents.",
+      "uncertainties": ["Occurrence times have no explicit timezone in the discovered table metadata.", "Some locations lack an explicit barangay number.", "The 5 September Crispulo Street entry may be a continuation or recurrence and requires episode review.", "Official NDRRMC PDF attachment access from this environment returned HTTP 403/Cloudflare rejection, so source-document acquisition remains incomplete."],
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "spatial_mapping_status": "UNREVIEWED",
@@ -431,11 +431,11 @@
         "event_timing_available": true,
         "location_detail_available": true,
         "multiple_official_reports": true,
-        "source_documents_accessible": true,
+        "source_documents_accessible": false,
         "independent_from_june_2019": true,
         "imerg_historical_availability": true
       },
-      "priority_score": 10,
+      "priority_score": 9,
       "acquisition_priority": "HIGH_PRIORITY",
       "secondary_corroboration": [],
       "phase_3b3b_acquisition_selected": true,
