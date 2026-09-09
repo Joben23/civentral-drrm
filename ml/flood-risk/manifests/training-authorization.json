@@ -11,10 +11,10 @@
     "No reviewed real canonical observations are present.",
     "No explicit authoritative negative observations are present.",
     "No historical at-issuance PAGASA forecast rainfall archive is present.",
-    "No verified antecedent rainfall series is present.",
-    "NASA GPM IMERG and optional ERA5-Land pilot sources are not acquired or approved.",
+    "A bounded official NASA IMERG ImageServer representation is acquired but remains provisional, lacks the precipitation quality index, and is not approved for pilot use.",
+    "Original IMERG HDF5 granules require Earthdata authentication and have not been acquired; optional ERA5-Land is also not acquired.",
     "PAGASA climatological raw data is PAGASA_DATA_NOT_ACQUIRED.",
-    "Candidate incident reports have not completed human spatial and temporal review.",
+    "The June 2019 DROMIC reports are acquired, but the candidate has not completed human label, spatial, temporal, or usage review.",
     "No reviewed event registry window is eligible for pilot row construction."
   ],
   "notes": "Mechanical readiness checks cannot replace an explicit data-governance decision. Do not change status until blockers are resolved and the decision is documented."

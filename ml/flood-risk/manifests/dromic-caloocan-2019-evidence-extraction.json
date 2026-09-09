@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "extraction_id": "dromic-caloocan-2019-phase3b2-candidate-extraction",
+  "event_id": "caloocan-flood-candidate-2019-06-24",
+  "extraction_status": "CANDIDATE_MACHINE_EXTRACTION_NOT_HUMAN_REVIEWED",
+  "primary_source_id": "dswd_dromic_caloocan_flood_2019-06-24",
+  "source_documents": [
+    {
+      "artifact_id": "dromic_caloocan_2019_report_1",
+      "source_document_ref": "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-1-on-the-Flooding-Incident-in-Caloocan-City-as-of-28-June-2019-6PM.docx",
+      "report_title": "DSWD DROMIC Report #1 on the Flooding Incident in Caloocan City",
+      "issue_time_source_text": "as of 28 June 2019, 6PM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false,
+      "evidence_status": "EXPLICITLY_STATED"
+    },
+    {
+      "artifact_id": "dromic_caloocan_2019_terminal_report",
+      "source_document_ref": "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Terminal-Report-on-the-Flooding-Incident-in-Caloocan-City-08-Jul-2019-7PM.docx",
+      "report_title": "DSWD DROMIC Terminal Report on the Flooding Incident in Caloocan City",
+      "issue_time_source_text": "08 July 2019, 7PM",
+      "issue_timezone": null,
+      "issue_time_is_event_onset": false,
+      "evidence_status": "EXPLICITLY_STATED"
+    }
+  ],
+  "supported_event_date": {
+    "value": "2019-06-24",
+    "evidence_status": "EXPLICITLY_STATED",
+    "source_artifact_id": "dromic_caloocan_2019_terminal_report",
+    "page_number": 1,
+    "notes": "The terminal report states that flooding occurred over portions of Caloocan City on 24 June 2019; it does not state an exact onset time."
+  },
+  "supported_event_start": null,
+  "supported_event_end": null,
+  "event_time_status": "UNRESOLVED",
+  "report_issue_times_are_event_onset": false,
+  "supported_location_scope": "MULTI_BARANGAY",
+  "supported_barangays": [
+    {"name": "Barangay 175", "current_psgc": "1380100175", "current_mapping_status": "RESOLVED_FROM_GOVERNED_2026_RECONCILIATION", "evidence_status": "EXPLICITLY_STATED"},
+    {"name": "Barangay 176", "current_psgc": null, "current_mapping_status": "UNRESOLVED_LEGACY_BARANGAY_SPLIT", "evidence_status": "EXPLICITLY_STATED"},
+    {"name": "Barangay 177", "current_psgc": "1380100177", "current_mapping_status": "RESOLVED_FROM_GOVERNED_2026_RECONCILIATION", "evidence_status": "EXPLICITLY_STATED"},
+    {"name": "Barangay 178", "current_psgc": "1380100178", "current_mapping_status": "RESOLVED_FROM_GOVERNED_2026_RECONCILIATION", "evidence_status": "EXPLICITLY_STATED"}
+  ],
+  "source_evidence": [
+    {
+      "fact_id": "report1_incident_context",
+      "statement": "Report #1 states that the 24 June 2019 regional weather conditions resulted in flooding in areas of Caloocan City on the same day.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dromic_caloocan_2019_report_1",
+      "page_number": 1,
+      "notes": "Supports the calendar date and city-level occurrence, not an exact onset time or causal ML label."
+    },
+    {
+      "fact_id": "report1_affected_population",
+      "statement": "Report #1 records 473 families or 1,892 persons affected in Barangays 177 and 178, including 422 families or 1,688 persons in Barangay 177 and 51 families or 204 persons in Barangay 178.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dromic_caloocan_2019_report_1",
+      "page_number": 1,
+      "notes": "Counts are preserved as report facts and are not model features or labels."
+    },
+    {
+      "fact_id": "report1_evacuation",
+      "statement": "Report #1 records 22 families or 88 persons temporarily sheltered at the Barangay 177 Barangay Hall and states that they had returned home.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dromic_caloocan_2019_report_1",
+      "page_number": 1,
+      "notes": "Evacuation activity occurs after impact and must never be used as a pre-cutoff input feature."
+    },
+    {
+      "fact_id": "terminal_affected_population",
+      "statement": "The terminal report records 2,013 families or 8,052 persons affected in Barangays 175, 176, 177, and 178.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dromic_caloocan_2019_terminal_report",
+      "page_number": 1,
+      "notes": "The larger terminal count requires human interpretation; it is not automatically a severity label."
+    },
+    {
+      "fact_id": "terminal_evacuation",
+      "statement": "The terminal report records 22 families or 88 persons sheltered at the Barangay 177 Barangay Hall and states that they returned home.",
+      "evidence_status": "EXPLICITLY_STATED",
+      "source_artifact_id": "dromic_caloocan_2019_terminal_report",
+      "page_number": 1,
+      "notes": "No exact evacuation or return timestamp is stated."
+    }
+  ],
+  "uncertainties": [
+    "Exact flooding onset and cessation times are not stated.",
+    "The reports' issue-time timezone is not explicit and issue times are not event times.",
+    "Street-level locations and event coordinates are not stated.",
+    "The terminal report names legacy Barangay 176, whose mapping to current Barangays 176-A through 176-F is unresolved in the governed geometry.",
+    "The relationship between the initial and terminal affected-population counts requires human interpretation.",
+    "Applicable document reuse/license terms remain pending review."
+  ],
+  "recommended_review_questions": [
+    "Does the official evidence support a defensible event onset/end envelope beyond the calendar date?",
+    "Can an authorized LGU or official record resolve which present-day area corresponds to legacy Barangay 176?",
+    "Do the source terms permit governed pilot feature/label derivation?",
+    "Does the combined official evidence justify FLOOD_CONFIRMED under label protocol v1 without treating report issue times as onset?",
+    "What prediction cutoff, if any, can be defined without using post-event evidence as an input?"
+  ],
+  "secondary_corroboration": [],
+  "label_status": "UNKNOWN",
+  "review_status": "REQUIRES_HUMAN_REVIEW",
+  "reviewed_by": null,
+  "human_approved": false,
+  "training_eligible": false
+}

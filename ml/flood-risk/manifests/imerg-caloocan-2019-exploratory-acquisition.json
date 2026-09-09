@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0.0",
+  "acquisition_id": "imerg-v07b-caloocan-2019-06-24-exploratory-v1",
+  "source_id": "nasa_gpm_imerg_final_hh_v07",
+  "status": "ACQUIRED_TECHNICALLY_VALIDATED_REVIEW_PENDING",
+  "acquisition_type": "EXPLORATORY_SOURCE_ACQUISITION_WINDOW",
+  "product": {
+    "short_name": "GPM_3IMERGHH",
+    "collection_version": "07",
+    "processing_id": "V07B",
+    "doi": "10.5067/GPM/IMERG/3B-HH/07",
+    "run": "FINAL_RUN_RESEARCH_PRODUCT",
+    "data_characterization": "SATELLITE_PRECIPITATION_ESTIMATE_WITH_GAUGE_ANALYSIS",
+    "spatial_resolution_degrees": 0.1,
+    "temporal_resolution_minutes": 30,
+    "variable_name": "precipitation",
+    "native_units": "mm/hr",
+    "time_semantics": "UTC_INTERVAL_START",
+    "historical_coverage_start": "1998-01-01T00:00:00Z",
+    "official_metadata_urls": [
+      "https://daac.gsfc.nasa.gov/datasets/GPM_3IMERGHH_07/summary",
+      "https://gpm.nasa.gov/resources/documents/imerg-v07-technical-documentation",
+      "https://gpm.nasa.gov/resources/documents/imerg-v07-release-notes"
+    ]
+  },
+  "access": {
+    "original_granule_access": "EARTHDATA_AUTHENTICATION_REQUIRED",
+    "authentication_material_present": false,
+    "original_granule_downloaded": false,
+    "representation": "OFFICIAL_EARTHDATA_IMAGESERVER_SAMPLES",
+    "public_subset_service": "https://gis.earthdata.nasa.gov/portal/rest/services/GESDISC/GPM_3IMERGHH/ImageServer/getSamples",
+    "access_note": "An unauthenticated original-HDF5 request redirected to Earthdata Login and returned HTTP 401. No bypass or unofficial mirror was used; the acquired values are an official bounded NASA ImageServer representation, not original HDF5 granules."
+  },
+  "acquisition_window": {
+    "classification": "EXPLORATORY_SOURCE_ACQUISITION_WINDOW",
+    "start_utc": "2019-06-23T16:00:00Z",
+    "end_utc_exclusive": "2019-06-24T16:00:00Z",
+    "source_date_text": "24 June 2019",
+    "source_timezone": "Asia/Manila UTC+08:00",
+    "timezone_assumption_status": "REQUIRES_HUMAN_REVIEW",
+    "conversion_method": "Exploratory envelope maps the complete 24 June 2019 Philippine civil date to UTC by subtracting eight hours; the source reports do not explicitly state timezone or onset time.",
+    "selection_rationale": "The reports support only the incident calendar date, so one complete assumed Philippine civil day was acquired for source validation. This does not select a model cutoff or forecast horizon.",
+    "target_window": false,
+    "prediction_window": false,
+    "training_window": false
+  },
+  "spatial_request": {
+    "crs": "EPSG:4326",
+    "city_boundary_source": "data/import/caloocan-city-boundary.geojson",
+    "city_boundary_sha256": "9647f3cac1758a07cfdc6a5bb8767fe9e4f1eb70b4e7d2c14a99abf2de1f9d50",
+    "city_bounds_wgs84": [120.960643551, 14.635162092, 121.099879118, 14.785291728],
+    "requested_bounds_wgs84": [120.8, 14.5, 121.2, 14.9],
+    "source_resolution_degrees": 0.1,
+    "requested_grid_centers": [
+      {"longitude": 120.85, "latitude": 14.55},
+      {"longitude": 120.95, "latitude": 14.55},
+      {"longitude": 121.05, "latitude": 14.55},
+      {"longitude": 121.15, "latitude": 14.55},
+      {"longitude": 120.85, "latitude": 14.65},
+      {"longitude": 120.95, "latitude": 14.65},
+      {"longitude": 121.05, "latitude": 14.65},
+      {"longitude": 121.15, "latitude": 14.65},
+      {"longitude": 120.85, "latitude": 14.75},
+      {"longitude": 120.95, "latitude": 14.75},
+      {"longitude": 121.05, "latitude": 14.75},
+      {"longitude": 121.15, "latitude": 14.75},
+      {"longitude": 120.85, "latitude": 14.85},
+      {"longitude": 120.95, "latitude": 14.85},
+      {"longitude": 121.05, "latitude": 14.85},
+      {"longitude": 121.15, "latitude": 14.85}
+    ],
+    "neighbor_rationale": "The 4 by 4 set includes the cells covering Caloocan's bounding box plus one immediately neighboring center in each direction for later containing, nearest, and area-weighted method evaluation.",
+    "mapping_method_selected": false,
+    "coarse_resolution_limitation_retained": true,
+    "limitation_note": "IMERG 0.1-degree cells span multiple local areas and cannot be represented as barangay-resolution ground truth."
+  },
+  "artifact_ids": [
+    "imerg_v07b_service_metadata",
+    "imerg_v07_cmr_collection",
+    "imerg_v07b_cmr_granule_catalog",
+    "imerg_v07b_imageserver_raster_catalog",
+    "imerg_v07b_samples_20190623t1600_2200",
+    "imerg_v07b_samples_20190623t2200_20190624t0400",
+    "imerg_v07b_samples_20190624t0400_1000",
+    "imerg_v07b_samples_20190624t1000_1600"
+  ],
+  "normalization": {
+    "source_variable_verified": true,
+    "source_units_verified": true,
+    "native_value_field": "value",
+    "native_units": "mm/hr",
+    "normalized_units": "mm",
+    "interval_hours": 0.5,
+    "formula": "precipitation_mm = native_rate_mm_per_hour * 0.5 hours",
+    "preserve_native_value_and_units": true,
+    "missing_fill_policy": "REJECT",
+    "quality_status": "PROVISIONAL_NO_QUALITY_INDEX",
+    "observed_forecast_separation": true
+  },
+  "validated_coverage": {
+    "expected_interval_count_per_cell": 48,
+    "expected_grid_cell_count": 16,
+    "expected_observation_count": 768,
+    "raw_sample_chunk_count": 4,
+    "quarantined_incomplete_response_count": 1,
+    "source_checksum_status": "PASSED",
+    "coverage_status": "COMPLETE_FOR_EXPLORATORY_WINDOW"
+  },
+  "training_effect": {
+    "creates_training_row": false,
+    "sets_event_label": false,
+    "sets_training_ready": false,
+    "authorizes_training": false
+  }
+}

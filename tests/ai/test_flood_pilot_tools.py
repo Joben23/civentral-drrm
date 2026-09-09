@@ -103,9 +103,11 @@ class FloodPilotToolsTest(unittest.TestCase):
         self.assertEqual("1.1.0", manifest["manifest_version"])
         imerg = sources["nasa_gpm_imerg_final_hh_v07"]
         era5 = sources["ecmwf_era5_land_hourly"]
-        self.assertEqual(("V07", "30 minutes", "PROPOSED", "NOT_ACQUIRED"), (
+        self.assertEqual(("V07B", "30 minutes", "ACQUIRED", "ACQUIRED"), (
             imerg["product_version"], imerg["temporal_resolution"], imerg["status"], imerg["availability_status"]
         ))
+        self.assertNotEqual("APPROVED_FOR_PILOT", imerg["status"])
+        self.assertEqual("PENDING_REVIEW", imerg["license_or_usage_status"])
         self.assertEqual("OPTIONAL_PRECIPITATION_CROSS_CHECK", era5["source_role"])
         self.assertNotEqual("APPROVED_FOR_PILOT", era5["status"])
 

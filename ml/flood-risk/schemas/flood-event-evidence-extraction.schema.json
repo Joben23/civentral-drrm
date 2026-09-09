@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/flood-event-evidence-extraction-v1.json",
+  "title": "CIVENTRAL non-authoritative candidate flood evidence extraction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "extraction_id", "event_id", "extraction_status", "primary_source_id", "source_documents", "supported_event_date", "supported_event_start", "supported_event_end", "event_time_status", "report_issue_times_are_event_onset", "supported_location_scope", "supported_barangays", "source_evidence", "uncertainties", "recommended_review_questions", "secondary_corroboration", "label_status", "review_status", "reviewed_by", "human_approved", "training_eligible"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "extraction_id": {"type": "string", "minLength": 1},
+    "event_id": {"type": "string", "minLength": 1},
+    "extraction_status": {"const": "CANDIDATE_MACHINE_EXTRACTION_NOT_HUMAN_REVIEWED"},
+    "primary_source_id": {"type": "string", "minLength": 1},
+    "source_documents": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/document"}},
+    "supported_event_date": {"$ref": "#/$defs/supported_date"},
+    "supported_event_start": {"type": "null"},
+    "supported_event_end": {"type": "null"},
+    "event_time_status": {"const": "UNRESOLVED"},
+    "report_issue_times_are_event_onset": {"const": false},
+    "supported_location_scope": {"const": "MULTI_BARANGAY"},
+    "supported_barangays": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/barangay"}},
+    "source_evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+    "uncertainties": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "recommended_review_questions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "secondary_corroboration": {"type": "array"},
+    "label_status": {"const": "UNKNOWN"},
+    "review_status": {"const": "REQUIRES_HUMAN_REVIEW"},
+    "reviewed_by": {"type": "null"},
+    "human_approved": {"const": false},
+    "training_eligible": {"const": false}
+  },
+  "$defs": {
+    "document": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "source_document_ref", "report_title", "issue_time_source_text", "issue_timezone", "issue_time_is_event_onset", "evidence_status"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1}, "source_document_ref": {"type": "string", "pattern": "^ml/flood-risk/data/raw/event-evidence/"},
+        "report_title": {"type": "string", "minLength": 1}, "issue_time_source_text": {"type": "string", "minLength": 1}, "issue_timezone": {"type": "null"},
+        "issue_time_is_event_onset": {"const": false}, "evidence_status": {"enum": ["EXPLICITLY_STATED", "DERIVED_FROM_DOCUMENT_STRUCTURE", "UNKNOWN"]}
+      }
+    },
+    "supported_date": {
+      "type": "object", "additionalProperties": false, "required": ["value", "evidence_status", "source_artifact_id", "page_number", "notes"],
+      "properties": {"value": {"type": "string", "format": "date"}, "evidence_status": {"const": "EXPLICITLY_STATED"}, "source_artifact_id": {"type": "string"}, "page_number": {"type": "integer", "minimum": 1}, "notes": {"type": "string", "minLength": 1}}
+    },
+    "barangay": {
+      "type": "object", "additionalProperties": false, "required": ["name", "current_psgc", "current_mapping_status", "evidence_status"],
+      "properties": {"name": {"type": "string"}, "current_psgc": {"type": ["string", "null"]}, "current_mapping_status": {"enum": ["RESOLVED_FROM_GOVERNED_2026_RECONCILIATION", "UNRESOLVED_LEGACY_BARANGAY_SPLIT"]}, "evidence_status": {"const": "EXPLICITLY_STATED"}}
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["fact_id", "statement", "evidence_status", "source_artifact_id", "page_number", "notes"],
+      "properties": {"fact_id": {"type": "string"}, "statement": {"type": "string", "minLength": 1}, "evidence_status": {"enum": ["EXPLICITLY_STATED", "DERIVED_FROM_DOCUMENT_STRUCTURE", "UNKNOWN"]}, "source_artifact_id": {"type": "string"}, "page_number": {"type": "integer", "minimum": 1}, "notes": {"type": "string", "minLength": 1}}
+    }
+  }
+}

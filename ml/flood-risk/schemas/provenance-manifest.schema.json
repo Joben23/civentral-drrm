@@ -38,7 +38,12 @@
           "citation": {"type": "string", "minLength": 1},
           "availability_status": {"enum": ["ACQUIRED", "NOT_ACQUIRED", "PAGASA_DATA_NOT_ACQUIRED"]},
           "license_or_usage_status": {"enum": ["PENDING_REVIEW", "PERMITTED_FOR_GOVERNED_USE", "PERMITTED_FOR_PILOT", "RESTRICTED", "UNKNOWN"]},
-          "status": {"enum": ["PROPOSED", "ACQUIRED", "VALIDATED", "APPROVED_FOR_PILOT", "REJECTED", "RETIRED"]}
+          "status": {"enum": ["PROPOSED", "ACQUIRED", "VALIDATED", "APPROVED_FOR_PILOT", "REJECTED", "RETIRED"]},
+          "artifacts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "#/$defs/source_artifact"}
+          }
         }
       }
     }
@@ -60,5 +65,34 @@
         }
       }
     }
-  ]
+  ],
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id", "artifact_role", "original_filename", "official_url",
+        "retrieved_at", "media_type", "byte_length", "sha256", "local_file",
+        "source_organization", "title", "issued_at", "issued_at_source_text", "issued_timezone", "status", "notes"
+      ],
+      "properties": {
+        "artifact_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "artifact_role": {"enum": ["REPORT_DOCUMENT", "PRODUCT_METADATA", "GRANULE_CATALOG", "RASTER_CATALOG", "IMAGESERVER_SAMPLES", "QUARANTINED_INCOMPLETE_RESPONSE"]},
+        "original_filename": {"type": "string", "minLength": 1},
+        "official_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+        "retrieved_at": {"type": "string", "format": "date-time"},
+        "media_type": {"type": "string", "minLength": 1},
+        "byte_length": {"type": "integer", "exclusiveMinimum": 0},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "local_file": {"type": "string", "pattern": "^ml/flood-risk/data/raw/"},
+        "source_organization": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "issued_at": {"type": ["string", "null"], "format": "date-time"},
+        "issued_at_source_text": {"type": ["string", "null"], "minLength": 1},
+        "issued_timezone": {"type": ["string", "null"], "minLength": 1},
+        "status": {"enum": ["ACQUIRED_VALIDATED", "QUARANTINED_INCOMPLETE"]},
+        "notes": {"type": "string", "minLength": 1}
+      }
+    }
+  }
 }

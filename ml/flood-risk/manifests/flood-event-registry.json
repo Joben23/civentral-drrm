@@ -11,13 +11,16 @@
       "event_start": null,
       "event_end": null,
       "event_time_status": "UNRESOLVED",
-      "location_scope": "CITY",
+      "location_scope": "MULTI_BARANGAY",
       "barangay_psgc": null,
       "latitude": null,
       "longitude": null,
       "source_ids": ["dswd_dromic_caloocan_flood_2019-06-24"],
-      "source_document_refs": [],
-      "evidence_summary": "The DSWD DROMIC page title identifies a Caloocan flooding incident dated 24 June 2019, but linked source reports have not been acquired or reviewed for exact time and location evidence.",
+      "source_document_refs": [
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-1-on-the-Flooding-Incident-in-Caloocan-City-as-of-28-June-2019-6PM.docx",
+        "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Terminal-Report-on-the-Flooding-Incident-in-Caloocan-City-08-Jul-2019-7PM.docx"
+      ],
+      "evidence_summary": "Two acquired official DSWD DROMIC reports explicitly identify flooding in portions of Caloocan City on 24 June 2019 and name Barangays 175, 176, 177, and 178. Exact onset/end times, coordinates, and the current mapping of legacy Barangay 176 remain unresolved; this is a machine-assisted candidate extraction awaiting an authorized human decision.",
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
@@ -25,7 +28,7 @@
       "reviewed_at": null,
       "leakage_review_status": "NOT_REVIEWED",
       "training_eligible": false,
-      "exclusion_reason": "SOURCE_DOCUMENTS_NOT_ACQUIRED_AND_EVENT_TIME_LOCATION_UNRESOLVED",
+      "exclusion_reason": "HUMAN_REVIEW_REQUIRED_EVENT_TIME_AND_LEGACY_BARANGAY_176_MAPPING_UNRESOLVED",
       "candidate_windows": []
     }
   ]

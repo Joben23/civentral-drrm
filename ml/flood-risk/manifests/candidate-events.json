@@ -4,15 +4,15 @@
   "candidates": [
     {
       "candidate_id": "candidate-dswd-dromic-2019-06-24-caloocan",
-      "event_window": {"start": "2019-06-24", "end": "2019-07-08", "precision": "REPORT_DATE_RANGE"},
+      "event_window": {"start": "2019-06-24", "end": null, "precision": "CALENDAR_DATE_ONLY_EVENT_TIMES_UNRESOLVED"},
       "official_source": "Flooding Incident in Caloocan City [24 Jun 2019] [Terminated]",
       "agency": "DSWD DROMIC",
       "source_reference": "https://dromic.dswd.gov.ph/flooding-incident-in-caloocan-city-24-june-2019/",
-      "location_wording": "Caloocan City",
+      "location_wording": "Portions of Caloocan City; Barangays 175, 176, 177, and 178",
       "label_status": "UNKNOWN",
-      "spatial_mapping_status": "UNREVIEWED",
+      "spatial_mapping_status": "UNKNOWN_SPATIAL_MAPPING",
       "review_status": "REQUIRES_HUMAN_REVIEW",
-      "notes": "Review the linked initial and terminal documents for exact observed locations and times. Do not create a label from the page title alone."
+      "notes": "Official initial and terminal reports are acquired and checksummed. Exact onset/end times and coordinates remain unstated, legacy Barangay 176 mapping remains unresolved, and the machine extraction does not establish a training label."
     },
     {
       "candidate_id": "candidate-ndrrmc-2023-07-31-caloocan",

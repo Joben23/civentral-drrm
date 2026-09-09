@@ -27,13 +27,16 @@ Lifecycle is `PROPOSED`, `ACQUIRED`, `VALIDATED`, `APPROVED_FOR_PILOT`,
 Pilot use also requires `availability_status=ACQUIRED` and
 `license_or_usage_status=PERMITTED_FOR_PILOT`.
 
-NASA GPM IMERG Final Half Hourly V07 (`GPM_3IMERGHH.07`) is the primary
+NASA GPM IMERG Final Half Hourly V07 (`GPM_3IMERGHH.07`, current V07B
+processing) is the primary
 historical precipitation candidate. Its official metadata describes a
 30-minute, 0.1-degree satellite precipitation-rate estimate. It is not PAGASA
 ground truth. ERA5-Land hourly precipitation is an optional reanalysis
-cross-check and must remain a separately named source. Neither is acquired or
-approved. PAGASA raw climatological data is `PAGASA_DATA_NOT_ACQUIRED`; no
-station is assumed.
+cross-check and must remain a separately named source. Phase 3B2 acquired a
+bounded official NASA ImageServer representation of IMERG, but it remains
+`ACQUIRED`, provisional, and not `APPROVED_FOR_PILOT`; ERA5-Land remains not
+acquired. PAGASA raw climatological data is `PAGASA_DATA_NOT_ACQUIRED`; no
+station is assumed. See `PHASE-3B2-EVIDENCE-ACQUISITION.md`.
 
 ## Labels and negative evidence
 
@@ -130,9 +133,10 @@ The registry entry remains `UNKNOWN`, unreviewed, and ineligible.
 11. Set `FLOOD_CONFIRMED` only if exact event window/location evidence supports
     it. Otherwise keep `UNKNOWN`.
 
-## IMERG manual acquisition step
+## IMERG original-granule manual acquisition step
 
-No downloader or credentials are included. An authorized researcher must:
+No credentials are included. Phase 3B2 confirmed that original HDF5 access
+requires NASA Earthdata authentication. An authorized researcher must:
 
 1. Sign in through NASA Earthdata/GES DISC and open DOI
    `10.5067/GPM/IMERG/3B-HH/07`.
@@ -149,6 +153,10 @@ No downloader or credentials are included. An authorized researcher must:
    rate-to-interval conversion before creating canonical JSON.
 
 Partial or failed acquisition is quarantined and produces no canonical records.
+
+Phase 3B2's credential-free official NASA ImageServer subset is a distinct
+derived service representation and must never be called an original HDF5
+granule.
 
 ## PAGASA acquisition track
 
@@ -185,3 +193,14 @@ python scripts/ai/build_flood_pilot_dataset.py `
 ```
 
 Neither command imports TensorFlow or changes the AI service.
+
+Phase 3B2 acquisition validation and one-time immutable normalization:
+
+```powershell
+python scripts/ai/validate_flood_acquisition.py
+python scripts/ai/normalize_imerg_observations.py
+```
+
+The normalizer refuses to overwrite an existing reviewed derivative. The
+reviewed result remains provisional and ignored; it does not create an event
+window or training row.

@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 import re
+from urllib.parse import parse_qsl, urlsplit
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -85,6 +86,18 @@ PILOT_ROLE_SOURCE_TYPES = {
     "NEGATIVE_EVENT_EVIDENCE": {"INCIDENT_REPORT", "MONITORING_LOG"},
     "OPTIONAL_PRECIPITATION_CROSS_CHECK": {"OBSERVED_WEATHER", "SATELLITE_DERIVED", "REANALYSIS"},
 }
+SOURCE_ARTIFACT_FIELDS = {
+    "artifact_id", "artifact_role", "original_filename", "official_url",
+    "retrieved_at", "media_type", "byte_length", "sha256", "local_file",
+    "source_organization", "title", "issued_at", "issued_at_source_text",
+    "issued_timezone", "status", "notes",
+}
+SOURCE_ARTIFACT_ROLES = {
+    "REPORT_DOCUMENT", "PRODUCT_METADATA", "GRANULE_CATALOG", "RASTER_CATALOG",
+    "IMAGESERVER_SAMPLES", "QUARANTINED_INCOMPLETE_RESPONSE",
+}
+SOURCE_ARTIFACT_STATUSES = {"ACQUIRED_VALIDATED", "QUARANTINED_INCOMPLETE"}
+SENSITIVE_FIELD_PATTERN = re.compile(r"token|password|secret|credential|api[_-]?key", re.IGNORECASE)
 REQUIRED_WEATHER_UNITS = {
     "forecast_rainfall_24h_mm": "mm",
     "antecedent_rainfall_24h_mm": "mm",
@@ -265,10 +278,19 @@ def discover_record_files(input_path: Path) -> List[Path]:
     if not input_path.exists():
         raise FileNotFoundError(f"Input path does not exist: {input_path}")
     suffixes = {".json", ".jsonl", ".csv"}
-    return sorted(
+    paths = sorted(
         path for path in input_path.rglob("*")
         if path.is_file() and path.suffix.lower() in suffixes and not path.name.startswith(".")
     )
+    if input_path.resolve() == DEFAULT_REVIEWED_DATA.resolve():
+        # This loader consumes the legacy canonical flood-label row schema.
+        # Governed child datasets have their own validators and must not be
+        # reinterpreted as labels merely because they live under reviewed/.
+        paths = [
+            path for path in paths
+            if path.relative_to(input_path).parts[0] not in {"events", "precipitation"}
+        ]
+    return paths
 
 
 def load_records(input_path: Path) -> List[LoadedRecord]:
@@ -348,7 +370,7 @@ def validate_manifest(
             "manifest_version must be 1.0.0 or 1.1.0.",
         ))
     required = base_required | (pilot_required if manifest_version == "1.1.0" else set())
-    allowed = base_required | pilot_required
+    allowed = base_required | pilot_required | {"artifacts"}
     seen: set[str] = set()
     sources = manifest.get("sources", [])
     for index, source in enumerate(sources, start=1):
@@ -363,7 +385,7 @@ def validate_manifest(
         extras = sorted(set(source) - allowed)
         if extras:
             issues.append(ValidationIssue("manifest", index, prefix, "UNEXPECTED_MANIFEST_FIELDS", f"Unexpected fields: {', '.join(extras)}"))
-        sensitive_names = [key for key in source if re.search(r"token|password|secret|credential|api[_-]?key", key, re.IGNORECASE)]
+        sensitive_names = [key for key in source if SENSITIVE_FIELD_PATTERN.search(key)]
         if sensitive_names:
             issues.append(ValidationIssue("manifest", index, prefix, "SENSITIVE_MANIFEST_FIELD", f"Credential-like fields are prohibited: {', '.join(sorted(sensitive_names))}"))
         if not isinstance(source_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]+", source_id):
@@ -428,6 +450,78 @@ def validate_manifest(
                         issues.append(ValidationIssue("manifest", index, prefix, "CHECKSUM_MISMATCH", f"Checksum does not match {local_file}."))
         elif checksum is not None:
             issues.append(ValidationIssue("manifest", index, prefix, "ORPHAN_CHECKSUM", "sha256 must be null when no local_file exists."))
+        artifacts = source.get("artifacts")
+        if artifacts is not None:
+            if not isinstance(artifacts, list) or not artifacts:
+                issues.append(ValidationIssue("manifest", index, prefix, "INVALID_SOURCE_ARTIFACTS", "artifacts must be a non-empty array when supplied."))
+                continue
+            artifact_ids: set[str] = set()
+            for artifact_index, artifact in enumerate(artifacts, start=1):
+                artifact_prefix = f"{prefix}:artifact-{artifact_index}"
+                if not isinstance(artifact, dict):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT", "Artifact entry is not an object."))
+                    continue
+                missing_artifact_fields = sorted(SOURCE_ARTIFACT_FIELDS - set(artifact))
+                unexpected_artifact_fields = sorted(set(artifact) - SOURCE_ARTIFACT_FIELDS)
+                if missing_artifact_fields:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "MISSING_SOURCE_ARTIFACT_FIELDS", f"Missing artifact fields: {', '.join(missing_artifact_fields)}"))
+                if unexpected_artifact_fields:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "UNEXPECTED_SOURCE_ARTIFACT_FIELDS", f"Unexpected artifact fields: {', '.join(unexpected_artifact_fields)}"))
+                nested_sensitive_names = [key for key in artifact if SENSITIVE_FIELD_PATTERN.search(key)]
+                if nested_sensitive_names:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "SENSITIVE_MANIFEST_FIELD", f"Credential-like artifact fields are prohibited: {', '.join(sorted(nested_sensitive_names))}"))
+                artifact_id = artifact.get("artifact_id")
+                if not isinstance(artifact_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]+", artifact_id) or artifact_id in artifact_ids:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_ID", "artifact_id must be unique and use lowercase letters, numbers, dots, underscores, or hyphens."))
+                else:
+                    artifact_ids.add(artifact_id)
+                    artifact_prefix = f"{prefix}:{artifact_id}"
+                if artifact.get("artifact_role") not in SOURCE_ARTIFACT_ROLES:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_ROLE", "artifact_role is not allowed."))
+                if artifact.get("status") not in SOURCE_ARTIFACT_STATUSES:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_STATUS", "Artifact status is not allowed."))
+                for text_field in ("original_filename", "media_type", "source_organization", "title", "notes"):
+                    if not isinstance(artifact.get(text_field), str) or not artifact.get(text_field, "").strip():
+                        issues.append(ValidationIssue("manifest", index, artifact_prefix, "MISSING_SOURCE_ARTIFACT_METADATA", f"{text_field} is required."))
+                artifact_url = artifact.get("official_url")
+                if not isinstance(artifact_url, str):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_URL", "Artifact official_url must be HTTPS."))
+                else:
+                    parsed_url = urlsplit(artifact_url)
+                    sensitive_query = [key for key, _ in parse_qsl(parsed_url.query, keep_blank_values=True) if SENSITIVE_FIELD_PATTERN.search(key)]
+                    if parsed_url.scheme != "https" or not parsed_url.hostname or parsed_url.username or parsed_url.password:
+                        issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_URL", "Artifact official_url must be credential-free HTTPS."))
+                    if sensitive_query:
+                        issues.append(ValidationIssue("manifest", index, artifact_prefix, "SENSITIVE_ARTIFACT_URL", "Credential-like query parameters are prohibited."))
+                artifact_retrieved_at = parse_iso_datetime(artifact.get("retrieved_at"))
+                if artifact_retrieved_at is None or artifact_retrieved_at.utcoffset() != timezone.utc.utcoffset(artifact_retrieved_at):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_RETRIEVAL_TIME", "Artifact retrieved_at must be an explicit UTC timestamp."))
+                issued_at = artifact.get("issued_at")
+                if issued_at is not None and parse_iso_datetime(issued_at) is None:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_ISSUE_TIME", "issued_at must be null or an ISO-8601 timestamp."))
+                issued_at_source_text = artifact.get("issued_at_source_text")
+                if issued_at_source_text is not None and (not isinstance(issued_at_source_text, str) or not issued_at_source_text.strip()):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_ISSUE_TEXT", "issued_at_source_text must be null or a non-empty verbatim source value."))
+                if artifact.get("issued_timezone") is not None and (not isinstance(artifact.get("issued_timezone"), str) or not artifact.get("issued_timezone", "").strip()):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "INVALID_SOURCE_ARTIFACT_TIMEZONE", "issued_timezone must be null or a non-empty string."))
+                artifact_local = artifact.get("local_file")
+                artifact_checksum = artifact.get("sha256")
+                artifact_size = artifact.get("byte_length")
+                if not isinstance(artifact_local, str) or Path(artifact_local).is_absolute() or ".." in Path(artifact_local).parts:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "UNSAFE_SOURCE_ARTIFACT_FILE", "Artifact local_file must be a repository-relative raw-data path."))
+                    continue
+                if not Path(artifact_local).as_posix().startswith("ml/flood-risk/data/raw/"):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "SOURCE_ARTIFACT_NOT_RAW", "Acquired artifacts must remain under the governed raw-data directory."))
+                artifact_path = repo_root / artifact_local
+                if not artifact_path.is_file():
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "SOURCE_ARTIFACT_NOT_FOUND", f"Artifact file does not exist: {artifact_local}"))
+                    continue
+                if not isinstance(artifact_size, int) or isinstance(artifact_size, bool) or artifact_size <= 0 or artifact_path.stat().st_size != artifact_size:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "SOURCE_ARTIFACT_SIZE_MISMATCH", "Artifact byte_length does not match the immutable raw file."))
+                if not isinstance(artifact_checksum, str) or not re.fullmatch(r"[a-f0-9]{64}", artifact_checksum):
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "MISSING_SOURCE_ARTIFACT_CHECKSUM", "Artifact requires a lowercase SHA-256 checksum."))
+                elif hashlib.sha256(artifact_path.read_bytes()).hexdigest() != artifact_checksum:
+                    issues.append(ValidationIssue("manifest", index, artifact_prefix, "SOURCE_ARTIFACT_CHECKSUM_MISMATCH", "Artifact checksum does not match the immutable raw file."))
     return issues
 
 
