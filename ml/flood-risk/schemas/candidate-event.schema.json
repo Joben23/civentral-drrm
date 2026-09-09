@@ -1,31 +1,144 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://civentral.invalid/schemas/flood-candidate-event-index-v1.json",
+  "$id": "https://civentral.invalid/schemas/flood-candidate-event-index-v1.1.json",
   "title": "Non-training official flood candidate-event index",
   "type": "object",
   "additionalProperties": false,
-  "required": ["index_version", "training_use_prohibited", "candidates"],
+  "required": [
+    "index_version", "phase", "training_use_prohibited", "prediction_target_status",
+    "additional_candidate_count", "candidates", "screened_out", "duplicate_review",
+    "negative_label_research"
+  ],
   "properties": {
-    "index_version": {"const": "1.0.0"},
+    "index_version": {"const": "1.1.0"},
+    "phase": {"const": "PHASE_3B3A_DISCOVERY_ONLY"},
     "training_use_prohibited": {"const": true},
-    "candidates": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["candidate_id", "event_window", "official_source", "agency", "source_reference", "location_wording", "label_status", "spatial_mapping_status", "review_status", "notes"],
-        "properties": {
-          "candidate_id": {"type": "string"},
-          "event_window": {"type": "object", "required": ["start", "end", "precision"]},
-          "official_source": {"type": "string"},
-          "agency": {"type": "string"},
-          "source_reference": {"type": "string", "pattern": "^https://"},
-          "location_wording": {"type": "string"},
-          "label_status": {"const": "UNKNOWN"},
-          "spatial_mapping_status": {"enum": ["UNREVIEWED", "UNKNOWN_SPATIAL_MAPPING"]},
-          "review_status": {"const": "REQUIRES_HUMAN_REVIEW"},
-          "notes": {"type": "string"}
-        }
+    "prediction_target_status": {"const": "PENDING_EVIDENCE_REVIEW"},
+    "additional_candidate_count": {"type": "integer", "minimum": 0},
+    "candidates": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/candidate"}},
+    "screened_out": {"type": "array", "items": {"$ref": "#/$defs/screened_out"}},
+    "duplicate_review": {"type": "array", "items": {"$ref": "#/$defs/duplicate_flag"}},
+    "negative_label_research": {"type": "array", "items": {"$ref": "#/$defs/negative_source"}}
+  },
+  "$defs": {
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "title", "report_issue_time_source_text", "access_status"],
+      "properties": {
+        "url": {"type": "string", "pattern": "^https://"},
+        "title": {"type": "string", "minLength": 1},
+        "report_issue_time_source_text": {"type": ["string", "null"]},
+        "access_status": {"enum": ["AVAILABLE_FOR_ACQUISITION", "PARTIALLY_AVAILABLE", "EXTERNAL_ACCESS_REQUIRED", "NOT_FOUND"]}
+      }
+    },
+    "priority_criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "official_government_source", "caloocan_explicit", "flooding_explicit",
+        "event_date_supported", "event_timing_available", "location_detail_available",
+        "multiple_official_reports", "source_documents_accessible",
+        "independent_from_june_2019", "imerg_historical_availability"
+      ],
+      "properties": {
+        "official_government_source": {"type": "boolean"},
+        "caloocan_explicit": {"type": "boolean"},
+        "flooding_explicit": {"type": "boolean"},
+        "event_date_supported": {"type": "boolean"},
+        "event_timing_available": {"type": "boolean"},
+        "location_detail_available": {"type": "boolean"},
+        "multiple_official_reports": {"type": "boolean"},
+        "source_documents_accessible": {"type": "boolean"},
+        "independent_from_june_2019": {"type": "boolean"},
+        "imerg_historical_availability": {"type": "boolean"}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id", "registry_event_id", "event_cluster_id", "hazard_type", "event_window",
+        "official_source", "agency", "source_id", "source_reference", "official_incident_page",
+        "official_document_links", "source_classification", "source_status", "document_access_status",
+        "location_wording", "supported_barangays", "location_precision", "barangay_mapping_status",
+        "legacy_barangay_176_remapped", "evidence_summary", "uncertainties", "label_status",
+        "negative_evidence_basis", "spatial_mapping_status", "review_status", "training_eligible",
+        "imerg_historical_availability", "priority_criteria", "priority_score", "acquisition_priority",
+        "secondary_corroboration", "phase_3b3b_acquisition_selected", "notes"
+      ],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 3},
+        "registry_event_id": {"type": "string", "minLength": 3},
+        "event_cluster_id": {"type": "string", "minLength": 3},
+        "hazard_type": {"const": "FLOOD"},
+        "event_window": {
+          "type": "object", "additionalProperties": false,
+          "required": ["start", "end", "precision", "report_issue_used_as_event_time"],
+          "properties": {
+            "start": {"type": "string", "format": "date"},
+            "end": {"type": ["string", "null"], "format": "date"},
+            "precision": {"type": "string", "minLength": 1},
+            "report_issue_used_as_event_time": {"const": false}
+          }
+        },
+        "official_source": {"type": "string", "minLength": 1},
+        "agency": {"type": "string", "minLength": 1},
+        "source_id": {"type": "string", "minLength": 3},
+        "source_reference": {"type": "string", "pattern": "^https://"},
+        "official_incident_page": {"type": ["string", "null"], "pattern": "^https://"},
+        "official_document_links": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/document"}},
+        "source_classification": {"const": "PRIMARY_OFFICIAL_GOVERNMENT"},
+        "source_status": {"enum": ["PROPOSED", "ACQUIRED"]},
+        "document_access_status": {"enum": ["AVAILABLE_FOR_ACQUISITION", "PARTIALLY_AVAILABLE", "EXTERNAL_ACCESS_REQUIRED", "NOT_FOUND"]},
+        "location_wording": {"type": "string", "minLength": 1},
+        "supported_barangays": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "location_precision": {"enum": ["CITY", "STREET_OR_LOCALITY", "MULTI_BARANGAY"]},
+        "barangay_mapping_status": {"type": "string", "minLength": 1},
+        "legacy_barangay_176_remapped": {"const": false},
+        "evidence_summary": {"type": "string", "minLength": 1},
+        "uncertainties": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "label_status": {"const": "UNKNOWN"},
+        "negative_evidence_basis": {"type": "null"},
+        "spatial_mapping_status": {"enum": ["UNREVIEWED", "UNKNOWN_SPATIAL_MAPPING"]},
+        "review_status": {"const": "REQUIRES_HUMAN_REVIEW"},
+        "training_eligible": {"const": false},
+        "imerg_historical_availability": {"enum": ["WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY", "OUTSIDE_KNOWN_COVERAGE", "UNVERIFIED"]},
+        "priority_criteria": {"$ref": "#/$defs/priority_criteria"},
+        "priority_score": {"type": "integer", "minimum": 0, "maximum": 10},
+        "acquisition_priority": {"enum": ["HIGH_PRIORITY", "MEDIUM_PRIORITY", "LOW_PRIORITY"]},
+        "secondary_corroboration": {"type": "array"},
+        "phase_3b3b_acquisition_selected": {"type": "boolean"},
+        "notes": {"type": "string", "minLength": 1}
+      }
+    },
+    "screened_out": {
+      "type": "object", "additionalProperties": false,
+      "required": ["candidate_id", "source_reference", "status", "reason"],
+      "properties": {
+        "candidate_id": {"type": "string"},
+        "source_reference": {"type": "string", "pattern": "^https://"},
+        "status": {"const": "REJECTED_WRONG_LOCATION"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "duplicate_flag": {
+      "type": "object", "additionalProperties": false,
+      "required": ["candidate_ids", "reasons", "action"],
+      "properties": {
+        "candidate_ids": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}},
+        "reasons": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "action": {"const": "FLAG_FOR_REVIEW_NO_AUTOMATIC_MERGE"}
+      }
+    },
+    "negative_source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_type", "access_path", "current_status", "affirmative_evidence_required"],
+      "properties": {
+        "source_type": {"type": "string", "minLength": 1},
+        "access_path": {"type": "string", "minLength": 1},
+        "current_status": {"const": "NOT_ACQUIRED"},
+        "affirmative_evidence_required": {"const": true}
       }
     }
   }

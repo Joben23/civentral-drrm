@@ -1,30 +1,474 @@
 {
-  "index_version": "1.0.0",
+  "index_version": "1.1.0",
+  "phase": "PHASE_3B3A_DISCOVERY_ONLY",
   "training_use_prohibited": true,
+  "prediction_target_status": "PENDING_EVIDENCE_REVIEW",
+  "additional_candidate_count": 6,
   "candidates": [
     {
       "candidate_id": "candidate-dswd-dromic-2019-06-24-caloocan",
-      "event_window": {"start": "2019-06-24", "end": null, "precision": "CALENDAR_DATE_ONLY_EVENT_TIMES_UNRESOLVED"},
+      "registry_event_id": "caloocan-flood-candidate-2019-06-24",
+      "event_cluster_id": "caloocan-2019-06-24-localized-flooding",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2019-06-24",
+        "end": null,
+        "precision": "CALENDAR_DATE_ONLY_EVENT_TIMES_UNRESOLVED",
+        "report_issue_used_as_event_time": false
+      },
       "official_source": "Flooding Incident in Caloocan City [24 Jun 2019] [Terminated]",
       "agency": "DSWD DROMIC",
+      "source_id": "dswd_dromic_caloocan_flood_2019-06-24",
       "source_reference": "https://dromic.dswd.gov.ph/flooding-incident-in-caloocan-city-24-june-2019/",
-      "location_wording": "Portions of Caloocan City; Barangays 175, 176, 177, and 178",
+      "official_incident_page": "https://dromic.dswd.gov.ph/flooding-incident-in-caloocan-city-24-june-2019/",
+      "official_document_links": [
+        {
+          "url": "https://dromic.dswd.gov.ph/wp-content/uploads/2019/06/DSWD-DROMIC-Report-1-on-the-Flooding-Incident-in-Caloocan-City-as-of-28-June-2019-6PM.docx",
+          "title": "DSWD DROMIC Report #1 on the Flooding Incident in Caloocan City",
+          "report_issue_time_source_text": "as of 28 June 2019, 6PM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        },
+        {
+          "url": "https://dromic.dswd.gov.ph/wp-content/uploads/2019/06/DSWD-DROMIC-Terminal-Report-on-the-Flooding-Incident-in-Caloocan-City-08-Jul-2019-7PM.docx",
+          "title": "DSWD DROMIC Terminal Report on the Flooding Incident in Caloocan City",
+          "report_issue_time_source_text": "08 July 2019, 7PM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "ACQUIRED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "Portions of Caloocan City; Barangay 175; Barangay 176; Barangay 177; Barangay 178",
+      "supported_barangays": ["Barangay 175", "Barangay 176", "Barangay 177", "Barangay 178"],
+      "location_precision": "MULTI_BARANGAY",
+      "barangay_mapping_status": "LEGACY_BARANGAY_176_REQUIRES_REVIEW",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "Acquired DSWD DROMIC reports explicitly identify flooding in portions of Caloocan City on 24 June 2019 and name Barangays 175, 176, 177, and 178.",
+      "uncertainties": ["Exact onset and cessation are unresolved.", "Legacy Barangay 176 has not been mapped to current split barangays."],
       "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
       "spatial_mapping_status": "UNKNOWN_SPATIAL_MAPPING",
       "review_status": "REQUIRES_HUMAN_REVIEW",
-      "notes": "Official initial and terminal reports are acquired and checksummed. Exact onset/end times and coordinates remain unstated, legacy Barangay 176 mapping remains unresolved, and the machine extraction does not establish a training label."
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": false,
+        "location_detail_available": true,
+        "multiple_official_reports": true,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": false,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 8,
+      "acquisition_priority": "HIGH_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": false,
+      "notes": "Phase 3B2 evidence is already acquired; priority does not change the UNKNOWN label or authorize training."
     },
     {
-      "candidate_id": "candidate-ndrrmc-2023-07-31-caloocan",
-      "event_window": {"start": "2023-07-31", "end": null, "precision": "SITUATION_REPORT_ENTRY_DATE"},
-      "official_source": "NDRRMC Situation Report No. 18 for Southwest Monsoon enhanced by TCs Egay and Falcon",
+      "candidate_id": "candidate-ndrrmc-2011-09-27-pedring-caloocan",
+      "registry_event_id": "caloocan-flood-candidate-2011-09-27-pedring",
+      "event_cluster_id": "caloocan-2011-09-27-pedring-metro-flooding",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2011-09-27",
+        "end": "2011-09-30",
+        "precision": "OFFICIAL_DATE_RANGE_NO_ONSET_OR_CESSATION_TIME",
+        "report_issue_used_as_event_time": false
+      },
+      "official_source": "NDRRMC SitRep No. 12, Effects of Typhoon Pedring",
       "agency": "NDRRMC/OCD",
-      "source_reference": "https://ndrrmc.gov.ph/attachments/article/4234/SitRep_No._18_for_Southwest_Monsoon_enhanced_by_TCs_EGAY_and_FALCON_2023.pdf",
-      "location_wording": "Caloocan Norte; Caloocan Sur",
+      "source_id": "ndrrmc_pedring_sitrep12_2011",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/1748/SitRep_No_12_re_Effects_of_Typhoon_PEDRING_as_of_30SEP2011_1800H.pdf",
+      "official_incident_page": null,
+      "official_document_links": [
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/1748/SitRep_No_12_re_Effects_of_Typhoon_PEDRING_as_of_30SEP2011_1800H.pdf",
+          "title": "NDRRMC SitRep No. 12 re Effects of Typhoon Pedring",
+          "report_issue_time_source_text": "as of 30 September 2011, 6:00 PM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "PROPOSED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "Cities of Malabon, Caloocan, Manila, Makati, Mandaluyong, Valenzuela, Pasay, Navotas, and Marikina; flooding (Metro-wide), 27-30 September",
+      "supported_barangays": [],
+      "location_precision": "CITY",
+      "barangay_mapping_status": "NO_BARANGAY_STATED_FOR_CALOOCAN_FLOOD_ENTRY",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "The official incident table explicitly includes Caloocan in a Metro-wide flooding entry dated 27-30 September 2011.",
+      "uncertainties": ["The entry aggregates several NCR cities.", "No Caloocan barangay, onset time, cessation time, or depth is stated for the flooding entry."],
       "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
       "spatial_mapping_status": "UNREVIEWED",
       "review_status": "REQUIRES_HUMAN_REVIEW",
-      "notes": "The wording is not a validated barangay identifier. A human must inspect the specific report revision and establish spatial and temporal mapping before any canonical record is considered."
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": false,
+        "location_detail_available": false,
+        "multiple_official_reports": false,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": true,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 7,
+      "acquisition_priority": "MEDIUM_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": false,
+      "notes": "City-level discovery evidence only; human review must determine whether the aggregate entry is sufficiently specific."
+    },
+    {
+      "candidate_id": "candidate-ndrrmc-2012-08-07-gener-haikui-caloocan",
+      "registry_event_id": "caloocan-flood-candidate-2012-08-07-gener-haikui",
+      "event_cluster_id": "caloocan-2012-08-07-gener-haikui-southwest-monsoon",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2012-08-07",
+        "end": "2012-08-08",
+        "precision": "OFFICIAL_OBSERVATION_DATES_NOT_ONSET_OR_CESSATION",
+        "report_issue_used_as_event_time": false
+      },
+      "official_source": "NDRRMC SitReps on Southwest Monsoon enhanced by Tropical Storm Haikui/Gener",
+      "agency": "NDRRMC/OCD",
+      "source_id": "ndrrmc_swm_gener_haikui_sitreps_2012",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/2051/SitRep_No_02_re_Effects_of_Southwest_Monsoon_Enhanced_by_Tropical_Storm_HAIKUI_as_of_7AUG2012_1700H.pdf",
+      "official_incident_page": null,
+      "official_document_links": [
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/2051/SitRep_No_02_re_Effects_of_Southwest_Monsoon_Enhanced_by_Tropical_Storm_HAIKUI_as_of_7AUG2012_1700H.pdf",
+          "title": "NDRRMC SitRep No. 2 re Southwest Monsoon enhanced by Tropical Storm Haikui/Gener",
+          "report_issue_time_source_text": "as of 07 August 2012, 5:00 PM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        },
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/2051/SitRep_No_03_re_Effects_of_Southwest_Monsoon_Enhanced_by_Tropical_Storm_HAIKUI_as_of_8AUG2012_0700H.pdf",
+          "title": "NDRRMC SitRep No. 3 re Southwest Monsoon enhanced by Tropical Storm Haikui/Gener",
+          "report_issue_time_source_text": "as of 08 August 2012, 7:00 AM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "PROPOSED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "Caloocan City: Bonifacio Monument Circle; 10 Ave bound to City Hall; Dagat-dagatan; not passable to light vehicles due to flooding",
+      "supported_barangays": [],
+      "location_precision": "STREET_OR_LOCALITY",
+      "barangay_mapping_status": "NO_BARANGAY_INFERRED_FROM_STREET_OR_LOCALITY",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "Official NDRRMC road-status tables explicitly place flooding at three named Caloocan locations on 7-8 August 2012.",
+      "uncertainties": ["Report as-of times are not onset or cessation times.", "No barangay identifiers or event depth are stated for the Caloocan rows."],
+      "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": false,
+        "location_detail_available": true,
+        "multiple_official_reports": true,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": true,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 9,
+      "acquisition_priority": "HIGH_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": true,
+      "notes": "The Haikui and Gener naming appears within the same official report family and is one episode, not two candidate events."
+    },
+    {
+      "candidate_id": "candidate-ndrrmc-2020-11-12-ulysses-caloocan",
+      "registry_event_id": "caloocan-flood-candidate-2020-11-12-ulysses",
+      "event_cluster_id": "caloocan-2020-11-12-typhoon-ulysses",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2020-11-12",
+        "end": null,
+        "precision": "OFFICIAL_CALENDAR_DATE_EVENT_TIMES_UNSTATED",
+        "report_issue_used_as_event_time": false
+      },
+      "official_source": "NDRRMC SitReps on Typhoon Ulysses",
+      "agency": "NDRRMC/OCD",
+      "source_id": "ndrrmc_ulysses_sitreps_2020",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/4138/SitRep_No_4_re_Preparedness_Measures_and_Effects_for_TY_ULYSSES_as_of_14NOV2020_5PM.pdf",
+      "official_incident_page": null,
+      "official_document_links": [
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4138/SitRep_No_4_re_Preparedness_Measures_and_Effects_for_TY_ULYSSES_as_of_14NOV2020_5PM.pdf",
+          "title": "NDRRMC SitRep No. 4 re Typhoon Ulysses",
+          "report_issue_time_source_text": "as of 14 November 2020, 5:00 PM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        },
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4138/SitRep_no_23_re_TY_Ulysses_as_of_03DEC2020.pdf",
+          "title": "NDRRMC SitRep No. 23 re Typhoon Ulysses",
+          "report_issue_time_source_text": "as of 03 December 2020, 8:00 AM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "PROPOSED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "Caloocan City: Barangay 120; Barangay 117; Barangay 118; Barangay 119; Barangay 160; Barangay 175; flooding on 12 November 2020; subsided",
+      "supported_barangays": ["Barangay 117", "Barangay 118", "Barangay 119", "Barangay 120", "Barangay 160", "Barangay 175"],
+      "location_precision": "MULTI_BARANGAY",
+      "barangay_mapping_status": "EXACT_NUMBERS_RETAINED_CANONICAL_MAPPING_UNREVIEWED",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "NDRRMC incident tables explicitly list flooding in six numbered Caloocan barangays on 12 November 2020 and later report it as subsided.",
+      "uncertainties": ["No onset or cessation time is stated for the Caloocan rows.", "Barangay identifiers require canonical PSGC review before spatial use."],
+      "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": false,
+        "location_detail_available": true,
+        "multiple_official_reports": true,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": true,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 9,
+      "acquisition_priority": "HIGH_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": true,
+      "notes": "All SitRep revisions belong to one Ulysses episode and must be acquired under one evidence source family."
+    },
+    {
+      "candidate_id": "candidate-ndrrmc-2022-08-23-florita-caloocan",
+      "registry_event_id": "caloocan-flood-candidate-2022-08-23-florita",
+      "event_cluster_id": "caloocan-2022-08-23-sts-florita",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2022-08-23",
+        "end": null,
+        "precision": "EPISODE_DATE_CONTEXT_ONSET_AND_CESSATION_UNRESOLVED",
+        "report_issue_used_as_event_time": false
+      },
+      "official_source": "NDRRMC SitReps on Severe Tropical Storm Florita",
+      "agency": "NDRRMC/OCD",
+      "source_id": "ndrrmc_florita_sitreps_2022",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/4194/SitRep_No_4_for_STS_Florita_2022_Update.pdf",
+      "official_incident_page": null,
+      "official_document_links": [
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4194/SitRep_No_4_for_STS_Florita_2022_Update.pdf",
+          "title": "NDRRMC SitRep No. 4 for STS Florita",
+          "report_issue_time_source_text": null,
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        },
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4194/SitRep_No_7_for_STS_Florita_2022_Update.pdf",
+          "title": "NDRRMC SitRep No. 7 for STS Florita",
+          "report_issue_time_source_text": "as of 28 August 2022, 8:00 AM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "PROPOSED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "Caloocan City flooded areas (gutter deep): A. de Jesus corner 10th Ave.; 10th Ave. corner B. Serrano; 9th St. corner 8th Ave.; EDSA Balintawak southbound outer lane; 11th Ave. corner Rizal Ave.",
+      "supported_barangays": [],
+      "location_precision": "STREET_OR_LOCALITY",
+      "barangay_mapping_status": "NO_BARANGAY_INFERRED_FROM_STREET_LOCATIONS",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "NDRRMC preparedness/effects sections explicitly list gutter-deep flooded areas at five Caloocan street locations during the Florita episode.",
+      "uncertainties": ["The document section does not establish an exact onset or cessation time for the Caloocan entries.", "The 23 August date is episode context and requires document-level human confirmation."],
+      "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": false,
+        "location_detail_available": true,
+        "multiple_official_reports": true,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": true,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 9,
+      "acquisition_priority": "HIGH_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": true,
+      "notes": "Street names are retained exactly enough for review; no barangay or onset time is inferred."
+    },
+    {
+      "candidate_id": "candidate-dswd-dromic-2024-08-28-swm-caloocan",
+      "registry_event_id": "caloocan-flood-candidate-2024-08-28-southwest-monsoon",
+      "event_cluster_id": "caloocan-2024-08-28-southwest-monsoon",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2024-08-28",
+        "end": null,
+        "precision": "OFFICIAL_CALENDAR_DATE_EVENT_TIMES_UNSTATED",
+        "report_issue_used_as_event_time": false
+      },
+      "official_source": "DSWD DROMIC Report #1 on the Effects of Southwest Monsoon in Metro Manila",
+      "agency": "DSWD DROMIC",
+      "source_id": "dswd_dromic_swm_metro_manila_2024-08-28",
+      "source_reference": "https://dromic.dswd.gov.ph/wp-content/uploads/2024/08/DSWD-DROMIC-Report-1-on-the-Effects-of-Southwest-Monsoon-in-Metro-Manila-as-of-28-August-2024-6PM.pdf",
+      "official_incident_page": null,
+      "official_document_links": [
+        {
+          "url": "https://dromic.dswd.gov.ph/wp-content/uploads/2024/08/DSWD-DROMIC-Report-1-on-the-Effects-of-Southwest-Monsoon-in-Metro-Manila-as-of-28-August-2024-6PM.pdf",
+          "title": "DSWD DROMIC Report #1 on the Effects of Southwest Monsoon in Metro Manila",
+          "report_issue_time_source_text": "as of 28 August 2024, 6PM",
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "PROPOSED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "On 28 August 2024, several NCR areas including Caloocan City experienced flooding due to heavy rains caused by Southwest Monsoon; one Caloocan barangay was affected but not named.",
+      "supported_barangays": [],
+      "location_precision": "CITY",
+      "barangay_mapping_status": "ONE_UNNAMED_BARANGAY_NO_INFERENCE_ALLOWED",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "The official DSWD DROMIC report explicitly states that Caloocan City experienced flooding on 28 August 2024 and records one affected but unnamed barangay.",
+      "uncertainties": ["Flood onset and cessation times are not stated.", "The affected Caloocan barangay is not named and must not be inferred."],
+      "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": false,
+        "location_detail_available": false,
+        "multiple_official_reports": false,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": true,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 7,
+      "acquisition_priority": "MEDIUM_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": false,
+      "notes": "This is distinct from the July Carina and September Enteng report families; city-level evidence remains insufficient for spatial training use."
+    },
+    {
+      "candidate_id": "candidate-ndrrmc-2024-09-02-enteng-caloocan",
+      "registry_event_id": "caloocan-flood-candidate-2024-09-02-enteng",
+      "event_cluster_id": "caloocan-2024-09-02-enteng-southwest-monsoon",
+      "hazard_type": "FLOOD",
+      "event_window": {
+        "start": "2024-09-02",
+        "end": "2024-09-05",
+        "precision": "OFFICIAL_OCCURRENCE_TIMES_PRESENT_BUT_TIMEZONE_AND_CESSATION_REQUIRE_REVIEW",
+        "report_issue_used_as_event_time": false
+      },
+      "official_source": "NDRRMC SitReps on Tropical Cyclone Enteng and Southwest Monsoon",
+      "agency": "NDRRMC/OCD",
+      "source_id": "ndrrmc_enteng_sitreps_2024",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_02_for_the_Effects_of_TC_ENTENG_2024_and_Southwest_Monsoon.pdf",
+      "official_incident_page": null,
+      "official_document_links": [
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_02_for_the_Effects_of_TC_ENTENG_2024_and_Southwest_Monsoon.pdf",
+          "title": "NDRRMC SitRep No. 2 for the Effects of TC Enteng and Southwest Monsoon",
+          "report_issue_time_source_text": null,
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        },
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_03_for_the_Effects_of_TC_ENTENG_and_Southwest_Monsoon_2024.pdf",
+          "title": "NDRRMC SitRep No. 3 for the Effects of TC Enteng and Southwest Monsoon",
+          "report_issue_time_source_text": null,
+          "access_status": "AVAILABLE_FOR_ACQUISITION"
+        }
+      ],
+      "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
+      "source_status": "PROPOSED",
+      "document_access_status": "AVAILABLE_FOR_ACQUISITION",
+      "location_wording": "Caloocan flooded areas: Barangay 172 North Olympus; Barangay 172 Dona Aurora; Barangay 185 Everlasting; Barangay 185 Quirino Highway Malaria; Barangay 174 1456 Camarin Road; Barangay 177 Duria Street; Corner Acacia and Santol Street; Sapang Alat Bridge; MLQ High School; Sampaguita Street; Crispulo Street",
+      "supported_barangays": ["Barangay 172", "Barangay 174", "Barangay 177", "Barangay 185"],
+      "location_precision": "MULTI_BARANGAY",
+      "barangay_mapping_status": "EXACT_NUMBERS_RETAINED_CANONICAL_MAPPING_UNREVIEWED",
+      "legacy_barangay_176_remapped": false,
+      "evidence_summary": "NDRRMC incident tables explicitly list eleven Caloocan flooded locations, including numbered barangays and occurrence times, during 2-5 September 2024.",
+      "uncertainties": ["Occurrence times have no explicit timezone in the discovered table metadata.", "Some locations lack an explicit barangay number.", "The 5 September Crispulo Street entry may be a continuation or recurrence and requires episode review."],
+      "label_status": "UNKNOWN",
+      "negative_evidence_basis": null,
+      "spatial_mapping_status": "UNREVIEWED",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "training_eligible": false,
+      "imerg_historical_availability": "WITHIN_KNOWN_1998_PRESENT_COVERAGE_METADATA_ONLY",
+      "priority_criteria": {
+        "official_government_source": true,
+        "caloocan_explicit": true,
+        "flooding_explicit": true,
+        "event_date_supported": true,
+        "event_timing_available": true,
+        "location_detail_available": true,
+        "multiple_official_reports": true,
+        "source_documents_accessible": true,
+        "independent_from_june_2019": true,
+        "imerg_historical_availability": true
+      },
+      "priority_score": 10,
+      "acquisition_priority": "HIGH_PRIORITY",
+      "secondary_corroboration": [],
+      "phase_3b3b_acquisition_selected": true,
+      "notes": "Report revisions are one Enteng episode; priority is for evidence acquisition and is not flood severity."
+    }
+  ],
+  "screened_out": [
+    {
+      "candidate_id": "candidate-ndrrmc-2023-07-31-caloocan",
+      "source_reference": "https://ndrrmc.gov.ph/attachments/article/4234/SitRep_No._17_for_Southwest_Monsoon_enhanced_by_TCs_EGAY_and_FALCON_2023.pdf",
+      "status": "REJECTED_WRONG_LOCATION",
+      "reason": "Document hierarchy places Caloocan Norte and Caloocan Sur under Binmaley, Pangasinan; they are not Caloocan City. The prior candidate was a place-name collision and is excluded."
+    }
+  ],
+  "duplicate_review": [],
+  "negative_label_research": [
+    {
+      "source_type": "CALOOCAN_CDRRMO_ALERT_AND_MONITORING_CENTER_LOG",
+      "access_path": "Formal records request to the Caloocan City DRRMO for time-bounded logs explicitly covering the named location and stating no flooding.",
+      "current_status": "NOT_ACQUIRED",
+      "affirmative_evidence_required": true
+    },
+    {
+      "source_type": "OCD_NCR_OR_NDRRMC_SITUATION_LOG",
+      "access_path": "Official OCD NCR/NDRRMC situation-report annex or monitoring log explicitly recording no flooding for Caloocan and a defined time window.",
+      "current_status": "NOT_ACQUIRED",
+      "affirmative_evidence_required": true
+    },
+    {
+      "source_type": "MMDA_FLOOD_CONTROL_INFORMATION_CENTER_LOG",
+      "access_path": "Formal access to an MMDA FCIC road/flood monitoring log that affirmatively covers a specific Caloocan location and observation interval.",
+      "current_status": "NOT_ACQUIRED",
+      "affirmative_evidence_required": true
     }
   ]
 }

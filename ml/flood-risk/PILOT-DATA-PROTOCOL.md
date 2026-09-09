@@ -204,3 +204,20 @@ python scripts/ai/normalize_imerg_observations.py
 The normalizer refuses to overwrite an existing reviewed derivative. The
 reviewed result remains provisional and ignored; it does not create an event
 window or training row.
+
+## Phase 3B3-A multi-event discovery
+
+Phase 3B3-A extends the existing registries; it does not introduce a competing
+event or provenance store. The governed discovery index and rationale are in
+`manifests/candidate-events.json` and
+`PHASE-3B3A-CANDIDATE-DISCOVERY.md`. Six additional official-source Caloocan
+flood candidates are registered for evidence acquisition. Every discovered
+candidate defaults to `UNKNOWN`, `REQUIRES_HUMAN_REVIEW`, and
+`training_eligible=false`.
+
+Multiple revisions from one official incident/report family remain one event.
+Ambiguous duplicate signals are flagged and never silently merged. A report's
+issue or publication time is not an event onset, street names are not inferred
+to barangays, and legacy Barangay 176 is not remapped. Discovery does not
+authorize source download, IMERG acquisition, a training window, a positive or
+negative label, or an ML target. The target remains pending evidence review.
