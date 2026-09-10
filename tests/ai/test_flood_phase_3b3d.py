@@ -147,13 +147,16 @@ def test_authorized_actions_are_evidence_collection_only():
     }.issubset(set(DECISION["prohibited_actions"]))
 
 
-def test_no_enteng_rainfall_training_rows_or_model_artifact_exists():
+def test_enteng_rainfall_remains_governed_and_no_active_flood_model_exists():
     assert WORKSHEET["imerg_acquired_for_candidate"] is False
-    enteng_precip = [
-        path for path in (WORKSPACE / "data" / "raw" / "precipitation").rglob("*")
-        if path.is_file() and any(token in path.name.lower() for token in ("enteng", "202409", "2024-09"))
-    ]
-    assert enteng_precip == []
+    acquisition = read_json(MANIFESTS / "imerg-enteng-2024-exploratory-acquisition.json")
+    assert acquisition["status"] == "ACQUIRED_TECHNICALLY_VALIDATED_REVIEW_PENDING"
+    assert acquisition["training_effect"] == {
+        "creates_training_row": False,
+        "sets_event_label": False,
+        "sets_training_ready": False,
+        "authorizes_training": False,
+    }
     pilot_files = [
         path for path in (WORKSPACE / "data" / "processed" / "pilot").rglob("*")
         if path.is_file() and path.name not in {"README.md", ".gitignore"}
@@ -165,7 +168,12 @@ def test_no_enteng_rainfall_training_rows_or_model_artifact_exists():
         if path.is_file() and excluded not in str(path).lower()
         and (path.name in {"model.keras", "saved_model.pb"} or path.suffix.lower() in {".h5", ".tflite"})
     ]
-    assert model_files == []
+    expected = WORKSPACE / "artifacts" / "rainfall-regression" / "rainfall-regression-dense-57-v0.1.0-candidate" / "model.keras"
+    assert model_files == [expected]
+    manifest = json.loads((expected.parent / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["model_problem"] == "RAINFALL_REGRESSION"
+    assert manifest["active"] is False
+    assert manifest["approved_for_inference"] is False
 
 
 def test_training_readiness_remains_false_and_model_unavailable():

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/rainfall-regression-candidate-manifest-v1.json",
+  "title": "CIVENTRAL TensorFlow rainfall-regression candidate manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_schema_version", "model_name", "model_version", "model_problem",
+    "candidate_status", "baseline_comparison_status", "approved_for_inference",
+    "operational_use_approved", "active", "trained_at_utc", "training_duration_seconds",
+    "environment", "reproducibility", "dataset", "feature_contract", "target_contract",
+    "model", "training_control", "baselines", "metrics", "test_error_analysis",
+    "negative_prediction_analysis", "artifact", "preprocessing_artifact",
+    "limitations"
+  ],
+  "properties": {
+    "manifest_schema_version": {"const": "1.0.0"},
+    "model_name": {"const": "civentral-rainfall-regression-dense-baseline"},
+    "model_version": {"type": "string", "minLength": 1},
+    "model_problem": {"const": "RAINFALL_REGRESSION"},
+    "candidate_status": {"const": "CANDIDATE_MODEL_TRAINED"},
+    "baseline_comparison_status": {"enum": ["BASELINE_COMPARISON_PASS", "BASELINE_COMPARISON_NOT_PASSED"]},
+    "approved_for_inference": {"const": false},
+    "operational_use_approved": {"const": false},
+    "active": {"const": false},
+    "trained_at_utc": {"type": "string", "format": "date-time"},
+    "training_duration_seconds": {"type": "number", "minimum": 0},
+    "environment": {"type": "object"},
+    "reproducibility": {"type": "object"},
+    "dataset": {"type": "object"},
+    "feature_contract": {"type": "object"},
+    "target_contract": {"type": "object"},
+    "model": {"type": "object"},
+    "training_control": {"type": "object"},
+    "baselines": {"type": "object"},
+    "metrics": {"type": "object"},
+    "test_error_analysis": {"type": "object"},
+    "negative_prediction_analysis": {"type": "object"},
+    "artifact": {"type": "object"},
+    "preprocessing_artifact": {"type": "object"},
+    "limitations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  }
+}

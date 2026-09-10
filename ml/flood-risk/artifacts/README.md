@@ -29,5 +29,13 @@ If a future model uses an external fitted scaler, its contract is documented at
 `../service/schemas/preprocessing-artifact.schema.json`. No fitted statistics
 or preprocessing instance is stored here.
 
-Never place a random, fixture-trained, or demonstration model here. A missing
-bundle must remain `MODEL_NOT_AVAILABLE`.
+Never place a random, fixture-trained, or demonstration model here.
+
+Phase 3D may generate an ignored, governed rainfall-regression candidate under
+`rainfall-regression/<candidate-version>/`. That bundle predicts rainfall
+quantity from the separate 57-feature Phase 3C contract. It is not compatible
+with the 10-feature flood-probability runtime contract, is never loaded by the
+service, and cannot make `/ready` succeed. Only compact research metadata may
+be tracked under `../manifests/`.
+
+A missing approved flood-model bundle must remain `MODEL_NOT_AVAILABLE`.

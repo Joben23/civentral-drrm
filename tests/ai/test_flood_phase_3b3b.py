@@ -228,11 +228,16 @@ def test_raw_evidence_files_remain_gitignored():
         assert result.returncode == 0
 
 
-def test_no_civentral_model_artifact_exists():
+def test_no_active_flood_model_artifact_exists():
     excluded = str(WORKSPACE / "service" / ".venv").lower()
     artifacts = []
     for path in WORKSPACE.rglob("*"):
         if path.is_file() and excluded not in str(path).lower():
             if path.name in {"model.keras", "saved_model.pb"} or path.suffix.lower() in {".h5", ".tflite"}:
                 artifacts.append(path)
-    assert artifacts == []
+    expected = WORKSPACE / "artifacts" / "rainfall-regression" / "rainfall-regression-dense-57-v0.1.0-candidate" / "model.keras"
+    assert artifacts == [expected]
+    manifest = json.loads((expected.parent / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["model_problem"] == "RAINFALL_REGRESSION"
+    assert manifest["active"] is False
+    assert manifest["approved_for_inference"] is False

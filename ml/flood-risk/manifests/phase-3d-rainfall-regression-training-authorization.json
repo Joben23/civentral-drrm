@@ -1,0 +1,51 @@
+{
+  "authorization_version": "1.0.0",
+  "authorization_id": "phase-3d-rainfall-regression-project-research",
+  "decision_scope": "PROJECT_RESEARCH_ONLY",
+  "model_problem": "RAINFALL_REGRESSION",
+  "rainfall_regression_training_authorization": "APPROVED_FOR_PROJECT_RESEARCH_ONLY",
+  "authorized_dataset": {
+    "path": "ml/flood-risk/data/processed/rainfall-regression-windows-24h-to-3h.json",
+    "sha256": "eb7a53a945c952a2fb129f4ebc9a5b592f2d709c6f7a0548a366e933518f0e96",
+    "total_windows": 17397,
+    "train_windows": 12311,
+    "validation_windows": 2596,
+    "test_windows": 2490,
+    "feature_count": 57,
+    "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "target_units": "mm"
+  },
+  "allowed_actions": [
+    "FIT_SMALL_DENSE_TENSORFLOW_RAINFALL_REGRESSOR_ON_TRAIN_SPLIT",
+    "SELECT_EPOCH_USING_VALIDATION_SPLIT",
+    "EVALUATE_FINAL_CANDIDATE_ON_TEST_SPLIT_ONCE",
+    "SAVE_IGNORED_CANDIDATE_MODEL_AND_PREPROCESSING_ARTIFACTS",
+    "RECORD_RESEARCH_METRICS_AND_ERROR_ANALYSIS"
+  ],
+  "baseline_comparison_policy": {
+    "defined_before_training": true,
+    "status_pass_rule": "TensorFlow raw MAE and RMSE must each be lower than both train-mean and 3-hour-persistence baselines on both validation and test splits.",
+    "baselines": [
+      "TRAIN_MEAN",
+      "ANTECEDENT_3H_PERSISTENCE"
+    ],
+    "test_set_tuning_allowed": false
+  },
+  "prohibited_actions": [
+    "TRAIN_FLOOD_CLASSIFIER",
+    "MODIFY_HISTORICAL_FLOOD_LABELS",
+    "CREATE_FLOOD_RISK_THRESHOLDS",
+    "FUSE_MGB_WITH_RAINFALL_OUTPUT",
+    "EXPOSE_PUBLIC_PREDICTIONS",
+    "APPROVE_OPERATIONAL_USE",
+    "ACTIVATE_MODEL",
+    "CHANGE_READY_ENDPOINT"
+  ],
+  "official_lgu_approval": false,
+  "operational_use_approved": false,
+  "public_prediction_approved": false,
+  "flood_classifier_training_approved": false,
+  "global_training_authorization": "NOT_APPROVED",
+  "global_training_ready": false,
+  "candidate_model_may_be_active": false
+}

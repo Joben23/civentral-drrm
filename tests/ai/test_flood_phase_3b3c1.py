@@ -163,7 +163,7 @@ def test_raw_docx_files_are_gitignored():
         assert result.returncode == 0
 
 
-def test_no_training_rows_or_civentral_model_artifact_exists():
+def test_no_flood_training_rows_or_active_flood_model_artifact_exists():
     pilot_files = [
         path for path in (WORKSPACE / "data" / "processed" / "pilot").rglob("*")
         if path.is_file() and path.name not in {"README.md", ".gitignore"}
@@ -175,7 +175,12 @@ def test_no_training_rows_or_civentral_model_artifact_exists():
         if path.is_file() and excluded not in str(path).lower()
         and (path.name in {"model.keras", "saved_model.pb"} or path.suffix.lower() in {".h5", ".tflite"})
     ]
-    assert model_files == []
+    expected = WORKSPACE / "artifacts" / "rainfall-regression" / "rainfall-regression-dense-57-v0.1.0-candidate" / "model.keras"
+    assert model_files == [expected]
+    manifest = json.loads((expected.parent / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["model_problem"] == "RAINFALL_REGRESSION"
+    assert manifest["active"] is False
+    assert manifest["approved_for_inference"] is False
 
 
 def test_all_flood_risk_json_files_parse():

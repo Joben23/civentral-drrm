@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/rainfall-regression-training-authorization-v1.json",
+  "title": "CIVENTRAL rainfall-regression project/research training authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization_version", "authorization_id", "decision_scope", "model_problem",
+    "rainfall_regression_training_authorization", "authorized_dataset",
+    "allowed_actions", "baseline_comparison_policy", "prohibited_actions",
+    "official_lgu_approval", "operational_use_approved",
+    "public_prediction_approved", "flood_classifier_training_approved",
+    "global_training_authorization", "global_training_ready",
+    "candidate_model_may_be_active"
+  ],
+  "properties": {
+    "authorization_version": {"const": "1.0.0"},
+    "authorization_id": {"const": "phase-3d-rainfall-regression-project-research"},
+    "decision_scope": {"const": "PROJECT_RESEARCH_ONLY"},
+    "model_problem": {"const": "RAINFALL_REGRESSION"},
+    "rainfall_regression_training_authorization": {"const": "APPROVED_FOR_PROJECT_RESEARCH_ONLY"},
+    "authorized_dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "total_windows", "train_windows", "validation_windows", "test_windows", "feature_count", "target", "target_units"],
+      "properties": {
+        "path": {"const": "ml/flood-risk/data/processed/rainfall-regression-windows-24h-to-3h.json"},
+        "sha256": {"const": "eb7a53a945c952a2fb129f4ebc9a5b592f2d709c6f7a0548a366e933518f0e96"},
+        "total_windows": {"const": 17397},
+        "train_windows": {"const": 12311},
+        "validation_windows": {"const": 2596},
+        "test_windows": {"const": 2490},
+        "feature_count": {"const": 57},
+        "target": {"const": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM"},
+        "target_units": {"const": "mm"}
+      }
+    },
+    "allowed_actions": {"type": "array", "minItems": 5, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "baseline_comparison_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defined_before_training", "status_pass_rule", "baselines", "test_set_tuning_allowed"],
+      "properties": {
+        "defined_before_training": {"const": true},
+        "status_pass_rule": {"type": "string", "minLength": 1},
+        "baselines": {"const": ["TRAIN_MEAN", "ANTECEDENT_3H_PERSISTENCE"]},
+        "test_set_tuning_allowed": {"const": false}
+      }
+    },
+    "prohibited_actions": {"type": "array", "minItems": 8, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "official_lgu_approval": {"const": false},
+    "operational_use_approved": {"const": false},
+    "public_prediction_approved": {"const": false},
+    "flood_classifier_training_approved": {"const": false},
+    "global_training_authorization": {"const": "NOT_APPROVED"},
+    "global_training_ready": {"const": false},
+    "candidate_model_may_be_active": {"const": false}
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "active": false,
+  "approved_for_inference": false,
+  "artifact": {
+    "byte_length": 95854,
+    "format": "KERAS_V3",
+    "path": "ml/flood-risk/artifacts/rainfall-regression/rainfall-regression-dense-57-v0.1.0-candidate/model.keras",
+    "sha256": "e729f7ca6f60d702f5ee6c9463ca72ea3c424bb2975cfef274f9319c324d22f6"
+  },
+  "baseline_comparison_status": "BASELINE_COMPARISON_PASS",
+  "baselines": {
+    "antecedent_3h_persistence": {
+      "feature_index": 49,
+      "feature_name": "antecedent_3h_mm",
+      "test": {
+        "mae_mm": 1.628181387534006,
+        "rmse_mm": 3.205976531881662
+      },
+      "uses_future_data": false,
+      "validation": {
+        "mae_mm": 1.187272729889708,
+        "rmse_mm": 2.2595765427226673
+      }
+    },
+    "train_mean": {
+      "fit_split": "train",
+      "test": {
+        "mae_mm": 1.8491862248648967,
+        "rmse_mm": 4.145112218667031
+      },
+      "train_target_mean_mm": 0.5632820239303985,
+      "validation": {
+        "mae_mm": 1.2450014029697511,
+        "rmse_mm": 2.5539339508303924
+      }
+    }
+  },
+  "candidate_status": "CANDIDATE_MODEL_TRAINED",
+  "dataset": {
+    "byte_length": 67054434,
+    "contract_path": "ml/flood-risk/manifests/phase-3c-rainfall-regression-contract.json",
+    "contract_sha256": "d92296cf9e40bcfb7f1dc712d9c284e335c2da3f32c3f9fdba9dbb2964d5b583",
+    "path": "ml/flood-risk/data/processed/rainfall-regression-windows-24h-to-3h.json",
+    "sha256": "eb7a53a945c952a2fb129f4ebc9a5b592f2d709c6f7a0548a366e933518f0e96",
+    "split_counts": {
+      "test": 2490,
+      "train": 12311,
+      "validation": 2596
+    },
+    "split_strategy": "PURGED_CHRONOLOGICAL_SOURCE_INTERVAL_SPLIT",
+    "test_evaluation_count": 1
+  },
+  "environment": {
+    "device_policy": "CPU_ONLY",
+    "numpy_version": "2.5.2",
+    "python_version": "3.12.10",
+    "tensorflow_version": "2.21.0"
+  },
+  "feature_contract": {
+    "feature_count": 57,
+    "feature_order": [
+      "lag_precipitation_mm_48",
+      "lag_precipitation_mm_47",
+      "lag_precipitation_mm_46",
+      "lag_precipitation_mm_45",
+      "lag_precipitation_mm_44",
+      "lag_precipitation_mm_43",
+      "lag_precipitation_mm_42",
+      "lag_precipitation_mm_41",
+      "lag_precipitation_mm_40",
+      "lag_precipitation_mm_39",
+      "lag_precipitation_mm_38",
+      "lag_precipitation_mm_37",
+      "lag_precipitation_mm_36",
+      "lag_precipitation_mm_35",
+      "lag_precipitation_mm_34",
+      "lag_precipitation_mm_33",
+      "lag_precipitation_mm_32",
+      "lag_precipitation_mm_31",
+      "lag_precipitation_mm_30",
+      "lag_precipitation_mm_29",
+      "lag_precipitation_mm_28",
+      "lag_precipitation_mm_27",
+      "lag_precipitation_mm_26",
+      "lag_precipitation_mm_25",
+      "lag_precipitation_mm_24",
+      "lag_precipitation_mm_23",
+      "lag_precipitation_mm_22",
+      "lag_precipitation_mm_21",
+      "lag_precipitation_mm_20",
+      "lag_precipitation_mm_19",
+      "lag_precipitation_mm_18",
+      "lag_precipitation_mm_17",
+      "lag_precipitation_mm_16",
+      "lag_precipitation_mm_15",
+      "lag_precipitation_mm_14",
+      "lag_precipitation_mm_13",
+      "lag_precipitation_mm_12",
+      "lag_precipitation_mm_11",
+      "lag_precipitation_mm_10",
+      "lag_precipitation_mm_09",
+      "lag_precipitation_mm_08",
+      "lag_precipitation_mm_07",
+      "lag_precipitation_mm_06",
+      "lag_precipitation_mm_05",
+      "lag_precipitation_mm_04",
+      "lag_precipitation_mm_03",
+      "lag_precipitation_mm_02",
+      "lag_precipitation_mm_01",
+      "antecedent_1h_mm",
+      "antecedent_3h_mm",
+      "antecedent_6h_mm",
+      "antecedent_12h_mm",
+      "antecedent_24h_mm",
+      "hour_sin",
+      "hour_cos",
+      "day_of_year_sin",
+      "day_of_year_cos"
+    ],
+    "feature_schema_version": "phase-3c-rainfall-features-v1",
+    "flood_labels_present": false,
+    "history_intervals": 48,
+    "interval_minutes": 30,
+    "mgb_features_present": false,
+    "spatial_scope": "CITY_LEVEL_MEAN_OF_THREE_CALOOCAN_INTERSECTING_CELLS"
+  },
+  "limitations": [
+    "This model predicts rainfall quantity, not flood occurrence, flood probability, flood depth, or flood risk class.",
+    "The candidate is approved only for project research and is not connected to the private inference service.",
+    "The source is a city-level mean of three coarse IMERG cells and is not barangay-scale ground truth.",
+    "The dataset covers approximately one year and may not represent rare or changing rainfall regimes.",
+    "No MGB susceptibility, flood-event label, risk threshold, or operational policy is part of this model."
+  ],
+  "manifest_schema_version": "1.0.0",
+  "metrics": {
+    "test": {
+      "loss_mse": 7.987100601196289,
+      "mae_mm": 1.508193850517273,
+      "rmse_mm": 2.826145887374878
+    },
+    "train": {
+      "loss_mse": 1.170240044593811,
+      "mae_mm": 0.45206117630004883,
+      "rmse_mm": 1.0817763805389404
+    },
+    "validation": {
+      "loss_mse": 3.5471718311309814,
+      "mae_mm": 1.008522868156433,
+      "rmse_mm": 1.88339364528656
+    }
+  },
+  "model": {
+    "architecture": [
+      "Input(57)",
+      "Dense(64, relu)",
+      "Dense(32, relu)",
+      "Dense(1, linear)"
+    ],
+    "learning_rate": 0.001,
+    "loss": "MSE",
+    "optimizer": "Adam",
+    "output_activation": "linear",
+    "parameter_count": 5825
+  },
+  "model_name": "civentral-rainfall-regression-dense-baseline",
+  "model_problem": "RAINFALL_REGRESSION",
+  "model_version": "rainfall-regression-dense-57-v0.1.0-candidate",
+  "negative_prediction_analysis": {
+    "clamped_test_metrics_qa_only": {
+      "mae_mm": 1.4997824443101202,
+      "rmse_mm": 2.824116409420888
+    },
+    "minimum_raw_prediction_mm": -1.3344793319702148,
+    "negative_raw_prediction_count": 96,
+    "nonnegative_clamp_applied_to_reported_model_metrics": false,
+    "raw_test_metrics": {
+      "mae_mm": 1.5081937798124039,
+      "rmse_mm": 2.826145897237378
+    }
+  },
+  "operational_use_approved": false,
+  "preprocessing_artifact": {
+    "byte_length": 5040,
+    "fit_split": "train",
+    "path": "ml/flood-risk/artifacts/rainfall-regression/rainfall-regression-dense-57-v0.1.0-candidate/preprocessing.json",
+    "sha256": "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4"
+  },
+  "reproducibility": {
+    "deterministic_ops": true,
+    "numpy_random_seed": 20240902,
+    "one_dnn_enabled": false,
+    "python_hash_seed": "20240902",
+    "python_random_seed": 20240902,
+    "random_seed": 20240902,
+    "shuffle": false,
+    "tensorflow_random_seed": 20240902
+  },
+  "target_contract": {
+    "future_intervals": 6,
+    "is_flood_classification": false,
+    "name": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "target_transform": "NONE",
+    "units": "mm"
+  },
+  "test_error_analysis": {
+    "all_test": {
+      "count": 2490,
+      "mae_mm": 1.5081937798124039,
+      "rmse_mm": 2.826145897237378
+    },
+    "nonzero_target": {
+      "count": 2198,
+      "mae_mm": 1.628984248247934,
+      "rmse_mm": 2.9954040728352664
+    },
+    "upper_tail": {
+      "count": 507,
+      "definition": "Test targets at or above the TRAIN positive-target 90th percentile.",
+      "mae_mm": 4.296342565551312,
+      "rmse_mm": 5.75713577473378,
+      "threshold_mm": 2.487333297729492
+    },
+    "zero_target": {
+      "count": 292,
+      "mae_mm": 0.5989559386435845,
+      "rmse_mm": 0.7549953164731127
+    }
+  },
+  "trained_at_utc": "2026-09-10T11:20:46.472102Z",
+  "training_control": {
+    "batch_size": 128,
+    "best_epoch": 13,
+    "best_validation_loss_mse": 3.5471718311309814,
+    "early_stopping": {
+      "min_delta": 1e-05,
+      "monitor": "val_loss",
+      "patience": 12,
+      "restore_best_weights": true
+    },
+    "epochs_completed": 25,
+    "epochs_requested": 150,
+    "fit_split": "train",
+    "model_selection_split": "validation",
+    "test_used_during_fit": false
+  },
+  "training_duration_seconds": 8.314775
+}

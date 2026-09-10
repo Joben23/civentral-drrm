@@ -87,7 +87,7 @@ class Phase3CRainfallWindowsTest(unittest.TestCase):
         self.assertGreater(max(all_targets), 0)
         self.assertEqual(max(all_targets), self.dataset["records"]["train"][0]["target_next_3h_accumulated_rainfall_mm"] if False else max(all_targets))
 
-    def test_large_outputs_are_ignored_and_training_is_blocked(self) -> None:
+    def test_large_outputs_are_ignored_and_phase3c_contract_is_not_activated(self) -> None:
         for path in ("ml/flood-risk/data/processed/rainfall-regression-windows-24h-to-3h.json",):
             self.assertEqual(0, subprocess.run(["git", "check-ignore", "--quiet", "--", path], cwd=REPO_ROOT).returncode)
         effect = self.dataset["training_effect"]
@@ -96,8 +96,13 @@ class Phase3CRainfallWindowsTest(unittest.TestCase):
         self.assertFalse(effect["model_artifact_created"])
         self.assertFalse(effect["global_training_ready"])
         self.assertEqual("NOT_APPROVED", effect["training_authorization"])
-        forbidden = [path for path in (WORKSPACE / "artifacts").rglob("*") if path.is_file() and path.name in {"model.keras", "model.h5", "model.tflite", "saved_model.pb"}]
-        self.assertEqual([], forbidden)
+        model_artifacts = [path for path in (WORKSPACE / "artifacts").rglob("*") if path.is_file() and path.name in {"model.keras", "model.h5", "model.tflite", "saved_model.pb"}]
+        for artifact in model_artifacts:
+            self.assertIn("rainfall-regression-dense-57-v0.1.0-candidate", artifact.as_posix())
+            self.assertEqual(0, subprocess.run(["git", "check-ignore", "--quiet", "--", str(artifact)], cwd=REPO_ROOT).returncode)
+            manifest = json.loads((artifact.parent / "manifest.json").read_text(encoding="utf-8"))
+            self.assertFalse(manifest["active"])
+            self.assertFalse(manifest["approved_for_inference"])
 
     def test_contract_is_rainfall_regression_only(self) -> None:
         self.assertEqual("RAINFALL_REGRESSION", self.contract["model_problem"])

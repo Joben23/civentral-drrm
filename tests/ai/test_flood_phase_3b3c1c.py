@@ -170,7 +170,7 @@ def test_timezone_cutoff_label_and_training_state_remain_blocked():
     assert AUTHORIZATION["status"] == "NOT_APPROVED"
 
 
-def test_no_enteng_imerg_training_rows_or_model_artifact_exists():
+def test_no_enteng_flood_training_rows_or_active_flood_model_artifact_exists():
     assert WORKSHEET["imerg_acquired_for_candidate"] is False
     assert not any("imerg" in source_id.lower() for source_id in EVENT["source_ids"])
     pilot_files = [
@@ -184,7 +184,12 @@ def test_no_enteng_imerg_training_rows_or_model_artifact_exists():
         if path.is_file() and excluded not in str(path).lower()
         and (path.name in {"model.keras", "saved_model.pb"} or path.suffix.lower() in {".h5", ".tflite"})
     ]
-    assert model_files == []
+    expected = WORKSPACE / "artifacts" / "rainfall-regression" / "rainfall-regression-dense-57-v0.1.0-candidate" / "model.keras"
+    assert model_files == [expected]
+    manifest = json.loads((expected.parent / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["model_problem"] == "RAINFALL_REGRESSION"
+    assert manifest["active"] is False
+    assert manifest["approved_for_inference"] is False
 
 
 def test_training_readiness_remains_false():
