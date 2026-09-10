@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3E2",
+  "status": "OFFLINE_CONTRACT_VALIDATED_NON_OPERATIONAL",
+  "model_problem": "RAINFALL_REGRESSION",
+  "candidate": {
+    "version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+    "model_path": "ml/flood-risk/artifacts/rainfall-regression/rainfall-regression-dense-57-v0.1.1-softplus-candidate/model.keras",
+    "model_sha256": "51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865",
+    "preprocessing_path": "ml/flood-risk/artifacts/rainfall-regression/rainfall-regression-dense-57-v0.1.1-softplus-candidate/preprocessing.json",
+    "preprocessing_sha256": "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4",
+    "dataset_contract_sha256": "d92296cf9e40bcfb7f1dc712d9c284e335c2da3f32c3f9fdba9dbb2964d5b583",
+    "feature_count": 57,
+    "output_policy": "MODEL_NONNEGATIVE_SOFTPLUS",
+    "status": "VALIDATED_RESEARCH_CANDIDATE",
+    "active": false,
+    "approved_for_inference": false,
+    "operational_use_approved": false
+  },
+  "input_contract": {
+    "history_intervals": 48,
+    "lookback_hours": 24,
+    "interval_minutes": 30,
+    "timestamp_semantics": "UTC interval start; the latest interval end is forecast_origin_utc.",
+    "required_fields": ["timestamp_utc", "city_mean_precipitation_mm"],
+    "source_requirements": ["exactly 48 observations", "chronological", "continuous 30-minute timestamps", "finite nonnegative rainfall", "no interpolation or imputation"]
+  },
+  "feature_contract": {
+    "feature_order_source": "ml/flood-risk/manifests/phase-3c-rainfall-regression-contract.json",
+    "feature_count": 57,
+    "future_observations_allowed": false,
+    "preprocessing": "Use stored train-derived means/stds only; never refit during inference."
+  },
+  "output_contract": {
+    "forecast_horizon_hours": 3,
+    "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "fields": ["model_problem", "forecast_origin_utc", "forecast_horizon_hours", "target", "raw_prediction_mm", "final_prediction_mm", "output_policy", "model_version", "model_status", "operational"],
+    "excluded_outputs": ["flood_probability", "flood_occurrence", "risk_category", "MGB_susceptibility", "evacuation_recommendation", "emergency_action"]
+  },
+  "failure_codes": ["INSUFFICIENT_HISTORY", "TIMESTAMP_GAP", "DUPLICATE_TIMESTAMP", "INVALID_PRECIPITATION", "NEGATIVE_SOURCE_PRECIPITATION", "FEATURE_CONTRACT_MISMATCH", "PREPROCESSING_MISMATCH", "MODEL_ARTIFACT_MISMATCH", "MODEL_LOAD_FAILED", "PREDICTION_FAILED"],
+  "proposed_phase_3f_private_api": {
+    "method": "POST",
+    "path": "/rainfall/predict",
+    "network_scope": "PRIVATE_DOCKER_NETWORK_ONLY",
+    "request": {"schema_version": "1.0", "request_id": "string", "history": [{"timestamp_utc": "ISO-8601 UTC", "city_mean_precipitation_mm": "number >= 0"}]},
+    "response": "The output_contract fields above; no flood-risk or MGB fields.",
+    "not_implemented_in_phase_3e2": true
+  },
+  "governance": {"flood_labels_unchanged": true, "global_training_ready": false, "global_training_authorization": "NOT_APPROVED", "mgb_fusion_implemented": false, "service_activation_changed": false}
+}
