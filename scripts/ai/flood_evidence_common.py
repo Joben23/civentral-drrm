@@ -33,6 +33,7 @@ WORKSHEET_OPTIONAL_FIELDS = {
     "phase_3b3c1_temporal_assessment",
     "phase_3b3c1b_temporal_assessment",
     "phase_3b3c1c_supplemental_evidence",
+    "phase_3b3d_research_adjudication",
 }
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
@@ -353,6 +354,151 @@ def validate_enteng_supplemental_evidence(worksheet: Mapping[str, Any]) -> List[
     return issues
 
 
+def validate_enteng_research_adjudication(worksheet: Mapping[str, Any]) -> List[EvidenceIssue]:
+    """Allow bounded evidence collection without authorizing labels, training, or operations."""
+    adjudication = worksheet.get("phase_3b3d_research_adjudication")
+    if adjudication is None:
+        return []
+    subject = str(worksheet.get("worksheet_id") or "unknown-worksheet")
+    issues: List[EvidenceIssue] = []
+    if not isinstance(adjudication, Mapping):
+        return [EvidenceIssue("INVALID_ENTENG_RESEARCH_ADJUDICATION", subject, "Research adjudication must be an object.")]
+    expected_identity = {
+        "phase": "PHASE_3B3D_ENTENG_PROJECT_RESEARCH_ADJUDICATION",
+        "decision_scope": "PROJECT_RESEARCH_ONLY",
+        "decision_type": "EXPLORATORY_RAINFALL_ACQUISITION_AUTHORIZATION",
+        "decision_status": "AUTHORIZED_WITH_STRICT_LIMITATIONS",
+        "rainfall_acquisition_authorization": "APPROVED_FOR_PROJECT_RESEARCH_ONLY",
+        "decision_authority": "PROJECT_RESEARCH_GOVERNANCE_POLICY",
+    }
+    for field, value in expected_identity.items():
+        if adjudication.get(field) != value:
+            issues.append(EvidenceIssue("INVALID_RESEARCH_AUTHORIZATION_IDENTITY", subject, f"{field} must remain {value!r}."))
+    for field in (
+        "official_lgu_approval", "operational_use_approved", "training_use_approved",
+        "human_approval_claimed", "human_approved_after_decision",
+        "training_eligible_after_decision", "training_ready_after_decision",
+    ):
+        if adjudication.get(field) is not False:
+            issues.append(EvidenceIssue("RESEARCH_AUTHORIZATION_SCOPE_BREACH", subject, f"{field} must remain false."))
+    if adjudication.get("adjudicator_identity") is not None or adjudication.get("official_lgu_reviewer") is not None:
+        issues.append(EvidenceIssue("FABRICATED_REVIEWER_IDENTITY", subject, "Project research authorization cannot invent an adjudicator or LGU reviewer."))
+    expected_state = {
+        "label_status_after_decision": "UNKNOWN",
+        "review_status_after_decision": "REQUIRES_HUMAN_REVIEW",
+        "training_authorization_after_decision": "NOT_APPROVED",
+        "model_status_after_decision": "MODEL_NOT_AVAILABLE",
+        "prediction_cutoff": None,
+    }
+    for field, value in expected_state.items():
+        if adjudication.get(field) != value:
+            issues.append(EvidenceIssue("RESEARCH_AUTHORIZATION_CHANGED_SAFETY_STATE", subject, f"{field} must remain {value!r}."))
+    evidence = adjudication.get("accepted_evidence_basis")
+    by_source = {
+        str(item.get("source_id")): item
+        for item in evidence or []
+        if isinstance(item, Mapping)
+    }
+    ndrrmc = by_source.get("ndrrmc_enteng_sitreps_2024")
+    dromic = by_source.get("dswd_dromic_enteng_2024_report_41")
+    if (
+        len(by_source) != 2
+        or not isinstance(ndrrmc, Mapping)
+        or ndrrmc.get("evidence_role") != "PRIMARY_TEMPORAL_DISCOVERY_EVIDENCE"
+        or ndrrmc.get("access_status") != "INDEXED_OFFICIAL_CONTENT_ONLY"
+        or ndrrmc.get("raw_artifact_acquired") is not False
+        or ndrrmc.get("accepted_use") != "EXPLORATORY_TEMPORAL_ALIGNMENT_ONLY"
+    ):
+        issues.append(EvidenceIssue("INVALID_NDRRMC_RESEARCH_BASIS", subject, "NDRRMC must remain indexed-only temporal discovery evidence with no acquired raw artifact."))
+    if (
+        not isinstance(dromic, Mapping)
+        or dromic.get("evidence_role") != "SUPPLEMENTAL_CORROBORATION"
+        or dromic.get("access_status") != "ACQUIRED"
+        or dromic.get("raw_artifact_acquired") is not True
+        or dromic.get("accepted_use") != "CALOOCAN_IMPACT_CORROBORATION_ONLY"
+    ):
+        issues.append(EvidenceIssue("INVALID_DROMIC_RESEARCH_BASIS", subject, "Report #41 can corroborate impact only and cannot become temporal evidence."))
+    temporal = worksheet.get("phase_3b3c1b_temporal_assessment")
+    episode = adjudication.get("primary_episode")
+    if not isinstance(temporal, Mapping) or not isinstance(episode, Mapping):
+        issues.append(EvidenceIssue("MISSING_RESEARCH_EPISODE", subject, "The existing bounded Enteng episode must be preserved."))
+    else:
+        if (
+            episode.get("episode_cluster_id") != "enteng-caloocan-2024-09-02-primary"
+            or episode.get("candidate_event_time_start") != temporal.get("candidate_event_time_start")
+            or episode.get("candidate_event_time_end") != temporal.get("candidate_event_time_end")
+        ):
+            issues.append(EvidenceIssue("RESEARCH_EPISODE_CHANGED", subject, "The adjudication must preserve the reviewed candidate envelope exactly."))
+        if (
+            episode.get("crispulo_cluster_id") != "enteng-caloocan-2024-09-05-crispulo-review"
+            or episode.get("crispulo_excluded") is not True
+            or episode.get("crispulo_merged") is not False
+        ):
+            issues.append(EvidenceIssue("CRISPULO_INCLUDED_IN_RESEARCH_EPISODE", subject, "The unresolved Crispulo cluster must remain separate and excluded."))
+    time_basis = adjudication.get("source_time_handling")
+    expected_time_basis = {
+        "source_timezone": "UNSPECIFIED",
+        "source_timestamps_preserved_unchanged": True,
+        "research_alignment_timezone": "Asia/Manila",
+        "research_alignment_utc_offset": "+08:00",
+        "timezone_basis": "PROJECT_RESEARCH_ASSUMPTION",
+        "claimed_as_explicit_source_metadata": False,
+        "source_corrected": False,
+        "formal_confirmation_required_for_training_or_operations": True,
+    }
+    if not isinstance(time_basis, Mapping) or any(time_basis.get(field) != value for field, value in expected_time_basis.items()):
+        issues.append(EvidenceIssue("INVALID_RESEARCH_TIMEZONE_BASIS", subject, "Asia/Manila must remain an explicit research assumption while source timezone stays unspecified."))
+    window = adjudication.get("exploratory_acquisition_window")
+    expected_window = {
+        "window_classification": "EXPLORATORY_SOURCE_ACQUISITION_WINDOW",
+        "acquisition_type": "BOUNDED_HISTORICAL_RAINFALL_ACQUISITION",
+        "research_local_start": "2024-08-31T08:00:00+08:00",
+        "research_local_end": "2024-09-03T08:00:00+08:00",
+        "utc_start": "2024-08-31T00:00:00Z",
+        "utc_end": "2024-09-03T00:00:00Z",
+        "antecedent_hours": 48,
+        "total_window_hours": 72,
+        "ends_at_event_upper_bound": True,
+        "is_prediction_window": False,
+        "is_training_window": False,
+        "is_validated_ml_feature_definition": False,
+        "prediction_cutoff": None,
+    }
+    if not isinstance(window, Mapping) or any(window.get(field) != value for field, value in expected_window.items()):
+        issues.append(EvidenceIssue("INVALID_EXPLORATORY_ACQUISITION_WINDOW", subject, "The bounded 48-hour-antecedent research window and UTC conversion must remain exact and non-ML."))
+    spatial = window.get("spatial_scope") if isinstance(window, Mapping) else None
+    expected_spatial = {
+        "contract_reference": "ml/flood-risk/manifests/imerg-caloocan-2019-exploratory-acquisition.json",
+        "crs": "EPSG:4326",
+        "city_boundary_source": "data/import/caloocan-city-boundary.geojson",
+        "city_boundary_sha256": "9647f3cac1758a07cfdc6a5bb8767fe9e4f1eb70b4e7d2c14a99abf2de1f9d50",
+        "requested_bounds_wgs84": [120.8, 14.5, 121.2, 14.9],
+        "source_resolution_degrees": 0.1,
+        "requested_grid_center_count": 16,
+        "mapping_method_selected": False,
+        "coarse_resolution_limitation_retained": True,
+        "global_archive_download_authorized": False,
+    }
+    if not isinstance(spatial, Mapping) or any(spatial.get(field) != value for field, value in expected_spatial.items()):
+        issues.append(EvidenceIssue("INVALID_RESEARCH_SPATIAL_SCOPE", subject, "The existing bounded 16-cell Caloocan spatial contract must be reused without selecting a mapping method or authorizing a global download."))
+    required_allowed = {
+        "RETRIEVE_BOUNDED_HISTORICAL_RAINFALL",
+        "CHECKSUM_AND_VALIDATE_RAINFALL_OBSERVATIONS",
+        "ASSESS_SPATIAL_AND_TEMPORAL_COVERAGE",
+        "INSPECT_EXPLORATORY_RAINFALL_PATTERNS",
+    }
+    if set(adjudication.get("authorized_actions") or []) != required_allowed:
+        issues.append(EvidenceIssue("INVALID_RESEARCH_AUTHORIZED_ACTIONS", subject, "Only the four bounded evidence-collection actions may be authorized."))
+    required_prohibited = {
+        "CREATE_TRAINING_ROWS", "ASSIGN_FLOOD_CONFIRMED", "ASSIGN_NO_FLOOD_CONFIRMED",
+        "CREATE_PREDICTION_CUTOFF", "TRAIN_TENSORFLOW", "CALIBRATE_MODEL",
+        "EXPOSE_PREDICTION_PROBABILITY", "ACTIVATE_MODEL", "USE_FOR_OPERATIONS",
+    }
+    if not required_prohibited.issubset(set(adjudication.get("prohibited_actions") or [])):
+        issues.append(EvidenceIssue("MISSING_RESEARCH_PROHIBITION", subject, "All label, training, prediction, model, and operational actions must remain prohibited."))
+    return issues
+
+
 def _source_map(manifest: Mapping[str, Any]) -> Mapping[str, Mapping[str, Any]]:
     return {str(item.get("source_id")): item for item in manifest.get("sources", []) if isinstance(item, Mapping)}
 
@@ -443,6 +589,7 @@ def validate_review_worksheet(
     issues.extend(validate_temporal_assessment(worksheet))
     issues.extend(validate_enteng_temporal_assessment(worksheet))
     issues.extend(validate_enteng_supplemental_evidence(worksheet))
+    issues.extend(validate_enteng_research_adjudication(worksheet))
     return issues
 
 

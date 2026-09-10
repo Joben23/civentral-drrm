@@ -46,7 +46,8 @@
     "imerg_acquired_for_candidate": {"const": false},
     "phase_3b3c1_temporal_assessment": {"$ref": "#/$defs/temporal_assessment"},
     "phase_3b3c1b_temporal_assessment": {"$ref": "#/$defs/enteng_temporal_assessment"},
-    "phase_3b3c1c_supplemental_evidence": {"$ref": "#/$defs/enteng_supplemental_evidence"}
+    "phase_3b3c1c_supplemental_evidence": {"$ref": "#/$defs/enteng_supplemental_evidence"},
+    "phase_3b3d_research_adjudication": {"$ref": "#/$defs/enteng_research_adjudication"}
   },
   "$defs": {
     "discovery_source": {
@@ -293,6 +294,133 @@
         "page_number": {"type": "integer", "minimum": 1, "maximum": 46},
         "statement": {"type": "string", "minLength": 1},
         "temporal_interpretation": {"enum": ["LATER_CUMULATIVE_SNAPSHOT_NOT_EVENT_TIME", "CUMULATIVE_ASSISTANCE_NOT_EVENT_TIME"]}
+      }
+    },
+    "enteng_research_adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase", "decision_scope", "decision_type", "decision_status",
+        "rainfall_acquisition_authorization", "decision_authority",
+        "adjudicator_identity", "official_lgu_reviewer", "official_lgu_approval",
+        "operational_use_approved", "training_use_approved", "human_approval_claimed",
+        "accepted_evidence_basis", "primary_episode", "source_time_handling",
+        "exploratory_acquisition_window", "authorized_actions", "prohibited_actions",
+        "limitations", "label_status_after_decision", "review_status_after_decision",
+        "human_approved_after_decision", "training_eligible_after_decision",
+        "prediction_cutoff", "training_ready_after_decision",
+        "training_authorization_after_decision", "model_status_after_decision"
+      ],
+      "properties": {
+        "phase": {"const": "PHASE_3B3D_ENTENG_PROJECT_RESEARCH_ADJUDICATION"},
+        "decision_scope": {"const": "PROJECT_RESEARCH_ONLY"},
+        "decision_type": {"const": "EXPLORATORY_RAINFALL_ACQUISITION_AUTHORIZATION"},
+        "decision_status": {"const": "AUTHORIZED_WITH_STRICT_LIMITATIONS"},
+        "rainfall_acquisition_authorization": {"const": "APPROVED_FOR_PROJECT_RESEARCH_ONLY"},
+        "decision_authority": {"const": "PROJECT_RESEARCH_GOVERNANCE_POLICY"},
+        "adjudicator_identity": {"type": "null"},
+        "official_lgu_reviewer": {"type": "null"},
+        "official_lgu_approval": {"const": false},
+        "operational_use_approved": {"const": false},
+        "training_use_approved": {"const": false},
+        "human_approval_claimed": {"const": false},
+        "accepted_evidence_basis": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/research_evidence_basis"}},
+        "primary_episode": {"$ref": "#/$defs/research_primary_episode"},
+        "source_time_handling": {"$ref": "#/$defs/research_time_handling"},
+        "exploratory_acquisition_window": {"$ref": "#/$defs/research_acquisition_window"},
+        "authorized_actions": {"type": "array", "minItems": 4, "uniqueItems": true, "items": {"enum": ["RETRIEVE_BOUNDED_HISTORICAL_RAINFALL", "CHECKSUM_AND_VALIDATE_RAINFALL_OBSERVATIONS", "ASSESS_SPATIAL_AND_TEMPORAL_COVERAGE", "INSPECT_EXPLORATORY_RAINFALL_PATTERNS"]}},
+        "prohibited_actions": {"type": "array", "minItems": 9, "uniqueItems": true, "items": {"enum": ["CREATE_TRAINING_ROWS", "ASSIGN_FLOOD_CONFIRMED", "ASSIGN_NO_FLOOD_CONFIRMED", "CREATE_PREDICTION_CUTOFF", "TRAIN_TENSORFLOW", "CALIBRATE_MODEL", "EXPOSE_PREDICTION_PROBABILITY", "ACTIVATE_MODEL", "USE_FOR_OPERATIONS"]}},
+        "limitations": {"type": "array", "minItems": 8, "items": {"type": "string", "minLength": 1}},
+        "label_status_after_decision": {"const": "UNKNOWN"},
+        "review_status_after_decision": {"const": "REQUIRES_HUMAN_REVIEW"},
+        "human_approved_after_decision": {"const": false},
+        "training_eligible_after_decision": {"const": false},
+        "prediction_cutoff": {"type": "null"},
+        "training_ready_after_decision": {"const": false},
+        "training_authorization_after_decision": {"const": "NOT_APPROVED"},
+        "model_status_after_decision": {"const": "MODEL_NOT_AVAILABLE"}
+      }
+    },
+    "research_evidence_basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "evidence_role", "access_status", "raw_artifact_acquired", "accepted_use", "limitation"],
+      "properties": {
+        "source_id": {"enum": ["ndrrmc_enteng_sitreps_2024", "dswd_dromic_enteng_2024_report_41"]},
+        "evidence_role": {"enum": ["PRIMARY_TEMPORAL_DISCOVERY_EVIDENCE", "SUPPLEMENTAL_CORROBORATION"]},
+        "access_status": {"enum": ["INDEXED_OFFICIAL_CONTENT_ONLY", "ACQUIRED"]},
+        "raw_artifact_acquired": {"type": "boolean"},
+        "accepted_use": {"enum": ["EXPLORATORY_TEMPORAL_ALIGNMENT_ONLY", "CALOOCAN_IMPACT_CORROBORATION_ONLY"]},
+        "limitation": {"type": "string", "minLength": 1}
+      }
+    },
+    "research_primary_episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["episode_cluster_id", "candidate_event_time_start", "start_interpretation", "candidate_event_time_end", "end_interpretation", "crispulo_cluster_id", "crispulo_excluded", "crispulo_merged"],
+      "properties": {
+        "episode_cluster_id": {"const": "enteng-caloocan-2024-09-02-primary"},
+        "candidate_event_time_start": {"type": "string", "minLength": 1},
+        "start_interpretation": {"type": "string", "minLength": 1},
+        "candidate_event_time_end": {"type": "string", "minLength": 1},
+        "end_interpretation": {"type": "string", "minLength": 1},
+        "crispulo_cluster_id": {"const": "enteng-caloocan-2024-09-05-crispulo-review"},
+        "crispulo_excluded": {"const": true},
+        "crispulo_merged": {"const": false}
+      }
+    },
+    "research_time_handling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_timezone", "source_timestamps_preserved_unchanged", "research_alignment_timezone", "research_alignment_utc_offset", "timezone_basis", "claimed_as_explicit_source_metadata", "source_corrected", "formal_confirmation_required_for_training_or_operations"],
+      "properties": {
+        "source_timezone": {"const": "UNSPECIFIED"},
+        "source_timestamps_preserved_unchanged": {"const": true},
+        "research_alignment_timezone": {"const": "Asia/Manila"},
+        "research_alignment_utc_offset": {"const": "+08:00"},
+        "timezone_basis": {"const": "PROJECT_RESEARCH_ASSUMPTION"},
+        "claimed_as_explicit_source_metadata": {"const": false},
+        "source_corrected": {"const": false},
+        "formal_confirmation_required_for_training_or_operations": {"const": true}
+      }
+    },
+    "research_acquisition_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["window_classification", "acquisition_type", "research_local_start", "research_local_end", "utc_start", "utc_end", "conversion_method", "antecedent_hours", "total_window_hours", "ends_at_event_upper_bound", "spatial_scope", "is_prediction_window", "is_training_window", "is_validated_ml_feature_definition", "prediction_cutoff"],
+      "properties": {
+        "window_classification": {"const": "EXPLORATORY_SOURCE_ACQUISITION_WINDOW"},
+        "acquisition_type": {"const": "BOUNDED_HISTORICAL_RAINFALL_ACQUISITION"},
+        "research_local_start": {"const": "2024-08-31T08:00:00+08:00"},
+        "research_local_end": {"const": "2024-09-03T08:00:00+08:00"},
+        "utc_start": {"const": "2024-08-31T00:00:00Z"},
+        "utc_end": {"const": "2024-09-03T00:00:00Z"},
+        "conversion_method": {"type": "string", "minLength": 1},
+        "antecedent_hours": {"const": 48},
+        "total_window_hours": {"const": 72},
+        "ends_at_event_upper_bound": {"const": true},
+        "spatial_scope": {"$ref": "#/$defs/research_spatial_scope"},
+        "is_prediction_window": {"const": false},
+        "is_training_window": {"const": false},
+        "is_validated_ml_feature_definition": {"const": false},
+        "prediction_cutoff": {"type": "null"}
+      }
+    },
+    "research_spatial_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_reference", "crs", "city_boundary_source", "city_boundary_sha256", "requested_bounds_wgs84", "source_resolution_degrees", "requested_grid_center_count", "mapping_method_selected", "coarse_resolution_limitation_retained", "global_archive_download_authorized"],
+      "properties": {
+        "contract_reference": {"const": "ml/flood-risk/manifests/imerg-caloocan-2019-exploratory-acquisition.json"},
+        "crs": {"const": "EPSG:4326"},
+        "city_boundary_source": {"const": "data/import/caloocan-city-boundary.geojson"},
+        "city_boundary_sha256": {"const": "9647f3cac1758a07cfdc6a5bb8767fe9e4f1eb70b4e7d2c14a99abf2de1f9d50"},
+        "requested_bounds_wgs84": {"const": [120.8, 14.5, 121.2, 14.9]},
+        "source_resolution_degrees": {"const": 0.1},
+        "requested_grid_center_count": {"const": 16},
+        "mapping_method_selected": {"const": false},
+        "coarse_resolution_limitation_retained": {"const": true},
+        "global_archive_download_authorized": {"const": false}
       }
     },
     "source_search": {
