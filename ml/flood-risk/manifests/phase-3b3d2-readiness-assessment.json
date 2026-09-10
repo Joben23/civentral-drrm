@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0.0",
+  "assessment_id": "phase-3b3d2-pre-training-data-adjudication",
+  "phase": "TENSORFLOW_DATA_PHASE_3B3D2",
+  "assessment_status": "TRAINING_DATA_INSUFFICIENT_ACTION_PLAN_READY",
+  "assessed_at_utc": "2026-09-10T00:00:00Z",
+  "source_of_truth": [
+    "ml/flood-risk/manifests/flood-event-registry.json",
+    "ml/flood-risk/manifests/phase-3b3b-enteng-2024-review.json",
+    "ml/flood-risk/manifests/imerg-enteng-2024-exploratory-acquisition.json",
+    "ml/flood-risk/manifests/training-authorization.json"
+  ],
+  "candidate_inventory": {
+    "candidate_event_count": 7,
+    "unknown_event_count": 7,
+    "confirmed_positive_event_count": 0,
+    "confirmed_negative_event_count": 0,
+    "events_with_defensible_temporal_research_envelope": 1,
+    "events_with_rainfall_acquired": 1,
+    "training_eligible_event_count": 0,
+    "temporal_envelope_note": "Enteng has a project-research acquisition envelope in Phase 3B3-D, but the canonical event registry remains UNRESOLVED and no prediction cutoff or candidate training window exists."
+  },
+  "enteng_rainfall_revalidation": {
+    "acquisition_id": "imerg-v07b-enteng-2024-09-02-bounded-research-v1",
+    "status": "ACQUIRED_TECHNICALLY_VALIDATED_REVIEW_PENDING",
+    "authorization": "APPROVED_FOR_PROJECT_RESEARCH_ONLY",
+    "raw_chunk_count": 12,
+    "grid_cell_count": 16,
+    "interval_count_per_cell": 144,
+    "observation_count": 2304,
+    "missing_interval_count": 0,
+    "duplicate_interval_count": 0,
+    "invalid_or_fill_value_count": 0,
+    "window_start_utc": "2024-08-31T00:00:00Z",
+    "window_end_utc_exclusive": "2024-09-03T00:00:00Z",
+    "native_units": "mm/hr",
+    "interval_minutes": 30,
+    "revalidation_status": "PASSED_EXISTING_PHASE_3B2_VALIDATOR"
+  },
+  "label_adjudication": {
+    "positive_labels_available": 0,
+    "negative_labels_available": 0,
+    "labels_required_for_supervised_training": true,
+    "negative_label_rule": "A negative requires affirmative governed evidence of monitored non-flood conditions; rainfall magnitude, missing reports, susceptibility, and neighboring areas cannot create NO_FLOOD.",
+    "rainfall_changes_outcome_label": false,
+    "current_label_state": "UNKNOWN"
+  },
+  "temporal_assessment": {
+    "acquisition_window": {
+      "start_utc": "2024-08-31T00:00:00Z",
+      "end_utc_exclusive": "2024-09-03T00:00:00Z",
+      "purpose": "BOUNDED_PROJECT_RESEARCH_RAINFALL_ACQUISITION"
+    },
+    "event_window": {
+      "enteng_start_source_text": "02 September 2024, 08:00 am",
+      "enteng_end_source_text": "03 September 2024, 08:00am (Subsided as of upper bound)",
+      "source_timezone": "UNSPECIFIED",
+      "status": "REQUIRES_HUMAN_REVIEW"
+    },
+    "prediction_cutoff": null,
+    "feature_windows": {
+      "status": "NOT_FINALIZED",
+      "candidate_windows_for_later_review": ["antecedent_6h", "antecedent_12h", "antecedent_24h", "antecedent_48h", "maximum_half_hour_rainfall"],
+      "post_event_rainfall_allowed_in_pre_event_features": false
+    },
+    "blockers": [
+      "No formally adjudicated prediction cutoff exists.",
+      "The Enteng event endpoint is an upper bound, not exact cessation.",
+      "Source timezone remains unspecified and requires human review."
+    ]
+  },
+  "spatial_assessment": {
+    "available_grid_cells": 16,
+    "grid_cells_are_independent_events": false,
+    "authoritative_geometry_available": true,
+    "caloocan_intersecting_cell_count_from_existing_analysis": 3,
+    "aggregation_status": "UNRESOLVED_REQUIRES_REVIEW",
+    "safe_candidates_for_later_comparison": [
+      "Caloocan-intersecting IMERG cells only",
+      "City-level spatial mean",
+      "City-level spatial maximum",
+      "Area-weighted aggregation only after reviewed geometry implementation"
+    ],
+    "locality_mapping_status": "UNSUPPORTED_WHERE_COORDINATES_ARE_NOT_EXPLICIT",
+    "blocker": "No spatial aggregation method has been formally selected; 16 cells must not become 16 event labels."
+  },
+  "target_assessment": {
+    "current_project_target_status": "PENDING",
+    "binary_flood_no_flood_supportable_now": false,
+    "multiclass_low_moderate_high_critical_supportable_now": false,
+    "risk_probability_supportable_now": false,
+    "recommendation_for_later_phase": "Conduct a separate target-design decision after obtaining multiple independently adjudicated positive and affirmative negative events. Do not change the project target in D2."
+  },
+  "leakage_assessment": {
+    "status": "BLOCKED_BEFORE_FEATURE_CONSTRUCTION",
+    "risks": [
+      "Using the 03 September Subsided-as-of upper bound to define a prediction cutoff would leak outcome timing.",
+      "Using post-occurrence rainfall from the 72-hour acquisition window in pre-event features would leak future information.",
+      "Using later DSWD cumulative impact totals as event-time labels would leak post-event response information.",
+      "Treating IMERG grid cells as independent events would inflate sample size and create dependence leakage."
+    ],
+    "required_controls": [
+      "Human-adjudicated prediction cutoff before feature construction.",
+      "Feature windows ending at or before that cutoff.",
+      "Event-level rather than cell-level split strategy.",
+      "Explicit spatial aggregation and leakage review."
+    ]
+  },
+  "training_sufficiency": {
+    "training_ready": false,
+    "training_authorization": "NOT_APPROVED",
+    "positive_training_rows": 0,
+    "negative_training_rows": 0,
+    "record_count": 0,
+    "sample_size_sufficient": false,
+    "class_balance_sufficient": false,
+    "event_independence_sufficient": false,
+    "prediction_cutoff_available": false,
+    "spatial_mapping_sufficient": false,
+    "target_definition_sufficient": false,
+    "decision": "INSUFFICIENT_FOR_SUPERVISED_TENSORFLOW_TRAINING"
+  },
+  "minimum_viable_training_path": [
+    {
+      "priority": 1,
+      "action": "Human-adjudicate existing official candidate evidence into independent event records while preserving UNKNOWN where onset, location, or source access remains insufficient.",
+      "reason": "Existing candidates are the shortest evidence-safe path to more governed event decisions."
+    },
+    {
+      "priority": 2,
+      "action": "Obtain affirmative authoritative non-flood monitoring observations for comparable Caloocan windows.",
+      "reason": "No negative label can be inferred from low rainfall or absent incident reporting."
+    },
+    {
+      "priority": 3,
+      "action": "For each event approved for research, acquire bounded rainfall only after its event window and prediction cutoff are adjudicated.",
+      "reason": "Rainfall is independent covariate evidence, not outcome evidence."
+    },
+    {
+      "priority": 4,
+      "action": "Select a reviewed spatial aggregation and event-level train/validation split, then make a separate target-design decision.",
+      "reason": "The current 16-cell acquisition cannot be treated as 16 independent samples."
+    }
+  ],
+  "readiness_matrix": [
+    {"data_source": "Historical flood event evidence", "status": "PARTIAL_REQUIRES_HUMAN_REVIEW", "training_role": "LABEL_PROVENANCE", "blocker": "All seven events remain UNKNOWN; raw NDRRMC access and temporal/spatial adjudication gaps remain."},
+    {"data_source": "Enteng IMERG", "status": "ACQUIRED_PROJECT_RESEARCH_ONLY", "training_role": "OBSERVED_PRECIPITATION_COVARIATE_CANDIDATE", "blocker": "No cutoff, feature window, spatial aggregation, or training approval."},
+    {"data_source": "June 2019 DROMIC/IMERG", "status": "ACQUIRED_PROVISIONAL_NOT_PILOT_APPROVED", "training_role": "OBSERVED_PRECIPITATION_AND_EVENT_EVIDENCE_CANDIDATE", "blocker": "Unknown label, unresolved event timing, and pending usage review."},
+    {"data_source": "Positive labels", "status": "NONE", "training_role": "TARGET", "blocker": "Zero confirmed positive labels."},
+    {"data_source": "Negative labels", "status": "NONE", "training_role": "TARGET", "blocker": "Zero affirmative governed non-flood observations."},
+    {"data_source": "Temporal cutoff", "status": "UNDEFINED", "training_role": "LEAKAGE_CONTROL", "blocker": "prediction_cutoff remains null."},
+    {"data_source": "Spatial aggregation", "status": "UNRESOLVED", "training_role": "FEATURE_MAPPING", "blocker": "No reviewed aggregation method; grid cells are not independent events."},
+    {"data_source": "Target definition", "status": "PENDING", "training_role": "SUPERVISED_TARGET", "blocker": "Evidence cannot currently support binary or multiclass training."},
+    {"data_source": "Train/validation split", "status": "UNDEFINED", "training_role": "GENERALIZATION_CONTROL", "blocker": "No eligible event-level records exist."},
+    {"data_source": "TensorFlow architecture", "status": "NOT_READY_FOR_USE", "training_role": "MODEL", "blocker": "Training data and target are not approved."},
+    {"data_source": "Model artifact", "status": "NOT_CREATED", "training_role": "DEPLOYABLE_MODEL", "blocker": "Training prohibited and no model is available."},
+    {"data_source": "Calibration", "status": "NOT_STARTED", "training_role": "PROBABILITY_VALIDATION", "blocker": "No trained model or eligible validation set."},
+    {"data_source": "Activation", "status": "NOT_APPROVED", "training_role": "OPERATIONS", "blocker": "Training authorization and operational approval are absent."}
+  ],
+  "safety_state": {
+    "label_status": "UNKNOWN",
+    "training_eligible": false,
+    "prediction_cutoff": null,
+    "training_ready": false,
+    "training_authorization": "NOT_APPROVED",
+    "tensorflow_training_performed": false,
+    "model_artifact_created": false,
+    "prediction_probability_generated": false
+  },
+  "next_phase": "PHASE_3B3D3_EVIDENCE_ADJUDICATION_AND_TARGET_DESIGN_PREPARATION"
+}
