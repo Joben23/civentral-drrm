@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0.0",
+  "assessment_id": "phase-3b3d3-target-design-preparation",
+  "phase": "TENSORFLOW_PHASE_3B3D3",
+  "assessment_status": "HYBRID_TENSORFLOW_RAINFALL_MODEL_RECOMMENDED",
+  "assessed_at_utc": "2026-09-10T00:00:00Z",
+  "source_of_truth": [
+    "ml/flood-risk/manifests/phase-3b3d2-readiness-assessment.json",
+    "ml/flood-risk/manifests/flood-event-registry.json",
+    "ml/flood-risk/manifests/imerg-enteng-2024-exploratory-acquisition.json",
+    "ml/flood-risk/manifests/training-authorization.json",
+    "ml/flood-risk/config/governance-v1.json",
+    "ml/flood-risk/config/label-protocol-v1.json"
+  ],
+  "direct_flood_classifier_assessment": {
+    "path": "PATH_A_DIRECT_SUPERVISED_FLOOD_CLASSIFIER",
+    "status": "BLOCKED",
+    "positive_label_count": 0,
+    "affirmative_negative_label_count": 0,
+    "independent_event_count": 0,
+    "class_balance_available": false,
+    "prediction_cutoff_available": false,
+    "spatial_mapping_ready": false,
+    "target_definition_ready": false,
+    "reason": "All seven candidates remain UNKNOWN and training-ineligible. No flood outcome labels may be fabricated from rainfall, susceptibility, or missing reports.",
+    "decision": "Do not train or represent a direct flood classifier in the current evidence state."
+  },
+  "hybrid_architecture_assessment": {
+    "path": "PATH_B_HYBRID_RAINFALL_FORECAST_AND_GOVERNED_RISK_FUSION",
+    "status": "RESEARCH_DIRECTION_TECHNICALLY_DEFENSIBLE_NOT_YET_TRAINING_AUTHORIZED",
+    "pipeline": [
+      "Real historical IMERG rainfall sequence",
+      "TensorFlow regression for future rainfall quantity",
+      "Separately governed static MGB flood susceptibility",
+      "Transparent deterministic application risk-fusion policy",
+      "Distinct Module 1 display of rainfall forecast, susceptibility, and combined assessment"
+    ],
+    "model_claim": "TensorFlow would predict rainfall quantity, not learned flood occurrence, until governed flood outcome labels exist.",
+    "required_separation": "The deterministic fusion layer must not be presented as TensorFlow flood classification or as a probability calibrated from flood outcomes.",
+    "current_authorization": "NOT_APPROVED"
+  },
+  "recommended_rainfall_target": {
+    "target_type": "NEXT_3_HOUR_ACCUMULATED_RAINFALL",
+    "target_variable": "precipitation_mm",
+    "target_units": "mm",
+    "forecast_horizon_hours": 3,
+    "construction": "Sum six future verified 30-minute IMERG interval accumulations immediately after the forecast origin.",
+    "why": "A 3-hour quantity is responsive enough for emergency research while reducing single-interval noise and avoiding the stronger operational assumptions of a 24-hour flood target.",
+    "alternatives_not_selected": {
+      "next_30_minutes": "Too noisy for a first emergency-risk research component.",
+      "next_1_hour": "Viable secondary benchmark but less stable than a 3-hour accumulation.",
+      "next_6_hours": "Useful secondary benchmark but less responsive for short-horizon action.",
+      "next_24_hours": "Too close to the existing flood target and more vulnerable to broad accumulation assumptions."
+    },
+    "status": "PROPOSED_FOR_LATER_TARGET_DESIGN_ONLY",
+    "not_a_flood_label": true
+  },
+  "input_design": {
+    "lookback_window_hours": 24,
+    "forecast_horizon_hours": 3,
+    "feature_timestamps": "Only verified observed intervals ending at or before the forecast origin may enter inputs.",
+    "proposed_features": [
+      "lagged_half_hour_rainfall",
+      "antecedent_1h_accumulation",
+      "antecedent_3h_accumulation",
+      "antecedent_6h_accumulation",
+      "antecedent_12h_accumulation",
+      "antecedent_24h_accumulation",
+      "time_of_day_cyclic_encoding",
+      "day_of_year_cyclic_encoding"
+    ],
+    "unavailable_inputs_excluded": ["PAGASA_station_rainfall", "archived_as_issued_PAGASA_forecasts", "flood_labels", "future_rainfall_after_forecast_origin"],
+    "feature_status": "PROPOSED_NOT_FINALIZED"
+  },
+  "spatial_design": {
+    "available_contract": {
+      "grid_cells": 16,
+      "resolution_degrees": 0.1,
+      "caloocan_intersecting_cells": 3,
+      "grid_cells_are_independent_events": false
+    },
+    "recommended_primary_approach": "CITY_LEVEL_MEAN_OF_THREE_CALOOCAN_INTERSECTING_CELLS",
+    "approach_reason": "A city-level rainfall series matches the current city-level evidence better than locality claims, limits neighbor contamination, and prevents 16 cells from being mistaken for 16 disasters.",
+    "secondary_qa": ["city_level_maximum_of_three_intersecting_cells", "retain_all_16_cells_for_sensitivity_analysis_only"],
+    "area_weighting": "Not selected until the existing authoritative polygons and IMERG cell footprints are implemented and independently reviewed for coverage weights.",
+    "cell_level_option": "The 16 cells may be modeled as correlated channels or spatial features, but never as independent event labels. Splits must be chronological and keep all cells from a timestamp in the same split.",
+    "status": "PROPOSED_NOT_FINALIZED"
+  },
+  "historical_corpus_requirement": {
+    "recommended_next_phase_range": {
+      "start_utc": "2023-09-01T00:00:00Z",
+      "end_utc_exclusive": "2024-09-03T00:00:00Z",
+      "duration": "Approximately 12 months plus the governed Enteng endpoint",
+      "spatial_scope": "The three Caloocan-intersecting 0.1-degree centers, with the existing 16-cell set retained only for bounded sensitivity analysis",
+      "product": "GPM_3IMERGHH V07B Final Run"
+    },
+    "reason": "One continuous wet/dry seasonal cycle is the shortest bounded corpus likely to expose seasonality, antecedent persistence, and non-event rainfall variation without claiming a universal sample-size threshold.",
+    "required_separation": "Use chronological train/validation/test periods; keep all cells and overlapping windows from a timestamp in one split.",
+    "not_acquired_in_d3": true
+  },
+  "mgb_risk_fusion": {
+    "allowed_static_codes": ["LF", "MF", "HF", "VHF", "NONE"],
+    "role": "STATIC_SUSCEPTIBILITY_INPUT_OR_POLICY_CONTEXT",
+    "not_outcome_truth": true,
+    "not_automatic_mapping": "Do not map LF/MF/HF/VHF directly to LOW/MODERATE/HIGH/CRITICAL without a separately documented policy.",
+    "required_governance": [
+      "Preserve MGB category and attribution independently.",
+      "Version any deterministic fusion policy and its thresholds.",
+      "Keep rainfall forecast quantity visibly separate from susceptibility.",
+      "Do not call fused output a calibrated flood probability without labeled outcome validation.",
+      "Require human and operational review before activation."
+    ],
+    "thresholds_finalized": false
+  },
+  "module_1_output_design": {
+    "separate_outputs": [
+      "MGB susceptibility: static LF/MF/HF/VHF/NONE with source attribution",
+      "TensorFlow rainfall forecast: predicted precipitation quantity in mm over the proposed horizon",
+      "Combined application flood-risk assessment: deterministic, versioned policy output with explicit provenance"
+    ],
+    "ui_requirement": "Never imply that MGB susceptibility or a rainfall forecast alone is a flood outcome label or that both are the same TensorFlow prediction.",
+    "activation_status": "NOT_APPROVED"
+  },
+  "split_strategy": {
+    "method": "CHRONOLOGICAL_EVENT_SAFE_SPLIT",
+    "shuffle": false,
+    "proposed_periods": {
+      "training": "First 70% of the recommended one-year-plus corpus",
+      "validation": "Next 15% chronologically",
+      "test": "Final 15% chronologically"
+    },
+    "leakage_controls": [
+      "No future timestamps in input features.",
+      "No overlapping windows across split boundaries.",
+      "All spatial cells for a timestamp remain in one split.",
+      "Fit normalization parameters on training period only."
+    ],
+    "status": "PROPOSED_NOT_FINALIZED"
+  },
+  "tensorflow_architecture": {
+    "recommendation": "SMALL_DENSE_REGRESSION_WITH_EXPLICIT_LAG_FEATURES",
+    "reason": "It is the simplest auditable baseline for a one-year bounded corpus and avoids assuming that LSTM/GRU complexity is justified.",
+    "comparison": {
+      "small_dense": "Primary baseline; transparent parameter count and lag attribution.",
+      "one_dimensional_temporal_model": "Secondary comparison if the dense baseline cannot capture local temporal structure.",
+      "lstm_gru": "Defer until the chronological corpus and baseline justify sequence-model complexity."
+    },
+    "training_authorized_in_d3": false
+  },
+  "capstone_compatibility": {
+    "compatibility": "CONDITIONALLY_COMPATIBLE",
+    "current_phrase": "TensorFlow-Based Risk Prediction",
+    "path_b_interpretation": "TensorFlow-Based Rainfall Forecasting with governed deterministic Flood-Risk Fusion",
+    "documentation_concerns": [
+      "The capstone must not claim TensorFlow learned flood occurrence without flood outcome labels.",
+      "Risk fusion must be documented as a separate deterministic governance/application layer.",
+      "Any probability language must be removed or reserved for a future labeled calibration phase.",
+      "The existing FLOOD_WITHIN_24H target and four risk categories remain pending and must not be silently redefined."
+    ],
+    "chapter_edits_in_d3": false,
+    "future_documentation_action": "Propose a terminology decision before implementation: rainfall prediction component versus direct flood classifier."
+  },
+  "remaining_blockers": [
+    "No governed flood-positive or affirmative negative labels.",
+    "No formally adjudicated prediction cutoff or final target.",
+    "Only 72 hours of Enteng rainfall is available, insufficient for robust rainfall regression.",
+    "No reviewed spatial aggregation implementation.",
+    "No approved training authorization for rainfall modeling.",
+    "No documented deterministic fusion thresholds or operational policy.",
+    "No calibration or activation evidence."
+  ],
+  "safety_state": {
+    "existing_event_labels_unchanged": true,
+    "label_status": "UNKNOWN",
+    "training_eligible": false,
+    "prediction_cutoff": null,
+    "training_ready": false,
+    "training_authorization": "NOT_APPROVED",
+    "tensorflow_training_performed": false,
+    "model_artifact_created": false,
+    "expanded_rainfall_acquired": false,
+    "flood_probability_generated": false,
+    "ready_endpoint_changed": false
+  },
+  "next_phase": "PHASE_3B3D4_BOUNDED_RAINFALL_CORPUS_AND_SPATIAL_AGGREGATION_DESIGN"
+}
