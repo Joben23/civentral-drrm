@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     model_path: Path | None = None
     model_manifest_path: Path | None = None
     risk_policy_path: Path | None = None
+    rainfall_bundle_path: Path = (
+        FLOOD_RISK_ROOT
+        / "deployment"
+        / "rainfall"
+        / "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
+    )
+    rainfall_authorization_path: Path = (
+        FLOOD_RISK_ROOT
+        / "manifests"
+        / "phase-3fb-private-rainfall-inference-authorization.json"
+    )
     feature_schema_path: Path = (
         FLOOD_RISK_ROOT / "schemas" / "flood-feature-schema-v1.json"
     )

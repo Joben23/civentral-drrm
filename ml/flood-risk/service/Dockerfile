@@ -26,9 +26,11 @@ RUN python -m pip install --upgrade pip \
 # Preserve the repository-relative paths used by app.config without copying
 # development environments, credentials, tests, or ungoverned model files.
 COPY --chown=civentral:civentral ml/flood-risk/service/app ./app
+COPY --chown=civentral:civentral ml/flood-risk/service/common ./common
 COPY --chown=civentral:civentral ml/flood-risk/service/schemas ./schemas
 COPY --chown=civentral:civentral ml/flood-risk/schemas /opt/civentral/ml/flood-risk/schemas
-COPY --chown=civentral:civentral ml/flood-risk/artifacts /opt/civentral/ml/flood-risk/artifacts
+COPY --chown=civentral:civentral ml/flood-risk/deployment/rainfall/rainfall-regression-dense-57-v0.1.1-softplus-candidate /opt/civentral/ml/flood-risk/deployment/rainfall/rainfall-regression-dense-57-v0.1.1-softplus-candidate
+COPY --chown=civentral:civentral ml/flood-risk/manifests/phase-3fb-private-rainfall-inference-authorization.json /opt/civentral/ml/flood-risk/manifests/phase-3fb-private-rainfall-inference-authorization.json
 COPY --chown=civentral:civentral data/import/caloocan-barangays-current-unaffected.geojson \
      /opt/civentral/data/import/caloocan-barangays-current-unaffected.geojson
 
@@ -39,4 +41,5 @@ EXPOSE 8098
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
     CMD curl --fail --silent --show-error http://127.0.0.1:8098/health
 
+# 0.0.0.0 is container-internal; Compose exposes but does not publish this port.
 CMD exec uvicorn app.main:app --host 0.0.0.0 --port 8098

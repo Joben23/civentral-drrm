@@ -7,6 +7,7 @@ import logging
 import re
 import time
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -82,12 +83,25 @@ class SanitizedRequestLoggingMiddleware(BaseHTTPMiddleware):
     ) -> None:
         record = {
             "event": "internal_api_request",
+            "request_timestamp": datetime.now(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
             "request_id": request_id,
             "endpoint": request.url.path,
             "method": request.method,
             "status_code": status_code,
             "latency_ms": round(latency_ms, 3),
         }
-        if error_class is not None:
-            record["error_class"] = error_class
+        monitored_request_id = getattr(request.state, "request_id", None)
+        if isinstance(monitored_request_id, str) and REQUEST_ID_PATTERN.fullmatch(
+            monitored_request_id
+        ):
+            record["request_id"] = monitored_request_id
+        model_version = getattr(request.state, "ai_model_version", None)
+        if isinstance(model_version, str):
+            record["model_version"] = model_version
+        failure_code = getattr(request.state, "failure_code", None)
+        if isinstance(failure_code, str):
+            record["failure_code"] = failure_code
+        record["success"] = status_code < 400
         self._logger.info(json.dumps(record, separators=(",", ":")))

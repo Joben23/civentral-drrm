@@ -40,6 +40,9 @@ htmlcov/
 ml/flood-risk/artifacts/*
 !ml/flood-risk/artifacts/.gitignore
 !ml/flood-risk/artifacts/README.md
+ml/flood-risk/data/raw/
+ml/flood-risk/data/reviewed/
+ml/flood-risk/data/processed/
 
 *.log
 logs/

@@ -5,11 +5,19 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+SERVICE_ROOT = REPO_ROOT / "ml" / "flood-risk" / "service"
+if str(SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SERVICE_ROOT))
+
+from common.rainfall_features import feature_names, iso_z, make_features, parse_utc
+
+
 WORKSPACE = REPO_ROOT / "ml" / "flood-risk"
 CORPUS = WORKSPACE / "data" / "processed" / "imerg-caloocan-city-mean-2023-2024.json"
 OUTPUT = WORKSPACE / "data" / "processed" / "rainfall-regression-windows-24h-to-3h.json"
@@ -20,51 +28,6 @@ HORIZON = 6
 PURGE = LOOKBACK + HORIZON
 
 
-def parse_time(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
-
-
-def iso_z(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def feature_names() -> list[str]:
-    return [f"lag_precipitation_mm_{index:02d}" for index in range(48, 0, -1)] + [
-        "antecedent_1h_mm",
-        "antecedent_3h_mm",
-        "antecedent_6h_mm",
-        "antecedent_12h_mm",
-        "antecedent_24h_mm",
-        "hour_sin",
-        "hour_cos",
-        "day_of_year_sin",
-        "day_of_year_cos",
-    ]
-
-
-def make_features(records: list[dict], origin_index: int) -> tuple[list[float], list[str]]:
-    history = [float(item["city_mean_precipitation_mm"]) for item in records[origin_index - LOOKBACK + 1 : origin_index + 1]]
-    if len(history) != LOOKBACK:
-        raise ValueError("Insufficient historical lookback")
-    accumulations = [
-        sum(history[-2:]),
-        sum(history[-6:]),
-        sum(history[-12:]),
-        sum(history[-24:]),
-        sum(history[-48:]),
-    ]
-    timestamp = parse_time(records[origin_index]["observed_at_start"])
-    hour_fraction = timestamp.hour + timestamp.minute / 60
-    day_fraction = timestamp.timetuple().tm_yday - 1 + hour_fraction / 24
-    values = history + accumulations + [
-        math.sin(2 * math.pi * hour_fraction / 24),
-        math.cos(2 * math.pi * hour_fraction / 24),
-        math.sin(2 * math.pi * day_fraction / 365.2425),
-        math.cos(2 * math.pi * day_fraction / 365.2425),
-    ]
-    return values, feature_names()
-
-
 def validate_corpus(records: list[dict]) -> None:
     if len(records) != 17664:
         raise ValueError(f"Expected 17664 corpus records, found {len(records)}")
@@ -72,8 +35,8 @@ def validate_corpus(records: list[dict]) -> None:
     for record in records:
         if record.get("contributing_cell_count") != 3:
             raise ValueError("Every corpus row must have three contributing cells")
-        start = parse_time(record["observed_at_start"])
-        end = parse_time(record["observed_at_end"])
+        start = parse_utc(record["observed_at_start"])
+        end = parse_utc(record["observed_at_end"])
         value = record.get("city_mean_precipitation_mm")
         if previous is not None and start - previous != HALF_HOUR:
             raise ValueError("Corpus timestamps are not continuous")
@@ -95,7 +58,7 @@ def build_window(records: list[dict], origin_index: int, split_name: str, allowe
     target_end = origin_index + HORIZON
     if input_start < allowed_start or target_end > allowed_end:
         return None
-    timestamps = [parse_time(record["observed_at_start"]) for record in records[input_start : target_end + 1]]
+    timestamps = [parse_utc(record["observed_at_start"]) for record in records[input_start : target_end + 1]]
     if any(right - left != HALF_HOUR for left, right in zip(timestamps, timestamps[1:])):
         return None
     features, names = make_features(records, origin_index)

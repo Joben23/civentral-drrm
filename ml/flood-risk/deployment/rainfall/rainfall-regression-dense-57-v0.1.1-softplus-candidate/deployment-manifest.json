@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "model_problem": "RAINFALL_REGRESSION",
+  "model_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+  "model_status": "VALIDATED_RESEARCH_CANDIDATE",
+  "model": {
+    "filename": "model.keras",
+    "sha256": "51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865",
+    "byte_length": 95844
+  },
+  "preprocessing": {
+    "filename": "preprocessing.json",
+    "sha256": "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4",
+    "byte_length": 5040
+  },
+  "feature_count": 57,
+  "history_intervals": 48,
+  "interval_minutes": 30,
+  "output_policy": "MODEL_NONNEGATIVE_SOFTPLUS",
+  "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+  "forecast_horizon_hours": 3,
+  "architecture": {
+    "type": "SMALL_DENSE_REGRESSION",
+    "dense_units": [64, 32, 1],
+    "activations": ["relu", "relu", "softplus"],
+    "parameter_count": 5825,
+    "tensorflow_version": "2.21.0"
+  },
+  "operational": false,
+  "public_use_approved": false,
+  "flood_classifier": false,
+  "mgb_fusion_approved": false
+}

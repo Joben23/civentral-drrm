@@ -1,8 +1,9 @@
 # CIVENTRAL private flood-risk inference service
 
-This is the Phase 7D-A server-runtime foundation for future private
-PHP-to-Python inference. It contains no model, prediction fixture, risk
-thresholds, PHP integration, warning integration, or database persistence.
+This private service contains two deliberately isolated runtime paths:
+the unavailable flood-classifier scaffold and the Phase 3F-B authenticated,
+research-only rainfall-regression runtime. It contains no risk fusion, warning
+integration, public inference, or database persistence.
 
 Current truthful behavior:
 
@@ -11,6 +12,11 @@ Current truthful behavior:
 - authenticated `GET /v1/model/status` reports `MODEL_NOT_AVAILABLE`.
 - authenticated `POST /v1/predictions/flood-risk` returns 503 and no
   probability, outcome, or risk level.
+- authenticated `GET /rainfall/ready` reports only rainfall-research runtime
+  readiness.
+- authenticated `POST /rainfall/predict` accepts 48 continuous UTC
+  half-hour city-mean observations and returns only predicted next-three-hour
+  rainfall in millimetres.
 
 ## Supported development runtime
 
@@ -82,7 +88,9 @@ install service dependencies into global/system Python.
 Settings use `CIVENTRAL_AI_` environment variables. The service requires no
 PHP session, Supabase, PAGASA, database, citizen, or employee credentials.
 Protected endpoints use `X-CIVENTRAL-AI-Key` with constant-time comparison.
-`/health` and `/ready` are unauthenticated private probes with sanitized state.
+`/health` and global `/ready` are unauthenticated private probes with
+sanitized state. Rainfall readiness is authenticated because it discloses a
+specific research candidate.
 
 The API fails closed if authentication is required but no key is configured.
 It adds no CORS middleware, rejects undeclared request fields, limits request
@@ -91,7 +99,7 @@ It never logs headers, keys, environment dumps, or request bodies.
 
 ## Artifact and policy lifecycle
 
-The service never creates or discovers arbitrary models. Configured model,
+The flood service never creates or discovers arbitrary models. Configured model,
 manifest, preprocessing, and risk-policy paths must stay below the artifact
 root. The loader validates:
 
@@ -115,6 +123,14 @@ No scaler is fitted at inference time. A future external fitted scaler must be
 checksummed in the approved bundle, match the feature order and training
 dataset hash, and is only applied as a transform. A model may instead contain
 its trained preprocessing layers.
+
+The rainfall runtime is separate from that lifecycle. It can load only the
+intentionally versioned Softplus candidate in `../deployment/rainfall/`, after
+validating its dedicated project-research authorization, manifest, SHA-256
+checksums, exact 57-feature order, train-fitted scaler, and architecture. Its
+authorization is non-operational and does not make global `/ready` succeed.
+The Dockerfile copies only that bundle; ignored training artifacts and raw or
+processed rainfall datasets are excluded.
 
 The schemas are in `schemas/`. They document the future artifact and policy
 contracts without supplying any artifact, fitted statistics, or thresholds.

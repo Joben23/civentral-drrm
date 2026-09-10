@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -32,6 +33,24 @@ def client(settings: Settings) -> TestClient:
 @pytest.fixture()
 def auth_headers() -> dict[str, str]:
     return {"X-CIVENTRAL-AI-Key": TEST_INTERNAL_KEY}
+
+
+@pytest.fixture()
+def rainfall_request() -> dict[str, Any]:
+    start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    return {
+        "schema_version": "1.0",
+        "request_id": "rainfall-test-001",
+        "history": [
+            {
+                "timestamp_utc": (start + timedelta(minutes=30 * index))
+                .isoformat()
+                .replace("+00:00", "Z"),
+                "city_mean_precipitation_mm": 0.0,
+            }
+            for index in range(48)
+        ],
+    }
 
 
 @pytest.fixture()

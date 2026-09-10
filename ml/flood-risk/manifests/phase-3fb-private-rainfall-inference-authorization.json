@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3F_B",
+  "recorded_at_utc": "2026-09-10T12:42:54.319Z",
+  "decision_scope": "PROJECT_RESEARCH_ONLY",
+  "authorization_type": "PRIVATE_RAINFALL_REGRESSION_INFERENCE",
+  "status": "APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY",
+  "authorized_model_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+  "private_internal_inference": true,
+  "operational_use_approved": false,
+  "public_use_approved": false,
+  "citizen_direct_access_approved": false,
+  "flood_classifier_approved": false,
+  "mgb_fusion_approved": false,
+  "emergency_decision_approved": false,
+  "global_training_ready": false,
+  "global_training_authorization": "NOT_APPROVED",
+  "statement": "Project/research authorization for authenticated private rainfall-regression inference only; no LGU or operational approval is asserted."
+}

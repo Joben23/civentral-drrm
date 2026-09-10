@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3F_B",
+  "status": "PRIVATE_RAINFALL_INFERENCE_FUNCTIONAL",
+  "recorded_at_utc": "2026-09-10T12:58:36.731Z",
+  "deployed_candidate": {
+    "model_problem": "RAINFALL_REGRESSION",
+    "model_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+    "model_status": "VALIDATED_RESEARCH_CANDIDATE",
+    "bundle_path": "ml/flood-risk/deployment/rainfall/rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+    "model_sha256": "51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865",
+    "model_byte_length": 95844,
+    "preprocessing_sha256": "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4",
+    "preprocessing_byte_length": 5040,
+    "feature_count": 57,
+    "output_policy": "MODEL_NONNEGATIVE_SOFTPLUS",
+    "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "forecast_horizon_hours": 3
+  },
+  "authorization": {
+    "status": "APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY",
+    "private_internal_inference": true,
+    "operational_use_approved": false,
+    "public_use_approved": false,
+    "flood_classifier_approved": false,
+    "mgb_fusion_approved": false,
+    "global_training_ready": false,
+    "global_training_authorization": "NOT_APPROVED"
+  },
+  "runtime": {
+    "implementation": "RainfallRegressionRuntime",
+    "separate_from_flood_runtime": true,
+    "feature_builder": "ml/flood-risk/service/common/rainfall_features.py",
+    "history_intervals": 48,
+    "interval_minutes": 30,
+    "timestamp_basis": "UTC",
+    "preprocessing_fit_split": "train",
+    "fallback_model": null,
+    "zero_imputation": false,
+    "silent_output_clamp": false
+  },
+  "private_api": {
+    "prediction": "POST /rainfall/predict",
+    "readiness": "GET /rainfall/ready",
+    "authentication_header": "X-CIVENTRAL-AI-Key",
+    "authenticator": "InternalAuthenticator",
+    "rainfall_readiness_requires_authentication": true,
+    "global_readiness": "GET /ready remains HTTP 503 MODEL_NOT_AVAILABLE",
+    "response_scope": "RAINFALL_ONLY",
+    "monitoring": [
+      "sanitized request ID",
+      "request timestamp via structured log emission",
+      "model version",
+      "success/failure",
+      "latency_ms",
+      "stable failure code"
+    ],
+    "prohibited_logging": ["API key", "secret headers", "full rainfall history", "PII"]
+  },
+  "deployment": {
+    "method": "INTENTIONALLY_VERSIONED_VALIDATED_BUNDLE",
+    "docker_copy_scope": "selected bundle plus authorization and runtime files only",
+    "raw_or_processed_rainfall_copied": false,
+    "research_histories_copied": false,
+    "compose_network": "dokploy-network",
+    "container_bind": "0.0.0.0:8098",
+    "container_bind_reason": "Required for container-to-container access on the private Docker network.",
+    "compose_expose_only": true,
+    "host_port_8098_published": false,
+    "public_domain_configured": false
+  },
+  "smoke_test": {
+    "input": "Existing governed real 2023-2024 Caloocan city-mean IMERG history; first 48 continuous observations.",
+    "health": {"http_status": 200, "service_status": "HEALTHY"},
+    "global_ready": {"http_status": 503, "code": "MODEL_NOT_AVAILABLE"},
+    "rainfall_ready": {
+      "http_status": 200,
+      "code": "RAINFALL_RESEARCH_READY",
+      "research_only": true,
+      "operational": false
+    },
+    "prediction": {
+      "http_status": 200,
+      "forecast_origin_utc": "2023-09-02T00:00:00Z",
+      "raw_prediction_mm": 1.1349682807922363,
+      "final_prediction_mm": 1.1349682807922363,
+      "output_policy": "MODEL_NONNEGATIVE_SOFTPLUS",
+      "operational": false
+    },
+    "missing_key": {"http_status": 401, "code": "UNAUTHORIZED"},
+    "insufficient_history": {
+      "http_status": 422,
+      "code": "INSUFFICIENT_HISTORY"
+    }
+  },
+  "limitations": [
+    "Research-only rainfall quantity prediction; not flood classification.",
+    "No MGB fusion, flood probability, warning, evacuation, or emergency action.",
+    "No operational or public-use approval.",
+    "Global flood-model readiness and authorization remain unchanged."
+  ]
+}

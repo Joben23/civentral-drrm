@@ -6,17 +6,27 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import sys
 from typing import Any, Mapping, Sequence
 
 import numpy as np
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SERVICE_ROOT = REPO_ROOT / "ml" / "flood-risk" / "service"
+if str(SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SERVICE_ROOT))
+
+from common.rainfall_features import (
+    RainfallFeatureError,
+    feature_names,
+    make_features,
+    parse_utc as shared_parse_utc,
+    validate_history as shared_validate_history,
+)
+
 import tensorflow as tf
 
-from construct_rainfall_regression_windows import feature_names, make_features
 
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE = REPO_ROOT / "ml" / "flood-risk"
 CANDIDATE_DIR = WORKSPACE / "artifacts" / "rainfall-regression" / "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
 MODEL_PATH = CANDIDATE_DIR / "model.keras"
@@ -25,7 +35,6 @@ CONTRACT_PATH = WORKSPACE / "manifests" / "phase-3e2-rainfall-offline-inference-
 EXPECTED_MODEL_SHA256 = "51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865"
 EXPECTED_PREPROCESSING_SHA256 = "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4"
 EXPECTED_FEATURE_COUNT = 57
-EXPECTED_INTERVAL = timedelta(minutes=30)
 
 
 class OfflineInferenceError(ValueError):
@@ -44,40 +53,18 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def parse_utc(value: Any) -> datetime:
-    if not isinstance(value, str):
-        raise OfflineInferenceError("INVALID_TIMESTAMP", "timestamp_utc must be an ISO-8601 string.")
+def parse_utc(value: Any):
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise OfflineInferenceError("INVALID_TIMESTAMP", "timestamp_utc is invalid.") from exc
-    if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
-        raise OfflineInferenceError("INVALID_TIMESTAMP", "timestamp_utc must explicitly use UTC.")
-    return parsed.astimezone(timezone.utc)
+        return shared_parse_utc(value)
+    except RainfallFeatureError as exc:
+        raise OfflineInferenceError("INVALID_TIMESTAMP", str(exc)) from exc
 
 
 def validate_history(history: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    if len(history) != 48:
-        raise OfflineInferenceError("INSUFFICIENT_HISTORY", "Exactly 48 historical half-hour observations are required.")
-    normalized: list[dict[str, Any]] = []
-    previous: datetime | None = None
-    for item in history:
-        if not isinstance(item, Mapping):
-            raise OfflineInferenceError("INVALID_PRECIPITATION", "Each history observation must be an object.")
-        timestamp = parse_utc(item.get("timestamp_utc"))
-        if previous is not None:
-            if timestamp == previous:
-                raise OfflineInferenceError("DUPLICATE_TIMESTAMP", "Duplicate history timestamp.")
-            if timestamp - previous != EXPECTED_INTERVAL:
-                raise OfflineInferenceError("TIMESTAMP_GAP", "History timestamps must be continuous 30-minute intervals.")
-        value = item.get("city_mean_precipitation_mm")
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
-            raise OfflineInferenceError("INVALID_PRECIPITATION", "Rainfall must be a finite JSON number.")
-        if float(value) < 0:
-            raise OfflineInferenceError("NEGATIVE_SOURCE_PRECIPITATION", "Source rainfall cannot be negative.")
-        normalized.append({"observed_at_start": timestamp.isoformat().replace("+00:00", "Z"), "observed_at_end": (timestamp + EXPECTED_INTERVAL).isoformat().replace("+00:00", "Z"), "city_mean_precipitation_mm": float(value)})
-        previous = timestamp
-    return normalized
+    try:
+        return shared_validate_history(history)
+    except RainfallFeatureError as exc:
+        raise OfflineInferenceError(exc.code, str(exc)) from exc
 
 
 def load_contracts() -> tuple[dict[str, Any], dict[str, Any]]:

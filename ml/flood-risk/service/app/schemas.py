@@ -136,3 +136,50 @@ class FutureFloodRiskPredictionResponse(BaseModel):
     valid_from: datetime
     valid_until: datetime
     limitations: list[str]
+
+
+class RainfallHistoryObservation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    timestamp_utc: Any
+    city_mean_precipitation_mm: Any
+
+
+class RainfallPredictionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["1.0"]
+    request_id: str = Field(
+        min_length=1, max_length=128, pattern=r"^[A-Za-z0-9._:-]+$"
+    )
+    history: list[RainfallHistoryObservation]
+
+
+class RainfallPredictionResponse(BaseModel):
+    schema_version: Literal["1.0"] = "1.0"
+    request_id: str
+    model_problem: Literal["RAINFALL_REGRESSION"]
+    forecast_origin_utc: str
+    forecast_horizon_hours: Literal[3]
+    target: Literal["NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM"]
+    raw_prediction_mm: float = Field(ge=0, allow_inf_nan=False)
+    final_prediction_mm: float = Field(ge=0, allow_inf_nan=False)
+    output_policy: Literal["MODEL_NONNEGATIVE_SOFTPLUS"]
+    model_version: Literal[
+        "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
+    ]
+    model_status: Literal["VALIDATED_RESEARCH_CANDIDATE"]
+    operational: Literal[False]
+
+
+class RainfallReadinessResponse(BaseModel):
+    success: bool
+    ready: bool
+    code: str
+    message: str
+    model_problem: Literal["RAINFALL_REGRESSION"]
+    model_version: str | None
+    model_status: str | None
+    authorization_status: str
+    research_only: Literal[True] = True
+    operational: Literal[False] = False

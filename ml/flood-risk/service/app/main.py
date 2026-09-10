@@ -16,7 +16,9 @@ from .errors import ApiError
 from .logging_config import SanitizedRequestLoggingMiddleware, configure_logging
 from .model_runtime import TensorFlowModelRuntime
 from .preprocessing import FeatureContractError, FeaturePreprocessor
+from .rainfall_runtime import RainfallRegressionRuntime, RainfallRuntimeError
 from .risk_policy import RiskPolicyRuntime, RiskPolicyState
+from common.rainfall_features import RainfallFeatureError
 from .schemas import (
     ErrorResponse,
     FloodRiskPredictionRequest,
@@ -24,6 +26,9 @@ from .schemas import (
     HealthResponse,
     ModelState,
     ModelStatusResponse,
+    RainfallPredictionRequest,
+    RainfallPredictionResponse,
+    RainfallReadinessResponse,
     ReadinessResponse,
 )
 from .security import InternalAuthenticator
@@ -59,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runtime_settings.barangay_reference_path,
     )
     model_runtime = TensorFlowModelRuntime(runtime_settings, preprocessor)
+    rainfall_runtime = RainfallRegressionRuntime(runtime_settings)
     risk_policy = RiskPolicyRuntime(
         runtime_settings.risk_policy_path,
         runtime_settings.artifact_root,
@@ -68,10 +74,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = runtime_settings
     app.state.preprocessor = preprocessor
     app.state.model_runtime = model_runtime
+    app.state.rainfall_runtime = rainfall_runtime
     app.state.risk_policy = risk_policy
 
     @app.exception_handler(ApiError)
-    async def handle_api_error(_request: Request, exc: ApiError) -> JSONResponse:
+    async def handle_api_error(request: Request, exc: ApiError) -> JSONResponse:
+        request.state.failure_code = exc.code
         payload: dict[str, object] = {
             "success": False,
             "code": exc.code,
@@ -83,8 +91,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(
-        _request: Request, exc: RequestValidationError
+        request: Request, exc: RequestValidationError
     ) -> JSONResponse:
+        request.state.failure_code = "INVALID_REQUEST"
         errors = [
             {
                 "location": [str(part) for part in error.get("loc", ())],
@@ -104,7 +113,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(Exception)
-    async def handle_unexpected_error(_request: Request, _exc: Exception) -> JSONResponse:
+    async def handle_unexpected_error(request: Request, _exc: Exception) -> JSONResponse:
+        request.state.failure_code = "INTERNAL_ERROR"
         return JSONResponse(
             status_code=500,
             content={
@@ -187,6 +197,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             model_status=model_status.state,
             risk_policy_status=policy_status.state.value,
         )
+
+    @app.get(
+        "/rainfall/ready",
+        response_model=RainfallReadinessResponse,
+        responses={401: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+    )
+    async def rainfall_ready(
+        _auth: None = Depends(authenticator),
+    ) -> RainfallReadinessResponse | JSONResponse:
+        status = await run_in_threadpool(rainfall_runtime.get_status)
+        payload = RainfallReadinessResponse(
+            success=status.ready,
+            ready=status.ready,
+            code=status.code,
+            message=status.message,
+            model_problem="RAINFALL_REGRESSION",
+            model_version=status.model_version,
+            model_status=status.model_status,
+            authorization_status=status.authorization_status,
+        )
+        if not status.ready:
+            return JSONResponse(status_code=503, content=jsonable_encoder(payload))
+        return payload
 
     @app.get("/v1/model/status", response_model=ModelStatusResponse)
     async def model_status(
@@ -271,6 +304,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             valid_from=request_data.valid_from,
             valid_until=request_data.valid_until,
             limitations=list(limitations),
+        )
+
+    @app.post(
+        "/rainfall/predict",
+        response_model=RainfallPredictionResponse,
+        responses={
+            401: {"model": ErrorResponse},
+            422: {"model": ErrorResponse},
+            500: {"model": ErrorResponse},
+            503: {"model": ErrorResponse},
+        },
+    )
+    async def predict_rainfall(
+        request_data: RainfallPredictionRequest,
+        request: Request,
+        _auth: None = Depends(authenticator),
+    ) -> RainfallPredictionResponse:
+        request.state.request_id = request_data.request_id
+        request.state.ai_model_version = (
+            "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
+        )
+        try:
+            result = await run_in_threadpool(
+                rainfall_runtime.predict,
+                [item.model_dump() for item in request_data.history],
+            )
+        except RainfallFeatureError as exc:
+            raise ApiError(422, exc.code, str(exc)) from exc
+        except RainfallRuntimeError as exc:
+            status_code = (
+                500
+                if exc.code == "PREDICTION_FAILED"
+                else 503
+            )
+            raise ApiError(status_code, exc.code, str(exc)) from exc
+        return RainfallPredictionResponse(
+            schema_version=request_data.schema_version,
+            request_id=request_data.request_id,
+            **result,
         )
 
     return app

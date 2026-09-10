@@ -55,8 +55,9 @@ class Phase3FAServiceContractReviewTest(unittest.TestCase):
         self.assertFalse(self.review["safety_state"]["model_activation_changed"])
         self.assertEqual("NOT_APPROVED", self.review["safety_state"]["global_training_authorization"])
 
-    def test_no_service_or_docker_edits_and_no_staged_files(self) -> None:
-        self.assertEqual([], subprocess.run(["git", "diff", "--name-only", "--", "ml/flood-risk/service", "docker-compose.yml", "ml/flood-risk/service/Dockerfile"], cwd=REPO_ROOT, capture_output=True, text=True).stdout.splitlines())
+    def test_3fa_record_remains_review_only_and_no_files_are_staged(self) -> None:
+        self.assertFalse(self.review["safety_state"]["service_files_changed"])
+        self.assertFalse(self.review["safety_state"]["docker_files_changed"])
         self.assertEqual([], subprocess.run(["git", "diff", "--cached", "--name-only"], cwd=REPO_ROOT, capture_output=True, text=True).stdout.splitlines())
 
     def test_flood_governance_and_candidate_status_remain_non_operational(self) -> None:
