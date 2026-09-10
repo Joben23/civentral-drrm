@@ -745,6 +745,56 @@
       ]
     },
     {
+      "source_id": "dswd_dromic_enteng_2024_report_41",
+      "source_name": "DSWD DROMIC Report #41 on the Effects of Severe Tropical Storm Enteng and Southwest Monsoon",
+      "agency": "DSWD DROMIC",
+      "source_type": "INCIDENT_REPORT",
+      "official_reference": "https://dromic.dswd.gov.ph/effects-of-sts-enteng-and-southwest-monsoon-31-aug-2024/",
+      "local_file": "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-41-on-the-Effects-of-Severe-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-13-October-2024-6AM.pdf",
+      "retrieved_at": "2026-09-10T07:59:39.371Z",
+      "coverage": "Supplemental cumulative Report #41 evidence. It explicitly lists Caloocan City with 6 affected barangays, 3,250 families, and 12,754 persons and records DSWD FO NCR food-pack augmentation actions involving Caloocan on 3, 6, and 7 September 2024. It does not state Caloocan flood occurrence, onset, cessation, or timezone.",
+      "time_range": {
+        "start": "2024-08-31",
+        "end": "2024-10-13"
+      },
+      "units": null,
+      "accumulation_semantics": null,
+      "version": "report-41",
+      "license_usage_notes": "Official public DSWD DROMIC PDF manually supplied under the governed raw-evidence path and technically validated. Usage and label suitability remain pending human review.",
+      "sha256": "00f588947b542457a19619df20940346cb105700ce6f194c12db0de822a46aa1",
+      "review_status": "REQUIRES_HUMAN_REVIEW",
+      "review_notes": "ACQUISITION_SOURCE / OFFICIAL_DSWD_DROMIC / SUPPLEMENTAL_CORROBORATION only. Report issue, cumulative annex, and relief-action dates cannot define or strengthen the NDRRMC-derived event envelope, resolve timezone, create a prediction cutoff, or confirm a flood label.",
+      "source_role": "FLOOD_EVENT_EVIDENCE",
+      "product_name": "DSWD DROMIC Report #41 on the Effects of Severe Tropical Storm Enteng and Southwest Monsoon",
+      "product_version": "report-41",
+      "temporal_resolution": "Later cumulative as-of report with dated response-action entries; no Caloocan flood occurrence timestamp.",
+      "spatial_resolution": "Caloocan City aggregate affected-population totals; six barangays counted but not named.",
+      "citation": "DSWD DROMIC, Report #41 on the Effects of Severe Tropical Storm Enteng and Southwest Monsoon, as of 13 October 2024, 6AM.",
+      "availability_status": "ACQUIRED",
+      "license_or_usage_status": "PENDING_REVIEW",
+      "status": "ACQUIRED",
+      "artifacts": [
+        {
+          "artifact_id": "dswd_dromic_enteng_2024_report_41",
+          "artifact_role": "REPORT_DOCUMENT",
+          "original_filename": "DSWD-DROMIC-Report-41-on-the-Effects-of-Severe-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-13-October-2024-6AM.pdf",
+          "official_url": "https://dromic.dswd.gov.ph/wp-content/uploads/2024/10/DSWD-DROMIC-Report-41-on-the-Effects-of-Severe-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-13-October-2024-6AM.pdf",
+          "retrieved_at": "2026-09-10T07:59:39.371Z",
+          "media_type": "application/pdf",
+          "byte_length": 2171872,
+          "sha256": "00f588947b542457a19619df20940346cb105700ce6f194c12db0de822a46aa1",
+          "local_file": "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-41-on-the-Effects-of-Severe-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-13-October-2024-6AM.pdf",
+          "source_organization": "DSWD Disaster Response Operations Monitoring and Information Center",
+          "title": "DSWD DROMIC Report #41 on the Effects of Severe Tropical Storm \"Enteng\" and Southwest Monsoon as of 13 October 2024, 6AM",
+          "issued_at": null,
+          "issued_at_source_text": "as of 13 October 2024, 6AM",
+          "issued_timezone": null,
+          "status": "ACQUIRED_VALIDATED",
+          "notes": "Validated from internal content, not filename: PDF 1.7 signature, EOF, no HTML masquerade, 46 parseable pages, byte length, SHA-256, internal title, text extraction, and rendered review of relevant pages. retrieved_at preserves the deterministically available local file timestamp, not a claimed remote-server download time."
+        }
+      ]
+    },
+    {
       "source_id": "dswd_dromic_ulysses_reports_3_4_2020_11_12",
       "source_name": "DSWD DROMIC Reports #3-4 on Typhoon Ulysses",
       "agency": "DSWD DROMIC",

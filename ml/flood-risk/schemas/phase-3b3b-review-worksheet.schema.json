@@ -25,7 +25,7 @@
     "acquisition_sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/acquisition_source"}},
     "machine_validation": {"$ref": "#/$defs/machine_validation"},
     "report_time_evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/report_time"}},
-    "caloocan_evidence_status": {"enum": ["NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC", "EXPLICIT_AFFECTED_POPULATION_ONLY"]},
+    "caloocan_evidence_status": {"enum": ["NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC", "EXPLICIT_AFFECTED_POPULATION_ONLY", "EXPLICIT_SUPPLEMENTAL_CALOOCAN_AGGREGATES_AND_RESPONSE_ACTIONS"]},
     "explicit_caloocan_facts": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
     "occurrence_time_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
     "location_evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
@@ -45,7 +45,8 @@
     "candidate_windows": {"type": "array", "maxItems": 0},
     "imerg_acquired_for_candidate": {"const": false},
     "phase_3b3c1_temporal_assessment": {"$ref": "#/$defs/temporal_assessment"},
-    "phase_3b3c1b_temporal_assessment": {"$ref": "#/$defs/enteng_temporal_assessment"}
+    "phase_3b3c1b_temporal_assessment": {"$ref": "#/$defs/enteng_temporal_assessment"},
+    "phase_3b3c1c_supplemental_evidence": {"$ref": "#/$defs/enteng_supplemental_evidence"}
   },
   "$defs": {
     "discovery_source": {
@@ -218,6 +219,80 @@
         "candidate_event_time_end": {"type": ["string", "null"], "minLength": 1},
         "end_interpretation": {"type": "string", "minLength": 1},
         "human_review_required": {"const": true}
+      }
+    },
+    "enteng_supplemental_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase", "source_id", "artifact_id", "source_classification",
+        "evidence_role", "page_count", "internal_title",
+        "report_issue_time_source_text", "report_issue_timezone",
+        "report_issue_time_is_event_onset", "affected_population_snapshot",
+        "response_actions", "additional_caloocan_facts",
+        "defines_02_september_onset", "defines_03_september_upper_bound",
+        "resolves_ndrrmc_timezone", "merges_crispulo_cluster",
+        "preserved_candidate_event_time_start", "preserved_candidate_event_time_end",
+        "timezone_status", "prediction_cutoff", "human_review_required"
+      ],
+      "properties": {
+        "phase": {"const": "PHASE_3B3C1C_ENTENG_SUPPLEMENTAL_RAW_EVIDENCE"},
+        "source_id": {"const": "dswd_dromic_enteng_2024_report_41"},
+        "artifact_id": {"const": "dswd_dromic_enteng_2024_report_41"},
+        "source_classification": {"const": "OFFICIAL_DSWD_DROMIC"},
+        "evidence_role": {"const": "SUPPLEMENTAL_CORROBORATION"},
+        "page_count": {"const": 46},
+        "internal_title": {"type": "string", "minLength": 1},
+        "report_issue_time_source_text": {"const": "as of 13 October 2024, 6AM"},
+        "report_issue_timezone": {"type": "null"},
+        "report_issue_time_is_event_onset": {"const": false},
+        "affected_population_snapshot": {"$ref": "#/$defs/enteng_affected_population_snapshot"},
+        "response_actions": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/enteng_response_action"}},
+        "additional_caloocan_facts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/enteng_additional_fact"}},
+        "defines_02_september_onset": {"const": false},
+        "defines_03_september_upper_bound": {"const": false},
+        "resolves_ndrrmc_timezone": {"const": false},
+        "merges_crispulo_cluster": {"const": false},
+        "preserved_candidate_event_time_start": {"type": "string", "minLength": 1},
+        "preserved_candidate_event_time_end": {"type": "string", "minLength": 1},
+        "timezone_status": {"const": "TIMEZONE_REQUIRES_HUMAN_REVIEW"},
+        "prediction_cutoff": {"type": "null"},
+        "human_review_required": {"const": true}
+      }
+    },
+    "enteng_affected_population_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page_number", "location_source_text", "affected_barangays", "affected_families", "affected_persons", "represents_conditions_on_02_september", "establishes_flood_onset"],
+      "properties": {
+        "page_number": {"const": 15},
+        "location_source_text": {"const": "Caloocan City"},
+        "affected_barangays": {"const": 6},
+        "affected_families": {"const": 3250},
+        "affected_persons": {"const": 12754},
+        "represents_conditions_on_02_september": {"const": false},
+        "establishes_flood_onset": {"const": false}
+      }
+    },
+    "enteng_response_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page_number", "date_source_text", "action_source_text", "is_flood_occurrence_time"],
+      "properties": {
+        "page_number": {"const": 3},
+        "date_source_text": {"enum": ["03 September 2024", "06 September 2024", "07 September 2024"]},
+        "action_source_text": {"type": "string", "minLength": 1},
+        "is_flood_occurrence_time": {"const": false}
+      }
+    },
+    "enteng_additional_fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page_number", "statement", "temporal_interpretation"],
+      "properties": {
+        "page_number": {"type": "integer", "minimum": 1, "maximum": 46},
+        "statement": {"type": "string", "minLength": 1},
+        "temporal_interpretation": {"enum": ["LATER_CUMULATIVE_SNAPSHOT_NOT_EVENT_TIME", "CUMULATIVE_ASSISTANCE_NOT_EVENT_TIME"]}
       }
     },
     "source_search": {

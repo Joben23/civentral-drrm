@@ -32,6 +32,7 @@ WORKSHEET_FIELDS = {
 WORKSHEET_OPTIONAL_FIELDS = {
     "phase_3b3c1_temporal_assessment",
     "phase_3b3c1b_temporal_assessment",
+    "phase_3b3c1c_supplemental_evidence",
 }
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
@@ -275,6 +276,83 @@ def validate_enteng_temporal_assessment(worksheet: Mapping[str, Any]) -> List[Ev
     return issues
 
 
+def validate_enteng_supplemental_evidence(worksheet: Mapping[str, Any]) -> List[EvidenceIssue]:
+    """Prevent late cumulative DROMIC evidence from changing NDRRMC timing or ML state."""
+    supplemental = worksheet.get("phase_3b3c1c_supplemental_evidence")
+    if supplemental is None:
+        return []
+    subject = str(worksheet.get("worksheet_id") or "unknown-worksheet")
+    issues: List[EvidenceIssue] = []
+    if not isinstance(supplemental, Mapping):
+        return [EvidenceIssue("INVALID_ENTENG_SUPPLEMENTAL_EVIDENCE", subject, "Supplemental evidence must be an object.")]
+    expected_identity = {
+        "phase": "PHASE_3B3C1C_ENTENG_SUPPLEMENTAL_RAW_EVIDENCE",
+        "source_id": "dswd_dromic_enteng_2024_report_41",
+        "artifact_id": "dswd_dromic_enteng_2024_report_41",
+        "source_classification": "OFFICIAL_DSWD_DROMIC",
+        "evidence_role": "SUPPLEMENTAL_CORROBORATION",
+        "page_count": 46,
+    }
+    for field, value in expected_identity.items():
+        if supplemental.get(field) != value:
+            issues.append(EvidenceIssue("INVALID_ENTENG_SUPPLEMENTAL_IDENTITY", subject, f"{field} must remain {value!r}."))
+    title = supplemental.get("internal_title")
+    if not isinstance(title, str) or not title.startswith("DSWD DROMIC Report #41"):
+        issues.append(EvidenceIssue("REPORT_41_INTERNAL_TITLE_REQUIRED", subject, "Report #41 must be identified from its internal title."))
+    if supplemental.get("report_issue_time_source_text") != "as of 13 October 2024, 6AM":
+        issues.append(EvidenceIssue("INVALID_REPORT_41_ISSUE_TEXT", subject, "The verbatim report issue text must be preserved."))
+    if supplemental.get("report_issue_timezone") is not None:
+        issues.append(EvidenceIssue("REPORT_41_TIMEZONE_INFERRED", subject, "Report #41 issue timezone is not explicit."))
+    snapshot = supplemental.get("affected_population_snapshot")
+    expected_snapshot = {
+        "page_number": 15,
+        "location_source_text": "Caloocan City",
+        "affected_barangays": 6,
+        "affected_families": 3250,
+        "affected_persons": 12754,
+        "represents_conditions_on_02_september": False,
+        "establishes_flood_onset": False,
+    }
+    if not isinstance(snapshot, Mapping) or any(snapshot.get(field) != value for field, value in expected_snapshot.items()):
+        issues.append(EvidenceIssue("INVALID_REPORT_41_CALOOCAN_SNAPSHOT", subject, "The verified Caloocan Annex A values and limitations must be preserved exactly."))
+    actions = supplemental.get("response_actions")
+    required_dates = {"03 September 2024", "06 September 2024", "07 September 2024"}
+    if not isinstance(actions, list) or {item.get("date_source_text") for item in actions if isinstance(item, Mapping)} != required_dates:
+        issues.append(EvidenceIssue("INVALID_REPORT_41_RESPONSE_ACTIONS", subject, "The three verified Caloocan response-action dates are required."))
+    elif any(item.get("is_flood_occurrence_time") is not False for item in actions):
+        issues.append(EvidenceIssue("RELIEF_ACTION_USED_AS_FLOOD_TIME", subject, "Relief-action dates cannot become flood occurrence times."))
+    safety_flags = (
+        "report_issue_time_is_event_onset",
+        "defines_02_september_onset",
+        "defines_03_september_upper_bound",
+        "resolves_ndrrmc_timezone",
+        "merges_crispulo_cluster",
+    )
+    for field in safety_flags:
+        if supplemental.get(field) is not False:
+            issues.append(EvidenceIssue("REPORT_41_TEMPORAL_BOUNDARY_VIOLATION", subject, f"{field} must remain false."))
+    temporal = worksheet.get("phase_3b3c1b_temporal_assessment")
+    if not isinstance(temporal, Mapping) or (
+        supplemental.get("preserved_candidate_event_time_start") != temporal.get("candidate_event_time_start")
+        or supplemental.get("preserved_candidate_event_time_end") != temporal.get("candidate_event_time_end")
+    ):
+        issues.append(EvidenceIssue("ENTENG_TEMPORAL_ENVELOPE_CHANGED_BY_REPORT_41", subject, "Supplemental evidence must preserve the NDRRMC-derived candidate envelope exactly."))
+    if supplemental.get("timezone_status") != "TIMEZONE_REQUIRES_HUMAN_REVIEW":
+        issues.append(EvidenceIssue("TIMEZONE_UNCERTAINTY_NOT_PRESERVED", subject, "Report #41 cannot resolve the NDRRMC timezone."))
+    if supplemental.get("prediction_cutoff") is not None:
+        issues.append(EvidenceIssue("PREDICTION_CUTOFF_CREATED", subject, "Report #41 cannot create a prediction cutoff."))
+    if supplemental.get("human_review_required") is not True:
+        issues.append(EvidenceIssue("HUMAN_REVIEW_BYPASSED", subject, "Supplemental evidence requires human review."))
+    acquisitions = worksheet.get("acquisition_sources")
+    report_41_refs = [
+        item for item in acquisitions or []
+        if isinstance(item, Mapping) and item.get("source_id") == "dswd_dromic_enteng_2024_report_41"
+    ]
+    if len(report_41_refs) != 1 or report_41_refs[0].get("artifact_refs") != ["dswd_dromic_enteng_2024_report_41"]:
+        issues.append(EvidenceIssue("REPORT_41_ACQUISITION_REFERENCE_REQUIRED", subject, "The supplemental source and artifact must be linked exactly once."))
+    return issues
+
+
 def _source_map(manifest: Mapping[str, Any]) -> Mapping[str, Mapping[str, Any]]:
     return {str(item.get("source_id")): item for item in manifest.get("sources", []) if isinstance(item, Mapping)}
 
@@ -364,6 +442,7 @@ def validate_review_worksheet(
             issues.append(EvidenceIssue("REPORT_TIME_USED_AS_EVENT_ONSET", subject, "Report issue time cannot establish event onset."))
     issues.extend(validate_temporal_assessment(worksheet))
     issues.extend(validate_enteng_temporal_assessment(worksheet))
+    issues.extend(validate_enteng_supplemental_evidence(worksheet))
     return issues
 
 

@@ -45,6 +45,7 @@ DISCOVERY_IDS = {
 ACQUISITION_IDS = {
     "dswd_dromic_florita_2022_08_25",
     "dswd_dromic_enteng_2024_reports_1_3",
+    "dswd_dromic_enteng_2024_report_41",
     "dswd_dromic_ulysses_reports_3_4_2020_11_12",
     "dswd_dromic_ulysses_terminal_2021_11_13",
 }
@@ -67,9 +68,9 @@ def issue_codes(issues):
     return {issue.code for issue in issues}
 
 
-def test_all_five_real_pdf_artifacts_pass_integrity_validation():
+def test_all_six_real_pdf_artifacts_pass_integrity_validation():
     artifacts = list(acquired_pdf_artifacts())
-    assert len(artifacts) == 5
+    assert len(artifacts) == 6
     for artifact in artifacts:
         assert validate_pdf_artifact(artifact) == []
         reader = PdfReader(str(REPO_ROOT / artifact["local_file"]), strict=True)
@@ -145,7 +146,7 @@ def test_enteng_reports_do_not_turn_general_forecasts_into_event_evidence():
     worksheet = read_json(MANIFESTS / "phase-3b3b-enteng-2024-review.json")
     source = SOURCES["dswd_dromic_enteng_2024_reports_1_3"]
     assert all("caloocan" not in pdf_text(artifact).lower() for artifact in source["artifacts"])
-    assert worksheet["caloocan_evidence_status"] == "NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC"
+    assert worksheet["caloocan_evidence_status"] == "EXPLICIT_SUPPLEMENTAL_CALOOCAN_AGGREGATES_AND_RESPONSE_ACTIONS"
     assert worksheet["occurrence_time_evidence"]
     assert all(
         item["evidence_status"] == "DOCUMENT_SEARCH_RESULT"
