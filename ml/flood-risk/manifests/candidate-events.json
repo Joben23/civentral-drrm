@@ -385,14 +385,14 @@
       "event_window": {
         "start": "2024-09-02",
         "end": "2024-09-05",
-        "precision": "OFFICIAL_OCCURRENCE_TIMES_PRESENT_BUT_TIMEZONE_AND_CESSATION_REQUIRE_REVIEW",
+        "precision": "CANDIDATE_BOUNDED_PRIMARY_EPISODE_WITH_TIMEZONE_AND_REVISION_REVIEW_REQUIRED",
         "report_issue_used_as_event_time": false
       },
       "official_source": "NDRRMC SitReps on Tropical Cyclone Enteng and Southwest Monsoon",
       "agency": "NDRRMC/OCD",
       "source_id": "ndrrmc_enteng_sitreps_2024",
       "source_reference": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_02_for_the_Effects_of_TC_ENTENG_2024_and_Southwest_Monsoon.pdf",
-      "official_incident_page": null,
+      "official_incident_page": "https://ndrrmc.gov.ph/8-ndrrmc-update/4261-situational-report-for-the-effects-of-tc-enteng-2024-and-southwest-monsoon.html",
       "official_document_links": [
         {
           "url": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_02_for_the_Effects_of_TC_ENTENG_2024_and_Southwest_Monsoon.pdf",
@@ -405,6 +405,12 @@
           "title": "NDRRMC SitRep No. 3 for the Effects of TC Enteng and Southwest Monsoon",
           "report_issue_time_source_text": null,
           "access_status": "EXTERNAL_ACCESS_REQUIRED"
+        },
+        {
+          "url": "https://ndrrmc.gov.ph/attachments/article/4261/SitRep_No_11_for_the_Effects_of_TC_ENTENG_and_Southwest_Monsoon_2024_Whole_Report.pdf",
+          "title": "NDRRMC SitRep No. 11 for the Effects of TC Enteng and Southwest Monsoon",
+          "report_issue_time_source_text": "as of 07 September 2024, 8:00 AM",
+          "access_status": "EXTERNAL_ACCESS_REQUIRED"
         }
       ],
       "source_classification": "PRIMARY_OFFICIAL_GOVERNMENT",
@@ -415,8 +421,8 @@
       "location_precision": "MULTI_BARANGAY",
       "barangay_mapping_status": "EXACT_NUMBERS_RETAINED_CANONICAL_MAPPING_UNREVIEWED",
       "legacy_barangay_176_remapped": false,
-      "evidence_summary": "NDRRMC incident tables explicitly list eleven Caloocan flooded locations, including numbered barangays and occurrence times, during 2-5 September 2024. The requested official SitRep PDFs remain inaccessible from this environment and are preserved as EXTERNAL_ACCESS_REQUIRED rather than acquired documents.",
-      "uncertainties": ["Occurrence times have no explicit timezone in the discovered table metadata.", "Some locations lack an explicit barangay number.", "The 5 September Crispulo Street entry may be a continuation or recurrence and requires episode review.", "Official NDRRMC PDF attachment access from this environment returned HTTP 403/Cloudflare rejection, so source-document acquisition remains incomplete."],
+      "evidence_summary": "Official indexed NDRRMC incident tables identify ten Caloocan rows in a candidate 02 September 2024 episode, with occurrence times at 08:00 am (Everlasting at 08:00 pm) and a later Subsided as of 03 September 8:00am upper bound. Crispulo st. changes across revisions to a 05 September 07:00 am record and remains a separate episode-review question. The raw NDRRMC attachments remain EXTERNAL_ACCESS_REQUIRED after HTTP 403 responses.",
+      "uncertainties": ["Occurrence and subsidence source text has no explicit timezone.", "Some locations lack an explicit barangay number and none is inferred.", "Subsided as of 03 September 8:00am is an upper bound rather than exact cessation.", "The 5 September Crispulo Street entry may be a correction, continuation, or recurrence and is not merged into the primary cluster.", "Official NDRRMC PDF attachment access returned HTTP 403, so indexed official content remains discovery evidence rather than an acquired raw artifact."],
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "spatial_mapping_status": "UNREVIEWED",
@@ -439,7 +445,7 @@
       "acquisition_priority": "HIGH_PRIORITY",
       "secondary_corroboration": [],
       "phase_3b3b_acquisition_selected": true,
-      "notes": "Report revisions are one Enteng episode; priority is for evidence acquisition and is not flood severity."
+      "notes": "The ten-location 02-03 September cluster is a bounded candidate episode for human review. Crispulo's later revision is separately flagged; priority is for evidence governance and is not flood severity."
     }
   ],
   "screened_out": [

@@ -29,7 +29,10 @@ WORKSHEET_FIELDS = {
     "label_status", "review_status", "reviewed_by", "human_approved",
     "training_eligible", "candidate_windows", "imerg_acquired_for_candidate",
 }
-WORKSHEET_OPTIONAL_FIELDS = {"phase_3b3c1_temporal_assessment"}
+WORKSHEET_OPTIONAL_FIELDS = {
+    "phase_3b3c1_temporal_assessment",
+    "phase_3b3c1b_temporal_assessment",
+}
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
@@ -201,6 +204,77 @@ def validate_temporal_assessment(worksheet: Mapping[str, Any]) -> List[EvidenceI
     return issues
 
 
+def validate_enteng_temporal_assessment(worksheet: Mapping[str, Any]) -> List[EvidenceIssue]:
+    """Keep indexed Enteng timing evidence separate from acquisition and ML state."""
+    assessment = worksheet.get("phase_3b3c1b_temporal_assessment")
+    if assessment is None:
+        return []
+    subject = str(worksheet.get("worksheet_id") or "unknown-worksheet")
+    issues: List[EvidenceIssue] = []
+    if not isinstance(assessment, Mapping):
+        return [EvidenceIssue("INVALID_ENTENG_TEMPORAL_ASSESSMENT", subject, "Enteng temporal assessment must be an object.")]
+    if assessment.get("phase") != "PHASE_3B3C1B_ENTENG_TEMPORAL_EVIDENCE":
+        issues.append(EvidenceIssue("INVALID_ENTENG_TEMPORAL_PHASE", subject, "Unexpected Enteng temporal assessment phase."))
+    quality = assessment.get("temporal_quality")
+    allowed_quality = {
+        "DEFENSIBLE_EVENT_TIME_ENVELOPE_FOUND",
+        "DATE_AND_OCCURRENCE_POINT_EVIDENCE_ONLY",
+        "TEMPORAL_EVIDENCE_INSUFFICIENT",
+    }
+    if quality not in allowed_quality:
+        issues.append(EvidenceIssue("INVALID_ENTENG_TEMPORAL_QUALITY", subject, str(quality)))
+    start = assessment.get("candidate_event_time_start")
+    end = assessment.get("candidate_event_time_end")
+    occurrence = assessment.get("occurrence_evidence")
+    subsidence = assessment.get("subsidence_evidence")
+    if quality == "DEFENSIBLE_EVENT_TIME_ENVELOPE_FOUND":
+        if (
+            not isinstance(start, str)
+            or not start.strip()
+            or not isinstance(end, str)
+            or not end.strip()
+            or not isinstance(occurrence, list)
+            or not occurrence
+            or not isinstance(subsidence, list)
+            or not subsidence
+        ):
+            issues.append(EvidenceIssue("UNSUPPORTED_ENTENG_TEMPORAL_ENVELOPE", subject, "A bounded episode requires explicit occurrence and subsidence evidence plus both candidate endpoints."))
+    elif start is not None or end is not None:
+        issues.append(EvidenceIssue("UNSUPPORTED_ENTENG_TEMPORAL_ENVELOPE", subject, "Point-only or insufficient evidence cannot populate candidate envelope endpoints."))
+    if (
+        assessment.get("raw_artifact_access_status") != "EXTERNAL_ACCESS_REQUIRED"
+        or assessment.get("acquired_artifact_refs") != []
+        or assessment.get("indexed_official_content_is_raw_artifact") is not False
+    ):
+        issues.append(EvidenceIssue("INDEXED_EVIDENCE_PROMOTED_TO_ACQUIRED", subject, "Indexed NDRRMC content cannot mark a raw artifact acquired."))
+    if assessment.get("report_issue_time_is_event_onset") is not False:
+        issues.append(EvidenceIssue("REPORT_TIME_USED_AS_EVENT_ONSET", subject, "Report issue time cannot establish occurrence."))
+    if assessment.get("subsided_time_is_event_onset") is not False:
+        issues.append(EvidenceIssue("SUBSIDED_TIME_USED_AS_EVENT_ONSET", subject, "Subsided time cannot establish occurrence."))
+    if assessment.get("separate_date_clusters_automatically_merged") is not False:
+        issues.append(EvidenceIssue("SEPARATE_ENTENG_CLUSTERS_MERGED", subject, "Separate occurrence-date clusters require human review."))
+    if assessment.get("timezone_status") != "TIMEZONE_REQUIRES_HUMAN_REVIEW":
+        issues.append(EvidenceIssue("TIMEZONE_UNCERTAINTY_NOT_PRESERVED", subject, "Unstated incident-table timezone must remain unresolved."))
+    if assessment.get("prediction_cutoff") is not None:
+        issues.append(EvidenceIssue("PREDICTION_CUTOFF_CREATED", subject, "Phase 3B3-C1B cannot create a prediction cutoff."))
+    if assessment.get("human_review_required") is not True:
+        issues.append(EvidenceIssue("HUMAN_REVIEW_BYPASSED", subject, "Enteng temporal evidence remains subject to human review."))
+    records = assessment.get("exact_caloocan_records")
+    if not isinstance(records, list) or not records:
+        issues.append(EvidenceIssue("MISSING_ENTENG_CALOOCAN_RECORDS", subject, "Official indexed Caloocan occurrence rows are required."))
+    else:
+        for record in records:
+            if not isinstance(record, Mapping):
+                issues.append(EvidenceIssue("INVALID_ENTENG_CALOOCAN_RECORD", subject, "Each Caloocan row must be an object."))
+                continue
+            if record.get("source_access_status") != "INDEXED_OFFICIAL_CONTENT_ONLY":
+                issues.append(EvidenceIssue("INVALID_INDEXED_EVIDENCE_STATUS", subject, str(record.get("locality_source_text"))))
+            locality = str(record.get("locality_source_text") or "")
+            if locality and not locality[:1].isdigit() and record.get("barangay_source_text") is not None:
+                issues.append(EvidenceIssue("UNSUPPORTED_BARANGAY_INFERENCE", subject, locality))
+    return issues
+
+
 def _source_map(manifest: Mapping[str, Any]) -> Mapping[str, Mapping[str, Any]]:
     return {str(item.get("source_id")): item for item in manifest.get("sources", []) if isinstance(item, Mapping)}
 
@@ -289,6 +363,7 @@ def validate_review_worksheet(
         if not isinstance(report_time, Mapping) or report_time.get("issue_time_is_event_onset") is not False:
             issues.append(EvidenceIssue("REPORT_TIME_USED_AS_EVENT_ONSET", subject, "Report issue time cannot establish event onset."))
     issues.extend(validate_temporal_assessment(worksheet))
+    issues.extend(validate_enteng_temporal_assessment(worksheet))
     return issues
 
 

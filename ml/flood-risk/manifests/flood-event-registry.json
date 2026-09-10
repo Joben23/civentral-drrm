@@ -174,7 +174,7 @@
         "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-2-on-the-Effects-of-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-02-September-2024-6AM.pdf",
         "ml/flood-risk/data/raw/event-evidence/DSWD-DROMIC-Report-3-on-the-Effects-of-Tropical-Storm-Enteng-and-Southwest-Monsoon-as-of-02-September-2024-6PM.pdf"
       ],
-      "evidence_summary": "NDRRMC discovery metadata lists eleven Caloocan flooded locations and occurrence times, but its PDFs remain externally inaccessible. Acquired DSWD Reports #1-3 contain no Caloocan reference; their Metro Manila rainfall and flood-hazard language is forecast/general context and cannot confirm a Caloocan flood occurrence.",
+      "evidence_summary": "Official indexed NDRRMC content supports a candidate ten-location Caloocan episode beginning with listed occurrence points on 02 September 2024 and bounded above by Subsided as of 03 September 8:00am. The source timezone and exact cessation remain unresolved. Crispulo st. changes from a 02 September entry in early revisions to 05 September 07:00 am in later revisions and is not merged automatically. Raw NDRRMC PDFs remain inaccessible; acquired DSWD Reports #1-3 contain no Caloocan reference.",
       "label_status": "UNKNOWN",
       "negative_evidence_basis": null,
       "review_status": "REQUIRES_HUMAN_REVIEW",
@@ -182,7 +182,7 @@
       "reviewed_at": null,
       "leakage_review_status": "NOT_REVIEWED",
       "training_eligible": false,
-      "exclusion_reason": "HUMAN_REVIEW_REQUIRED_NDRRMC_SOURCE_NOT_ACQUIRED_DROMIC_HAS_NO_CALOOCAN_OCCURRENCE_EVIDENCE",
+      "exclusion_reason": "CANDIDATE_TEMPORAL_ENVELOPE_REQUIRES_HUMAN_REVIEW_TIMEZONE_AND_CRISPULO_REVISION_UNRESOLVED_NDRRMC_RAW_SOURCE_NOT_ACQUIRED",
       "candidate_windows": []
     }
   ]

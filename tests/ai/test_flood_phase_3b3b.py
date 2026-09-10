@@ -146,7 +146,12 @@ def test_enteng_reports_do_not_turn_general_forecasts_into_event_evidence():
     source = SOURCES["dswd_dromic_enteng_2024_reports_1_3"]
     assert all("caloocan" not in pdf_text(artifact).lower() for artifact in source["artifacts"])
     assert worksheet["caloocan_evidence_status"] == "NO_CALOOCAN_REFERENCE_IN_ACQUIRED_DROMIC"
-    assert worksheet["occurrence_time_evidence"] == []
+    assert worksheet["occurrence_time_evidence"]
+    assert all(
+        item["evidence_status"] == "DOCUMENT_SEARCH_RESULT"
+        and item["source_artifact_id"] is None
+        for item in worksheet["occurrence_time_evidence"]
+    )
     assert worksheet["positive_label_supported_by_acquired_dromic"] is False
 
 

@@ -44,7 +44,8 @@
     "training_eligible": {"const": false},
     "candidate_windows": {"type": "array", "maxItems": 0},
     "imerg_acquired_for_candidate": {"const": false},
-    "phase_3b3c1_temporal_assessment": {"$ref": "#/$defs/temporal_assessment"}
+    "phase_3b3c1_temporal_assessment": {"$ref": "#/$defs/temporal_assessment"},
+    "phase_3b3c1b_temporal_assessment": {"$ref": "#/$defs/enteng_temporal_assessment"}
   },
   "$defs": {
     "discovery_source": {
@@ -126,6 +127,97 @@
         "conflicts_between_report_revisions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
         "remaining_uncertainties": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
         "recommended_human_review_questions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "enteng_temporal_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase", "temporal_quality", "official_source_searches",
+        "raw_artifact_access_status", "acquired_artifact_refs",
+        "indexed_official_content_is_raw_artifact", "exact_caloocan_records",
+        "episode_clusters", "candidate_event_time_start", "candidate_event_time_end",
+        "occurrence_evidence", "subsidence_evidence", "timezone_status",
+        "report_issue_time_is_event_onset", "subsided_time_is_event_onset",
+        "separate_date_clusters_automatically_merged", "prediction_cutoff",
+        "human_review_required", "bounded_imerg_acquisition_requires_human_authorization",
+        "conflicts_between_report_revisions", "remaining_uncertainties",
+        "recommended_human_review_questions"
+      ],
+      "properties": {
+        "phase": {"const": "PHASE_3B3C1B_ENTENG_TEMPORAL_EVIDENCE"},
+        "temporal_quality": {"enum": ["DEFENSIBLE_EVENT_TIME_ENVELOPE_FOUND", "DATE_AND_OCCURRENCE_POINT_EVIDENCE_ONLY", "TEMPORAL_EVIDENCE_INSUFFICIENT"]},
+        "official_source_searches": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/enteng_source_search"}},
+        "raw_artifact_access_status": {"const": "EXTERNAL_ACCESS_REQUIRED"},
+        "acquired_artifact_refs": {"type": "array", "maxItems": 0},
+        "indexed_official_content_is_raw_artifact": {"const": false},
+        "exact_caloocan_records": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/enteng_caloocan_record"}},
+        "episode_clusters": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/enteng_episode_cluster"}},
+        "candidate_event_time_start": {"type": ["string", "null"], "minLength": 1},
+        "candidate_event_time_end": {"type": ["string", "null"], "minLength": 1},
+        "occurrence_evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "subsidence_evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "timezone_status": {"const": "TIMEZONE_REQUIRES_HUMAN_REVIEW"},
+        "report_issue_time_is_event_onset": {"const": false},
+        "subsided_time_is_event_onset": {"const": false},
+        "separate_date_clusters_automatically_merged": {"const": false},
+        "prediction_cutoff": {"type": "null"},
+        "human_review_required": {"const": true},
+        "bounded_imerg_acquisition_requires_human_authorization": {"const": true},
+        "conflicts_between_report_revisions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "remaining_uncertainties": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "recommended_human_review_questions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "enteng_source_search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["report_revision", "official_reference", "report_issue_time_source_text", "access_status", "indexed_content_status", "result"],
+      "properties": {
+        "report_revision": {"type": "string", "minLength": 1},
+        "official_reference": {"type": "string", "pattern": "^https://ndrrmc\\.gov\\.ph/"},
+        "report_issue_time_source_text": {"type": ["string", "null"]},
+        "access_status": {"const": "EXTERNAL_ACCESS_REQUIRED"},
+        "indexed_content_status": {"enum": ["OFFICIAL_INDEX_ONLY", "OFFICIAL_PDF_CONTENT_INDEXED"]},
+        "result": {"type": "string", "minLength": 1}
+      }
+    },
+    "enteng_caloocan_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id", "barangay_source_text", "locality_source_text", "incident_type",
+        "occurrence_date_source_text", "occurrence_time_source_text",
+        "description_source_text", "remarks_source_text", "flood_status_source_text",
+        "source_report_revisions", "source_access_status", "episode_cluster_id"
+      ],
+      "properties": {
+        "record_id": {"type": "string", "minLength": 1},
+        "barangay_source_text": {"type": ["string", "null"], "minLength": 1},
+        "locality_source_text": {"type": "string", "minLength": 1},
+        "incident_type": {"const": "Flooded Areas"},
+        "occurrence_date_source_text": {"type": "string", "minLength": 1},
+        "occurrence_time_source_text": {"type": "string", "minLength": 1},
+        "description_source_text": {"type": ["string", "null"], "minLength": 1},
+        "remarks_source_text": {"type": ["string", "null"], "minLength": 1},
+        "flood_status_source_text": {"type": "string", "minLength": 1},
+        "source_report_revisions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "source_access_status": {"const": "INDEXED_OFFICIAL_CONTENT_ONLY"},
+        "episode_cluster_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "enteng_episode_cluster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["episode_cluster_id", "assessment", "record_ids", "candidate_event_time_start", "candidate_event_time_end", "end_interpretation", "human_review_required"],
+      "properties": {
+        "episode_cluster_id": {"type": "string", "minLength": 1},
+        "assessment": {"enum": ["BOUNDED_PRIMARY_EPISODE", "SEPARATE_LATER_OCCURRENCE_REQUIRES_REVIEW"]},
+        "record_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "candidate_event_time_start": {"type": ["string", "null"], "minLength": 1},
+        "candidate_event_time_end": {"type": ["string", "null"], "minLength": 1},
+        "end_interpretation": {"type": "string", "minLength": 1},
+        "human_review_required": {"const": true}
       }
     },
     "source_search": {
