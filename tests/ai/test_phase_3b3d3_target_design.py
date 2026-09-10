@@ -74,8 +74,13 @@ class Phase3B3D3TargetDesignTest(unittest.TestCase):
         self.assertFalse(safety["tensorflow_training_performed"])
         self.assertFalse(safety["model_artifact_created"])
         self.assertFalse(safety["expanded_rainfall_acquired"])
-        forbidden = [path for path in (WORKSPACE / "artifacts").rglob("*") if path.is_file() and path.name in {"model.keras", "model.h5", "model.tflite", "saved_model.pb"}]
-        self.assertEqual([], forbidden)
+        model_artifacts = [path for path in (WORKSPACE / "artifacts").rglob("*") if path.is_file() and path.name in {"model.keras", "model.h5", "model.tflite", "saved_model.pb"}]
+        for artifact in model_artifacts:
+            self.assertIn(artifact.parent.name, {"rainfall-regression-dense-57-v0.1.0-candidate", "rainfall-regression-dense-57-v0.1.1-softplus-candidate"})
+            self.assertEqual(0, subprocess.run(["git", "check-ignore", "--quiet", "--", str(artifact)], cwd=REPO_ROOT).returncode)
+            manifest = json.loads((artifact.parent / "manifest.json").read_text(encoding="utf-8"))
+            self.assertFalse(manifest["active"])
+            self.assertFalse(manifest["approved_for_inference"])
 
     def test_capstone_compatibility_is_conditional(self) -> None:
         compatibility = self.design["capstone_compatibility"]

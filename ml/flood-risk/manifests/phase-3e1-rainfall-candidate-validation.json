@@ -1,0 +1,212 @@
+{
+  "schema_version": "1.0.0",
+  "assessment_id": "phase-3e1-rainfall-candidate-validation",
+  "selection_rule": {
+    "primary": "LOWEST_VALIDATION_RMSE",
+    "secondary": "LOWEST_VALIDATION_MAE",
+    "test_used_for_selection": false,
+    "physical_validity": "Selected final application output must contain no negative rainfall."
+  },
+  "frozen_phase_3d": {
+    "model_sha256": "e729f7ca6f60d702f5ee6c9463ca72ea3c424bb2975cfef274f9319c324d22f6",
+    "preprocessing_sha256": "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4",
+    "dataset_sha256": "eb7a53a945c952a2fb129f4ebc9a5b592f2d709c6f7a0548a366e933518f0e96",
+    "training_result_sha256": "017237258a61528a0048430f49b50543544d3b16237768dcde9441c15e4c7aab",
+    "manifest_sha256": "1a112b1d10b2f27a63f5c6cb84ad69821f7554ab6305a3ef8c8e0aec5faf346a"
+  },
+  "frozen_candidate_immutable": true,
+  "feature_count": 57,
+  "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+  "train_derived_upper_tail_threshold_mm": 2.487333297729492,
+  "validation": {
+    "linear_raw": {
+      "raw": {
+        "count": 2596,
+        "mae_mm": 1.0085228301021658,
+        "rmse_mm": 1.8833936065553945
+      },
+      "negative_prediction_count": 259,
+      "negative_prediction_percentage": 9.976887519260401,
+      "minimum_prediction_mm": -0.9602645635604858,
+      "zero_target": {
+        "count": 414,
+        "mae_mm": 0.3537894164792437,
+        "rmse_mm": 0.48910164599176004
+      },
+      "nonzero_target": {
+        "count": 2182,
+        "mae_mm": 1.132748143227688,
+        "rmse_mm": 2.043233439350795
+      },
+      "upper_tail": {
+        "threshold_mm": 2.487333297729492,
+        "count": 397,
+        "mae_mm": 3.3977061515153206,
+        "rmse_mm": 4.278232633741393
+      }
+    },
+    "linear_zero_floor": {
+      "final": {
+        "raw": {
+          "count": 2596,
+          "mae_mm": 0.9941148989912278,
+          "rmse_mm": 1.879355565995722
+        },
+        "negative_prediction_count": 0,
+        "negative_prediction_percentage": 0.0,
+        "minimum_prediction_mm": 0.0,
+        "zero_target": {
+          "count": 414,
+          "mae_mm": 0.3369447939583789,
+          "rmse_mm": 0.4855749856963937
+        },
+        "nonzero_target": {
+          "count": 2182,
+          "mae_mm": 1.1188025357848115,
+          "rmse_mm": 2.0389649557348806
+        },
+        "upper_tail": {
+          "threshold_mm": 2.487333297729492,
+          "count": 397,
+          "mae_mm": 3.396702272277935,
+          "rmse_mm": 4.276929407653371
+        }
+      },
+      "changed_prediction_count": 259,
+      "minimum_final_prediction_mm": 0.0
+    },
+    "softplus": {
+      "raw": {
+        "count": 2596,
+        "mae_mm": 1.0055961423374689,
+        "rmse_mm": 1.8551084843468542
+      },
+      "negative_prediction_count": 0,
+      "negative_prediction_percentage": 0.0,
+      "minimum_prediction_mm": 0.0516924113035202,
+      "zero_target": {
+        "count": 414,
+        "mae_mm": 0.385945504900194,
+        "rmse_mm": 0.4838687715430945
+      },
+      "nonzero_target": {
+        "count": 2182,
+        "mae_mm": 1.123165053381938,
+        "rmse_mm": 2.012451656067027
+      },
+      "upper_tail": {
+        "threshold_mm": 2.487333297729492,
+        "count": 397,
+        "mae_mm": 3.37439145526898,
+        "rmse_mm": 4.259650379666196
+      }
+    },
+    "baselines": {
+      "train_mean": {
+        "count": 2596,
+        "mae_mm": 1.2450014029697511,
+        "rmse_mm": 2.5539339508303924
+      },
+      "antecedent_3h_persistence": {
+        "count": 2596,
+        "mae_mm": 1.187272729889708,
+        "rmse_mm": 2.2595765427226673
+      }
+    },
+    "softplus_training": {
+      "epochs_completed": 19,
+      "best_epoch": 7,
+      "best_validation_loss_mse": 3.441427707672119
+    }
+  },
+  "selection": {
+    "selected_policy": "SOFTPLUS",
+    "selected_model": "SOFTPLUS_COMPARISON_CANDIDATE",
+    "selected_artifact": {
+      "model_path": "ml\\flood-risk\\artifacts\\rainfall-regression\\rainfall-regression-dense-57-v0.1.1-softplus-candidate\\model.keras",
+      "model_sha256": "51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865",
+      "model_byte_length": 95844,
+      "preprocessing_path": "ml\\flood-risk\\artifacts\\rainfall-regression\\rainfall-regression-dense-57-v0.1.1-softplus-candidate\\preprocessing.json",
+      "preprocessing_sha256": "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4",
+      "candidate_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+      "active": false,
+      "approved_for_inference": false,
+      "output_activation": "softplus"
+    },
+    "status": "VALIDATED_RESEARCH_CANDIDATE",
+    "reason": "Selected by validation RMSE, then validation MAE; test was not used for selection."
+  },
+  "final_test_evaluation": {
+    "raw": {
+      "raw": {
+        "count": 2490,
+        "mae_mm": 1.4999239305577552,
+        "rmse_mm": 2.84452797252382
+      },
+      "negative_prediction_count": 0,
+      "negative_prediction_percentage": 0.0,
+      "minimum_prediction_mm": 0.025834782049059868,
+      "zero_target": {
+        "count": 292,
+        "mae_mm": 0.5680991428304617,
+        "rmse_mm": 0.667476482920095
+      },
+      "nonzero_target": {
+        "count": 2198,
+        "mae_mm": 1.6237150306561945,
+        "rmse_mm": 3.0177923867047243
+      },
+      "upper_tail": {
+        "threshold_mm": 2.487333297729492,
+        "count": 507,
+        "mae_mm": 4.294154621205151,
+        "rmse_mm": 5.786395793386038
+      }
+    },
+    "final": {
+      "raw": {
+        "count": 2490,
+        "mae_mm": 1.4999239305577552,
+        "rmse_mm": 2.84452797252382
+      },
+      "negative_prediction_count": 0,
+      "negative_prediction_percentage": 0.0,
+      "minimum_prediction_mm": 0.025834782049059868,
+      "zero_target": {
+        "count": 292,
+        "mae_mm": 0.5680991428304617,
+        "rmse_mm": 0.667476482920095
+      },
+      "nonzero_target": {
+        "count": 2198,
+        "mae_mm": 1.6237150306561945,
+        "rmse_mm": 3.0177923867047243
+      },
+      "upper_tail": {
+        "threshold_mm": 2.487333297729492,
+        "count": 507,
+        "mae_mm": 4.294154621205151,
+        "rmse_mm": 5.786395793386038
+      }
+    },
+    "negative_final_prediction_count": 0
+  },
+  "upper_tail_definition": "Targets at or above the TRAIN positive-target 90th percentile; descriptive QA only.",
+  "output_policy": {
+    "raw_prediction_mm": "TensorFlow model output",
+    "final_prediction_mm": "Softplus model output",
+    "output_policy": "MODEL_NONNEGATIVE_SOFTPLUS",
+    "floor_value_mm": null
+  },
+  "governance": {
+    "candidate_status": "VALIDATED_RESEARCH_CANDIDATE",
+    "active": false,
+    "approved_for_inference": false,
+    "operational_use_approved": false,
+    "global_training_ready": false,
+    "global_training_authorization": "NOT_APPROVED",
+    "flood_labels_changed": false,
+    "mgb_fusion_implemented": false,
+    "service_activation_changed": false
+  }
+}

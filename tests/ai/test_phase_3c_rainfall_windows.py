@@ -98,7 +98,7 @@ class Phase3CRainfallWindowsTest(unittest.TestCase):
         self.assertEqual("NOT_APPROVED", effect["training_authorization"])
         model_artifacts = [path for path in (WORKSPACE / "artifacts").rglob("*") if path.is_file() and path.name in {"model.keras", "model.h5", "model.tflite", "saved_model.pb"}]
         for artifact in model_artifacts:
-            self.assertIn("rainfall-regression-dense-57-v0.1.0-candidate", artifact.as_posix())
+            self.assertIn(artifact.parent.name, {"rainfall-regression-dense-57-v0.1.0-candidate", "rainfall-regression-dense-57-v0.1.1-softplus-candidate"})
             self.assertEqual(0, subprocess.run(["git", "check-ignore", "--quiet", "--", str(artifact)], cwd=REPO_ROOT).returncode)
             manifest = json.loads((artifact.parent / "manifest.json").read_text(encoding="utf-8"))
             self.assertFalse(manifest["active"])
