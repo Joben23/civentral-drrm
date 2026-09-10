@@ -11,6 +11,7 @@
     "source_id": {"const": "nasa_gpm_imerg_final_hh_v07"},
     "status": {"const": "ACQUIRED_TECHNICALLY_VALIDATED_REVIEW_PENDING"},
     "acquisition_type": {"const": "EXPLORATORY_SOURCE_ACQUISITION_WINDOW"},
+    "authorization": {"const": "APPROVED_FOR_PROJECT_RESEARCH_ONLY"},
     "product": {"type": "object", "required": ["short_name", "collection_version", "processing_id", "doi", "run", "data_characterization", "spatial_resolution_degrees", "temporal_resolution_minutes", "variable_name", "native_units", "time_semantics", "historical_coverage_start", "official_metadata_urls"]},
     "access": {"type": "object", "additionalProperties": false, "required": ["original_granule_access", "authentication_material_present", "original_granule_downloaded", "representation", "public_subset_service", "access_note"], "properties": {"original_granule_access": {"const": "EARTHDATA_AUTHENTICATION_REQUIRED"}, "authentication_material_present": {"const": false}, "original_granule_downloaded": {"const": false}, "representation": {"const": "OFFICIAL_EARTHDATA_IMAGESERVER_SAMPLES"}, "public_subset_service": {"type": "string", "pattern": "^https://gis\\.earthdata\\.nasa\\.gov/"}, "access_note": {"type": "string", "minLength": 1}}},
     "acquisition_window": {"type": "object", "required": ["classification", "start_utc", "end_utc_exclusive", "source_date_text", "source_timezone", "timezone_assumption_status", "conversion_method", "selection_rationale", "target_window", "prediction_window", "training_window"]},

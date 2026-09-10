@@ -159,10 +159,11 @@ def validate_imerg_acquisition(acquisition: Mapping[str, Any], source: Mapping[s
     issues: List[AcquisitionIssue] = []
     subject = str(acquisition.get("acquisition_id") or "imerg-acquisition")
     required = {"schema_version", "acquisition_id", "source_id", "status", "acquisition_type", "product", "access", "acquisition_window", "spatial_request", "artifact_ids", "normalization", "validated_coverage", "training_effect"}
+    optional = {"authorization"}
     if required - set(acquisition):
         issues.append(AcquisitionIssue("MISSING_IMERG_ACQUISITION_FIELDS", subject, ", ".join(sorted(required - set(acquisition)))))
-    if set(acquisition) - required:
-        issues.append(AcquisitionIssue("UNEXPECTED_IMERG_ACQUISITION_FIELDS", subject, ", ".join(sorted(set(acquisition) - required))))
+    if set(acquisition) - required - optional:
+        issues.append(AcquisitionIssue("UNEXPECTED_IMERG_ACQUISITION_FIELDS", subject, ", ".join(sorted(set(acquisition) - required - optional))))
     if _contains_sensitive_key(acquisition):
         issues.append(AcquisitionIssue("SENSITIVE_ACQUISITION_FIELD", subject, "Credential-like fields are prohibited."))
     expected_identity = {"schema_version": SCHEMA_VERSION, "source_id": IMERG_SOURCE_ID, "status": "ACQUIRED_TECHNICALLY_VALIDATED_REVIEW_PENDING", "acquisition_type": EXPLORATORY_WINDOW}
@@ -192,7 +193,13 @@ def validate_imerg_acquisition(acquisition: Mapping[str, Any], source: Mapping[s
     for flag in ("target_window", "prediction_window", "training_window"):
         if window.get(flag) is not False:
             issues.append(AcquisitionIssue("ACQUISITION_WINDOW_MISCLASSIFIED", subject, f"{flag} must be false."))
-    if window.get("timezone_assumption_status") != "REQUIRES_HUMAN_REVIEW" or window.get("source_timezone") != "Asia/Manila UTC+08:00" or not window.get("conversion_method"):
+    legacy_timezone = window.get("source_timezone") == "Asia/Manila UTC+08:00"
+    enteng_timezone = (
+        window.get("source_timezone") == "UNSPECIFIED"
+        and window.get("research_alignment_timezone") == "Asia/Manila"
+        and window.get("timezone_basis") == "PROJECT_RESEARCH_ASSUMPTION"
+    )
+    if window.get("timezone_assumption_status") != "REQUIRES_HUMAN_REVIEW" or not (legacy_timezone or enteng_timezone) or not window.get("conversion_method"):
         issues.append(AcquisitionIssue("TIMEZONE_CONVERSION_NOT_EXPLICIT", subject, "Local-date conversion and review status must be explicit."))
     try:
         start = _utc_timestamp(window.get("start_utc"), "start_utc")
