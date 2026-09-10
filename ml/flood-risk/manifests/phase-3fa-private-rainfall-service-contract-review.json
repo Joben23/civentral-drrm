@@ -1,0 +1,157 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3F_A",
+  "status": "PRIVATE_RAINFALL_SERVICE_CONTRACT_READY",
+  "reviewed_at_utc": "2026-09-10T00:00:00Z",
+  "current_service": {
+    "entrypoint": "ml/flood-risk/service/app/main.py:create_app",
+    "framework": "FastAPI",
+    "health_route": "GET /health",
+    "global_readiness_route": "GET /ready",
+    "current_readiness": "HTTP 503 MODEL_NOT_AVAILABLE",
+    "current_flood_route": "POST /v1/predictions/flood-risk",
+    "current_model_loader": "TensorFlowModelRuntime",
+    "current_loader_scope": "Flood classifier only: input shape 10, FLOOD_PROBABILITY output, approved manifest and risk-policy lifecycle.",
+    "rainfall_route_present": false,
+    "service_files_modified_in_3fa": false
+  },
+  "deployment": {
+    "compose_file": "docker-compose.yml",
+    "ai_service": "flood-risk-ai",
+    "ai_container_port": 8098,
+    "network": "dokploy-network",
+    "web_to_ai_url": "http://flood-risk-ai:8098",
+    "host_ports_mapping": false,
+    "public_domain_assigned": false,
+    "compose_exposure": "expose-only; no ports mapping",
+    "dockerfile": "ml/flood-risk/service/Dockerfile",
+    "dockerfile_artifact_behavior": "COPY ml/flood-risk/artifacts into the image build context; ignored candidate files are absent from a normal Git checkout unless intentionally supplied to the build context.",
+    "security_observation": "Compose currently sets CIVENTRAL_AI_ALLOW_PUBLIC_BIND=true while relying on private-network exposure. Phase 3F-B should remove that override or document the private firewall boundary before service integration.",
+    "review_conclusion": "The AI service is private by Docker networking today, but the explicit public-bind override should be tightened in implementation."
+  },
+  "artifact_deployment_options": {
+    "recommended": {
+      "option": "A_INTENTIONALLY_VERSIONED_VALIDATED_BUNDLE",
+      "recommendation": "After separate governance approval, intentionally version the small validated Softplus model/preprocessing/manifest bundle in the deployment source revision so Dokploy builds are reproducible and checksum-verifiable.",
+      "reproducibility": "HIGH",
+      "security": "Acceptable after repository sensitivity review; model contains no credentials or citizen data.",
+      "deployment_simplicity": "HIGH; existing Dockerfile already copies ml/flood-risk/artifacts.",
+      "rollback": "HIGH; Git/Dokploy revision rollback restores the exact bundle.",
+      "checksum_verification": "Required at startup and should match the governed Phase 3E2/3E1 checksums.",
+      "dokploy_compatibility": "HIGH; existing Compose Git deployment already builds from the repository.",
+      "phase_3fa_action": "Review only; do not stage, commit, or force-add the ignored bundle in Phase 3F-A."
+    },
+    "alternatives": [
+      {"option": "B_PERSISTENT_VOLUME", "assessment": "Possible but weaker reproducibility and rollback; volume provenance and checksum lifecycle must be managed outside the current repository contract."},
+      {"option": "C_DEPLOYMENT_TIME_INJECTION", "assessment": "No existing supported artifact-injection mechanism was found in the current repository; do not invent one for the capstone."},
+      {"option": "D_EXTERNAL_REGISTRY", "assessment": "No existing ML artifact registry is present; not recommended for this project review."}
+    ]
+  },
+  "model_loading_policy": {
+    "separate_runtime_required": true,
+    "reason": "The existing TensorFlowModelRuntime validates the flood classifier contract and cannot load the 57-feature Softplus rainfall bundle without a separate rainfall runtime contract.",
+    "startup_checks": [
+      "Expected candidate version equals rainfall-regression-dense-57-v0.1.1-softplus-candidate.",
+      "Model SHA-256 equals 51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865.",
+      "Preprocessing SHA-256 equals e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4.",
+      "Feature count equals 57 and exact Phase 3C feature order matches.",
+      "Architecture is Dense(64, ReLU), Dense(32, ReLU), Dense(1, Softplus), parameter count 5825.",
+      "Output policy equals MODEL_NONNEGATIVE_SOFTPLUS.",
+      "Candidate status equals VALIDATED_RESEARCH_CANDIDATE.",
+      "Private research inference authorization is explicitly present before serving."
+    ],
+    "failure_states": ["MODEL_UNAVAILABLE", "MODEL_ARTIFACT_MISMATCH", "PREPROCESSING_MISMATCH", "FEATURE_CONTRACT_MISMATCH", "MODEL_INFERENCE_NOT_APPROVED", "MODEL_LOAD_FAILED"],
+    "fail_closed_behavior": "Do not serve rainfall inference when any startup check fails. Do not change global flood /ready semantics."
+  },
+  "research_inference_authorization_design": {
+    "proposed_status": "APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY",
+    "not_granted_in_3fa": true,
+    "does_not_imply": ["ACTIVE_OPERATIONAL_MODEL", "LGU_APPROVED", "PUBLIC_APPROVED", "FLOOD_CLASSIFIER_APPROVED", "MGB_FUSION_APPROVED"],
+    "governing_record": "A distinct rainfall-regression runtime manifest/authorization should be introduced in Phase 3F-B; do not overload flood training_authorization or the flood model manifest."
+  },
+  "authentication": {
+    "current_mechanism": "X-CIVENTRAL-AI-Key shared internal key with constant-time comparison via InternalAuthenticator.",
+    "configuration": "CIVENTRAL_AI_INTERNAL_KEY from environment/Dokploy; minimum 32 characters; never logged or exposed to browser clients.",
+    "recommendation": "Reuse this mechanism for the future private rainfall route; do not introduce a second secret system in Phase 3F-B.",
+    "caller_scope": "Server-to-server internal callers only; citizen/mobile clients must not call flood-risk-ai directly."
+  },
+  "request_contract": {
+    "method": "POST",
+    "path": "/rainfall/predict",
+    "private_only": true,
+    "history_count": 48,
+    "body": {"schema_version": "1.0", "request_id": "string", "history": [{"timestamp_utc": "ISO-8601 UTC", "city_mean_precipitation_mm": "finite number >= 0"}]},
+    "history_rules": ["exactly 48 entries", "strict 30-minute UTC continuity", "no duplicates", "no missing intervals", "no negative or non-finite rainfall", "no interpolation or imputation"],
+    "primary_contract_is_history": true,
+    "arbitrary_57_number_vector_allowed": false
+  },
+  "response_contract": {
+    "schema_version": "1.0",
+    "request_id": "string",
+    "model_problem": "RAINFALL_REGRESSION",
+    "forecast_origin_utc": "ISO-8601 UTC",
+    "forecast_horizon_hours": 3,
+    "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "raw_prediction_mm": "finite number >= 0",
+    "final_prediction_mm": "finite number >= 0",
+    "output_policy": "MODEL_NONNEGATIVE_SOFTPLUS",
+    "model_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+    "model_status": "VALIDATED_RESEARCH_CANDIDATE",
+    "operational": false,
+    "forbidden_fields": ["flood_probability", "flood_occurrence", "risk_level", "MGB_category", "evacuation_recommendation"]
+  },
+  "error_contract": {
+    "mapping": {
+      "UNAUTHORIZED": 401,
+      "INSUFFICIENT_HISTORY": 422,
+      "TIMESTAMP_GAP": 422,
+      "DUPLICATE_TIMESTAMP": 422,
+      "INVALID_PRECIPITATION": 422,
+      "NEGATIVE_SOURCE_PRECIPITATION": 422,
+      "FEATURE_CONTRACT_MISMATCH": 503,
+      "PREPROCESSING_MISMATCH": 503,
+      "MODEL_ARTIFACT_MISMATCH": 503,
+      "MODEL_LOAD_FAILED": 503,
+      "PREDICTION_FAILED": 500,
+      "MODEL_INFERENCE_NOT_APPROVED": 503,
+      "MODEL_UNAVAILABLE": 503
+    },
+    "message_policy": "Return stable public error codes and sanitized messages; never expose paths, checksums beyond approved metadata, stack traces, secrets, or request history."
+  },
+  "readiness_design": {
+    "recommendation": "Keep global GET /ready unchanged at HTTP 503 MODEL_NOT_AVAILABLE until the existing flood-runtime contract is separately approved.",
+    "rainfall_readiness": "Use a separate future private GET /rainfall/ready or internal status field for rainfall candidate availability; do not conflate it with flood-model readiness.",
+    "phase_3fa_change": false
+  },
+  "lifecycle_and_rollback": {
+    "selected_research_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+    "previous_candidate": "rainfall-regression-dense-57-v0.1.0-candidate",
+    "promotion": "Manual only after checksum, authorization, and private-service review; no automatic promotion.",
+    "rollback": "Select the previous approved deployment revision or disable rainfall authorization; never silently fall back to a different model bundle.",
+    "disable_switch": "A distinct rainfall inference authorization/configuration flag should disable the route while leaving global flood readiness unchanged.",
+    "checksum_failure": "Mark rainfall runtime unavailable and refuse prediction."
+  },
+  "monitoring": {
+    "minimum_metadata": ["request_timestamp", "request_id", "model_version", "success_or_failure", "latency_ms", "failure_code"],
+    "prohibited_logging": ["full rainfall history by default", "credentials", "secret headers", "citizen PII"],
+    "external_platform_required": false
+  },
+  "phase_3fb_scope": [
+    "Create a separate rainfall model runtime and manifest schema.",
+    "Reuse InternalAuthenticator and private Docker-network routing.",
+    "Implement POST /rainfall/predict with the history contract.",
+    "Implement separate rainfall readiness/status semantics without changing flood /ready.",
+    "Add checksum/feature/Softplus architecture validation and fail-closed errors.",
+    "Add private request/response and monitoring tests.",
+    "Keep MGB fusion, flood probability, public exposure, and operational activation out of scope."
+  ],
+  "safety_state": {
+    "model_activation_changed": false,
+    "service_files_changed": false,
+    "docker_files_changed": false,
+    "flood_labels_changed": false,
+    "mgb_fusion_approved": false,
+    "global_training_ready": false,
+    "global_training_authorization": "NOT_APPROVED"
+  }
+}
