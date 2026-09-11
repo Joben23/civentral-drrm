@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3F_H",
+  "strategy_decision": "LIVE_STRATEGY_MORE_SOURCE_RESEARCH_REQUIRED",
+  "production_source": "NO_APPROVED_LIVE_SOURCE",
+  "current_model": {
+    "version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate",
+    "problem": "RAINFALL_REGRESSION",
+    "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "history_intervals": 48,
+    "interval_minutes": 30,
+    "feature_count": 57,
+    "operational": false,
+    "status": "VALIDATED_RESEARCH_CANDIDATE",
+    "authorization": "APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY"
+  },
+  "source_findings": {
+    "imerg_final": {
+      "training_alignment": "MATCHES_EXISTING_RESEARCH_MODEL",
+      "serving_role": "RETROSPECTIVE_BASELINE_ONLY",
+      "recommendation": "RETAIN_AS_RESEARCH_BASELINE"
+    },
+    "imerg_nrt": {
+      "historical_archive": "APPROXIMATELY_1998_TO_PRESENT_FOR_EARLY_LATE_RETROSPECTIVE_PROCESSING",
+      "governed_civentral_training_corpus": false,
+      "early_latency_hours_approx": 4,
+      "late_latency_hours_approx": 14,
+      "final_latency_months_approx": 3.5,
+      "current_three_hour_target_implication": "EARLY_3_MINUS_4_APPROX_MINUS_1_HOUR; LATE_3_MINUS_14_APPROX_MINUS_11_HOURS",
+      "training_alignment": "NOT_YET_DEMONSTRATED_AGAINST_FINAL",
+      "serving_role": "CANDIDATE_ONLY; CURRENT_THREE_HOUR_TARGET_NOT_PRACTICAL_AT_EARLY_LATENCY",
+      "recommendation": "PHASE_3FI_REDESIGNED_HORIZON_OR_FORECAST_FORMULATION_STUDY"
+    },
+    "cmorph_cdr": {
+      "training_alignment": "INSUFFICIENT_EVIDENCE",
+      "serving_role": "REJECTED_FOR_SILENT_SUBSTITUTION",
+      "recommendation": "DO_NOT_USE_AS_LIVE_SOURCE"
+    },
+    "cmorph_rt": {
+      "training_alignment": "NOT_AUDITED_SUFFICIENTLY",
+      "serving_role": "NOT_ACCEPTED",
+      "recommendation": "SEPARATE_RT_METADATA_AND_ARCHIVE_REVIEW_REQUIRED"
+    },
+    "gsmap_nrt": {
+      "training_alignment": "NOT_VERIFIED",
+      "serving_role": "NOT_ACCEPTED; APPROXIMATELY_FOUR_HOUR_LATENCY_CONCERNS_CURRENT_TARGET",
+      "recommendation": "COMPARE_IN_PHASE_3FI"
+    },
+    "gsmap_now": {
+      "product_semantics": "HOURLY_RAINFALL_RATE_MM_PER_HOUR_UPDATED_EVERY_30_MINUTES",
+      "latency": "APPROXIMATELY_ZERO_HOURS",
+      "historical_archive": "APPROXIMATELY_2017_PRESENT; CURRENT_V8_FROM_2021",
+      "thirty_minute_contract_alignment": "NOT_ESTABLISHED; HALF_HOURLY_UPDATE_IS_NOT_INDEPENDENT_HALF_HOUR_ACCUMULATION",
+      "training_alignment": "REQUIRES_NEW_HOURLY_SOURCE_ALIGNED_MODEL",
+      "serving_role": "BEST_CURRENT_LOW_LATENCY_CANDIDATE_FOR_RESEARCH",
+      "recommendation": "COMPARE_IN_PHASE_3FI"
+    },
+    "pagasa_observed": {
+      "finding": "PAGASA_COMPATIBLE_HISTORY_SOURCE_NOT_FOUND",
+      "serving_role": "NOT_ACCEPTED",
+      "recommendation": "DO_NOT_FABRICATE_OR_USE_TENDAY_FORECAST_AS_OBSERVED_HISTORY"
+    }
+  },
+  "training_serving_recommendation": {
+    "recommended_training_product": "TO_BE_SELECTED_BY_PHASE_3FI_IMERG_EARLY_OR_GSMAP_NOW_STRATEGY_COMPARISON",
+    "recommended_serving_product": "THE_SAME_VERIFIED_PRODUCT_AND_PROCESSING_VERSION_AS_TRAINING",
+    "model_path": "NEW_SOURCE_ALIGNED_MODEL_AFTER_PHASE_3FI_AND_SEPARATE_APPROVAL",
+    "next_phase": "PHASE_3FI_LOW_LATENCY_SOURCE_FORECAST_TARGET_FEASIBILITY_STUDY",
+    "strategy_a": "IMERG_EARLY_SOURCE_ALIGNED_MODEL_WITH_REDESIGNED_HORIZON_OR_FORECAST_FORMULATION",
+    "strategy_b": "GSMAP_NOW_SOURCE_ALIGNED_MODEL_WITH_TRUE_HOURLY_SEMANTICS_AND_NEW_CONTRACT",
+    "retraining_performed": false,
+    "preprocessing_refit_performed": false,
+    "production_adapter_created": false
+  },
+  "governance": {
+    "operational_use_approved": false,
+    "public_use_approved": false,
+    "flood_classifier_approved": false,
+    "mgb_fusion_approved": false,
+    "module4_activated": false,
+    "global_training_authorization": "NOT_APPROVED",
+    "global_training_ready": false
+  }
+}
