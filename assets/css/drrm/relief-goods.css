@@ -1,0 +1,48 @@
+.relief-action-button {
+  cursor: pointer;
+  transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
+}
+
+.relief-action-button:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, .12);
+}
+
+.relief-action-button:active {
+  transform: translateY(1px) scale(.99);
+  box-shadow: none;
+}
+
+.relief-action-button:focus-visible {
+  outline: 3px solid rgba(23, 107, 135, .35);
+  outline-offset: 2px;
+}
+
+.relief-action-button:disabled {
+  cursor: not-allowed;
+  filter: none;
+  opacity: .55;
+  transform: none;
+  box-shadow: none;
+}
+
+.relief-secondary-button {
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.relief-secondary-button:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.relief-secondary-button:active {
+  transform: translateY(1px);
+}
+
+.relief-secondary-button:focus-visible {
+  outline: 3px solid rgba(23, 107, 135, .35);
+  outline-offset: 2px;
+}
