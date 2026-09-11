@@ -48,7 +48,8 @@ try {
     if ($method === 'GET') {
         $inventory = $service->inventory();
         $distributions = $service->distributions();
-        reliefResponse(true, ['summary' => $service->summary($inventory, $distributions), 'inventory' => $inventory, 'distributions' => $distributions, 'destinations' => $service->destinations(), 'capabilities' => $authorization->capabilities()]);
+        $beneficiaries = $service->beneficiaries();
+        reliefResponse(true, ['summary' => $service->summary($inventory, $distributions), 'beneficiary_summary' => $service->beneficiarySummary($beneficiaries), 'inventory' => $inventory, 'distributions' => $distributions, 'beneficiaries' => $beneficiaries, 'destinations' => $service->destinations(), 'beneficiary_destinations' => $service->beneficiaryDestinations(), 'capabilities' => $authorization->capabilities()]);
     }
     $payload = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($payload) || !isset($payload['action'])) reliefResponse(false, null, 'Invalid request.', 400);
@@ -56,6 +57,8 @@ try {
     $actor = (string) ($auth->currentUserId() ?? ($details['full_name'] ?? 'authenticated-user'));
     $result = match ($payload['action']) {
         'create_item' => $service->createItem($payload),
+        'register_beneficiary' => $service->registerBeneficiary($payload, $actor),
+        'record_assistance' => $service->recordAssistance($payload, $actor),
         'receive' => $service->receive($payload, $actor),
         'release' => $service->release($payload, $actor),
         default => throw new DrrmReliefGoodsValidationException('Invalid request action.'),
