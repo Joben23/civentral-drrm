@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3F_I",
+  "decision": "LOW_LATENCY_STRATEGY_MORE_EVIDENCE_REQUIRED",
+  "freshness_classes": {
+    "FRESH": "latest trusted observation <= 1 hour old",
+    "DEGRADED": "latest trusted observation > 1 and <= 3 hours old",
+    "STALE_FOR_CURRENT_3H_TARGET": "latest trusted observation > 3 hours old",
+    "status": "research feasibility labels, not operational policy"
+  },
+  "current_target": {
+    "name": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM",
+    "latency_implication_formula": "remaining nominal future coverage = 3 - latency_hours"
+  },
+  "strategy_a_imerg_early": {
+    "archive": "approximately 1998-present for Early/Late retrospective processing",
+    "latency_hours_approx": 4,
+    "temporal_semantics": "30-minute precipitation product family; exact run metadata must be verified",
+    "current_target_assessment": "not practical: 3 - 4 ~= -1 hour",
+    "candidate_target_options": ["+4h_to_+7h", "+5h_to_+8h", "availability_anchored_target", "next_6_hours"],
+    "history_contract": "new source-aligned half-hour contract",
+    "training_corpus": "not yet governed in CIVentral",
+    "recommendation": "study only; do not reuse frozen Final model"
+  },
+  "strategy_b_gsmap_now": {
+    "product": "JAXA GSMaP NOW",
+    "latency_hours_approx": 0,
+    "value_semantics": "hourly rainfall rate in mm/hr",
+    "update_frequency": "updated every 30 minutes",
+    "historical_archive": "approximately 2017-present; current v8 from 2021",
+    "critical_semantic_note": "half-hourly updates are not independent half-hour accumulations",
+    "history_contract_options": {
+      "B1": "24 hourly observations representing previous 24 hours",
+      "B2": "48 hourly observations representing previous 48 hours"
+    },
+    "target_options": ["NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM", "NEXT_6_HOUR_ACCUMULATED_RAINFALL_MM"],
+    "recommendation": "best freshness candidate for a new hourly source-aligned model study"
+  },
+  "next_phase": {
+    "phase": "PHASE_3F_J",
+    "name": "SOURCE_ALIGNED_CORPUS_AND_MODEL_RESEARCH",
+    "strategy_a": "IMERG Early redesigned horizon/formulation",
+    "strategy_b": "GSMaP NOW hourly semantics and new contract",
+    "training_performed": false,
+    "provider_activation": false
+  },
+  "production_state": {
+    "source": "NO_APPROVED_LIVE_SOURCE",
+    "operational": false,
+    "global_flood_readiness": "MODEL_NOT_AVAILABLE",
+    "ui_changed": false
+  }
+}
