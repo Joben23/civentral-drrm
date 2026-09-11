@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TENSORFLOW_PHASE_3F_J",
+  "decision": "SOURCE_SELECTION_MORE_EVIDENCE_REQUIRED",
+  "bounded_acquisition": {
+    "bulk_corpus_downloaded": false,
+    "cap_bytes": 524288000,
+    "imerg_early": {
+      "sample": "one recent V07C HDF5 granule",
+      "estimated_bytes_from_head": 8259257,
+      "get_result": "HTML_EARTHDATA_ACCESS_PAGE_WITHOUT_CREDENTIALS",
+      "raw_file_retained": false
+    },
+    "gsmap_now": {
+      "sample": "one official point-pick response",
+      "point": {"latitude": 14.65, "longitude": 120.95},
+      "timestamp_utc": "2026-09-10T23:00:00Z",
+      "rainfall_rate_mm_per_hour": 0.28,
+      "response_source": "JAXA_OFFICIAL_PICK_ENDPOINT",
+      "raw_bulk_file_retained": false
+    }
+  },
+  "imerg_early": {
+    "collection": "GPM_3IMERGHHE",
+    "version": "07",
+    "observed_processing_sample": "V07C",
+    "collection_version_note": "07 is the collection version; V07C is an observed granule processing revision, not the collection version",
+    "title": "GPM IMERG Early Precipitation L3 Half Hourly 0.1 degree x 0.1 degree V07",
+    "archive_start": "1998-01-01T00:00:00Z",
+    "temporal_resolution": "30 minutes",
+    "machine_access": "NASA CMR metadata, HTTPS HDF5, OPeNDAP",
+    "observed_age_hours_approx": 4.6,
+    "freshness_class": "STALE_FOR_CURRENT_3H_TARGET",
+    "current_target_implication": "3 - 4 ~= -1 hour",
+    "caloocan_value_decoded": false,
+    "recommendation": "NEW_LATENCY_AWARE_TARGET_STUDY_REQUIRED"
+  },
+  "gsmap_now": {
+    "product": "JAXA GSMaP NOW",
+    "temporal_semantics": "hourly rainfall rate",
+    "units": "mm/hr",
+    "documented_nominal_latency": "0-hour",
+    "update_frequency": "half-hourly updates",
+    "historical_archive": "approximately 2017-03-29-present; current v8 from approximately 2021-12-06",
+    "version_governance": "algorithm/product versions changed through time; future corpus must handle version boundaries explicitly",
+    "official_download_access": "JAXA user registration required",
+    "public_point_query": true,
+    "observed_age_hours_approx": 5.6,
+    "freshness_class": "STALE_FOR_CURRENT_3H_TARGET",
+    "observed_sample_interpretation": "STALE_DURING_CHECK; DOES_NOT_ESTABLISH_NORMAL_GSMAP_NOW_LATENCY; MAY_REFLECT_TEMPORARY_SERVICE_OR_UPDATE_STATE",
+    "point_sample": "14.65N, 120.95E at 2026-09-10T23:00:00Z returned 0.28 mm/hr",
+    "independent_half_hour_values": false,
+    "caloocan_area_aggregate_verified": false,
+    "recommendation": "PHASE_3FK_REGISTERED_NATIVE_SAMPLE_AND_FINAL_SOURCE_SELECTION"
+  },
+  "candidate_contracts": {
+    "imerg_early": ["+4h_to_+7h", "+5h_to_+8h", "availability_anchored_3h", "next_6h"],
+    "gsmap_now_history": {"B1": "24 hourly observations", "B2": "48 hourly observations"},
+    "gsmap_now_targets": ["NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM", "NEXT_6_HOUR_ACCUMULATED_RAINFALL_MM"]
+  },
+  "next_phases": {
+    "phase_3fk": "CREDENTIALLED_SPATIAL_SAMPLE_AND_FINAL_SOURCE_SELECTION",
+    "phase_3fl": "SOURCE_ALIGNED_HISTORICAL_CORPUS_CONSTRUCTION",
+    "phase_3fm": "BASELINE_AND_TENSORFLOW_MODEL_TRAINING_EVALUATION",
+    "training_started": false
+  },
+  "production": {
+    "source": "NO_APPROVED_LIVE_SOURCE",
+    "operational": false,
+    "provider_created": false,
+    "training_performed": false
+  }
+}
