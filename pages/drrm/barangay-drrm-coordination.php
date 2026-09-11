@@ -14,7 +14,8 @@ if (!$authorization->canView()) {
 }
 
 $canCreate = $authorization->canCreate();
-$csrfToken = $canCreate ? (new \App\Services\DrrmBarangayCoordinationCsrfService())->token() : null;
+$canEdit = $authorization->canEdit();
+$csrfToken = $canCreate || $canEdit ? (new \App\Services\DrrmBarangayCoordinationCsrfService())->token() : null;
 
 $currentDetails = is_array($_SESSION['current_user_details'] ?? null) ? $_SESSION['current_user_details'] : [];
 $firstName = trim((string) ($currentDetails['first_name'] ?? ''));
@@ -181,6 +182,7 @@ include '../../includes/sidebar.php';
               <th class="px-2 py-3">Status</th>
               <th class="px-2 py-3">Requested At</th>
               <th class="px-2 py-3">Requested By</th>
+              <?php if ($canEdit): ?><th class="px-2 py-3">Actions</th><?php endif; ?>
             </tr>
           </thead>
           <tbody id="assistanceRequestsBody" class="divide-y divide-slate-100"></tbody>
@@ -209,7 +211,29 @@ include '../../includes/sidebar.php';
         </table>
       </div>
     </section>
+
+    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-black text-slate-800">Assistance Request Response History</h2>
+      </div>
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full min-w-[900px] text-left text-[11px]">
+          <thead class="border-b border-slate-100 text-[9px] font-black uppercase tracking-wider text-slate-400">
+            <tr>
+              <th class="px-2 py-3">Barangay / Request</th>
+              <th class="px-2 py-3">Request Context</th>
+              <th class="px-2 py-3">From Status</th>
+              <th class="px-2 py-3">To Status</th>
+              <th class="px-2 py-3">Response Note</th>
+              <th class="px-2 py-3">Handled By</th>
+              <th class="px-2 py-3">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="assistanceRequestHistoryBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </section>
   </section>
 </main>
-<script>window.CiventralBarangayCoordinationConfig = <?php echo json_encode(['endpoint' => $basePath . 'api/drrm/barangay-coordination.php', 'csrfToken' => $csrfToken, 'canCreate' => $canCreate], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;</script>
+<script>window.CiventralBarangayCoordinationConfig = <?php echo json_encode(['endpoint' => $basePath . 'api/drrm/barangay-coordination.php', 'csrfToken' => $csrfToken, 'canCreate' => $canCreate, 'canEdit' => $canEdit, 'displayName' => $displayName !== '' ? $displayName : 'Authenticated user'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;</script>
 <script src="<?php echo $basePath; ?>assets/js/drrm/barangay-coordination.js?v=<?php echo rawurlencode((string) filemtime(__DIR__ . '/../../assets/js/drrm/barangay-coordination.js')); ?>"></script>

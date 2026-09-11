@@ -14,6 +14,7 @@ final class DrrmBarangayCoordinationAuthorizationService
     public const RESOURCE = 'barangay drrm coordination tool';
     public const ACTION_VIEW = 'VIEW';
     public const ACTION_CREATE = 'CREATE';
+    public const ACTION_EDIT = 'EDIT';
 
     public function __construct(private readonly array $resourceActions, private readonly bool $isSuperadmin) {}
 
@@ -39,10 +40,11 @@ final class DrrmBarangayCoordinationAuthorizationService
 
     public function canView(): bool { return $this->allows(self::ACTION_VIEW); }
     public function canCreate(): bool { return $this->allows(self::ACTION_CREATE); }
+    public function canEdit(): bool { return $this->allows(self::ACTION_EDIT); }
 
     public function allows(string $action): bool
     {
-        if (!in_array($action, [self::ACTION_VIEW, self::ACTION_CREATE], true)) {
+        if (!in_array($action, [self::ACTION_VIEW, self::ACTION_CREATE, self::ACTION_EDIT], true)) {
             throw new InvalidArgumentException('Unknown Module 5 action.');
         }
         return $this->isSuperadmin || in_array($action, $this->resourceActions, true);
@@ -57,7 +59,7 @@ final class DrrmBarangayCoordinationAuthorizationService
 
     public function capabilities(): array
     {
-        return ['canView' => $this->canView(), 'canCreate' => $this->canCreate()];
+        return ['canView' => $this->canView(), 'canCreate' => $this->canCreate(), 'canEdit' => $this->canEdit()];
     }
 
     private static function normalizeResource(string $resource): string

@@ -2,7 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const config = window.CiventralBarangayCoordinationConfig || {};
   const endpoint = config.endpoint || 'api/drrm/barangay-coordination.php';
   const csrfToken = config.csrfToken || '';
+  const displayName = config.displayName || 'Authenticated user';
   const canCreate = Boolean(config.canCreate);
+  const canEdit = Boolean(config.canEdit);
 
   function buildTableRow(data, type) {
     return type === 'request' ? `
@@ -106,18 +108,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.getElementById('assistanceRequestsBody');
     if (!body) return;
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="7" class="px-2 py-3 text-slate-500">No assistance requests.</td></tr>';
+      body.innerHTML = '<tr><td colspan="' + (canEdit ? 8 : 7) + '" class="px-2 py-3 text-slate-500">No assistance requests.</td></tr>';
       return;
     }
-    body.innerHTML = rows.map((row) => buildTableRow({
-      barangay: row.barangay || row.barangay_id,
-      request_category: row.request_category,
-      priority: row.priority,
-      description: row.description,
-      status: row.status,
-      requested_at: row.requested_at,
-      requested_by_reference: row.requested_by_reference,
-    }, 'request')).join('');
+
+    body.innerHTML = rows.map((row) => {
+      const actionCells = canEdit ? renderRequestActions(row) : '';
+      const match = buildTableRow({
+        barangay: row.barangay || row.barangay_id,
+        request_category: row.request_category,
+        priority: row.priority,
+        description: row.description,
+        status: row.status,
+        requested_at: row.requested_at,
+        requested_by_reference: row.requested_by_reference,
+      }, 'request');
+      return match.replace('</tr>', actionCells + '</tr>');
+    }).join('');
+  }
+
+  function renderRequestActions(row) {
+    const status = String(row.status || 'PENDING').toUpperCase();
+    const requestId = row.id || '';
+    let buttons = '';
+    const common = 'class="rounded-lg border border-slate-200 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-slate-700 hover:bg-slate-50"';
+    if (status === 'PENDING') {
+      buttons += `<button type="button" data-action="transition" data-transition="ACKNOWLEDGED" data-request-id="${escapeHtml(requestId)}" data-expected="${escapeHtml(status)}" data-status="ACKNOWLEDGED" ${common}>Acknowledge</button> <button type="button" data-action="transition" data-transition="CANCELLED" data-request-id="${escapeHtml(requestId)}" data-expected="${escapeHtml(status)}" data-status="CANCELLED" ${common}>Cancel</button>`;
+    } else if (status === 'ACKNOWLEDGED') {
+      buttons += `<button type="button" data-action="transition" data-transition="IN_PROGRESS" data-request-id="${escapeHtml(requestId)}" data-expected="${escapeHtml(status)}" data-status="IN_PROGRESS" ${common}>Start</button> <button type="button" data-action="transition" data-transition="CANCELLED" data-request-id="${escapeHtml(requestId)}" data-expected="${escapeHtml(status)}" data-status="CANCELLED" ${common}>Cancel</button>`;
+    } else if (status === 'IN_PROGRESS') {
+      buttons += `<button type="button" data-action="transition" data-transition="COMPLETED" data-request-id="${escapeHtml(requestId)}" data-expected="${escapeHtml(status)}" data-status="COMPLETED" ${common}>Complete</button> <button type="button" data-action="transition" data-transition="CANCELLED" data-request-id="${escapeHtml(requestId)}" data-expected="${escapeHtml(status)}" data-status="CANCELLED" ${common}>Cancel</button>`;
+    }
+    return `<td class="px-2 py-3 text-slate-500">${buttons}</td>`;
   }
 
   function renderHistory(rows) {
@@ -138,6 +160,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 'history')).join('');
   }
 
+  function renderAssistanceRequestHistory(rows, requests = []) {
+    const body = document.getElementById('assistanceRequestHistoryBody');
+    if (!body) return;
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7" class="px-2 py-3 text-slate-500">No assistance response history.</td></tr>';
+      return;
+    }
+
+    const lookup = new Map((requests || []).map((row) => [String(row.id), row]));
+    body.innerHTML = rows.map((row) => {
+      const request = lookup.get(String(row.request_id)) || {};
+      const barangay = request.barangay || request.barangay_id || 'Unknown Barangay';
+      const category = request.request_category || 'ASSISTANCE_REQUEST';
+      const fromStatus = row.from_status || 'UNKNOWN';
+      const toStatus = row.to_status || 'UNKNOWN';
+      return `<tr>
+        <td class="px-2 py-3 font-black text-slate-700">${escapeHtml(barangay)}</td>
+        <td class="px-2 py-3 text-slate-800">${escapeHtml(category)}<br><span class="text-[9px] text-slate-500">${escapeHtml(String(row.request_id || ''))}</span></td>
+        <td class="px-2 py-3 text-slate-600">${escapeHtml(fromStatus)}</td>
+        <td class="px-2 py-3 text-slate-600">${escapeHtml(toStatus)}</td>
+        <td class="px-2 py-3 text-slate-500">${escapeHtml(row.response_note || '')}</td>
+        <td class="px-2 py-3 text-slate-500">${escapeHtml(row.handled_by_reference || '')}</td>
+        <td class="px-2 py-3 text-slate-500">${formatDate(row.created_at)}</td>
+      </tr>`;
+    }).join('');
+  }
+
   function renderFromApi(payload) {
     const data = payload && payload.data ? payload.data : payload;
     if (!data) return;
@@ -154,11 +203,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const requests = Array.isArray(data.assistance_requests) ? data.assistance_requests : [];
     const enrichedRequests = requests.map((row) => ({...row, barangay: map.get(row.barangay_id) || row.barangay_id}));
+    window.__coordinationRequests = enrichedRequests;
     renderRequests(enrichedRequests);
 
     const history = Array.isArray(data.situation_history) ? data.situation_history : [];
     const enrichedHistory = history.map((row) => ({...row, barangay: map.get(row.barangay_id) || row.barangay_id}));
     renderHistory(enrichedHistory);
+
+    const requestHistory = Array.isArray(data.assistance_request_history) ? data.assistance_request_history : [];
+    renderAssistanceRequestHistory(requestHistory, enrichedRequests);
   }
 
   function showLoadError(message) {
@@ -213,6 +266,96 @@ document.addEventListener('DOMContentLoaded', () => {
       feedbackEl.textContent = 'Request could not be completed.';
     });
   }
+
+  function openTransitionModal(row, expectedStatus, targetStatus) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40';
+    const requiredNote = targetStatus === 'COMPLETED' || targetStatus === 'CANCELLED';
+    modal.innerHTML = `
+      <div class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-black uppercase tracking-wide text-slate-800">Assistance Request Response</h3>
+          <button type="button" id="closeTransitionModal" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-black text-slate-600">×</button>
+        </div>
+        <div class="mt-4 grid gap-3 text-[11px]">
+          <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"><span class="font-black text-slate-500">Barangay:</span> <span class="text-slate-800">${escapeHtml(row.barangay || row.barangay_id || 'Unknown')}</span></div>
+          <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"><span class="font-black text-slate-500">Category:</span> <span class="text-slate-800">${escapeHtml(row.request_category || '')}</span></div>
+          <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"><span class="font-black text-slate-500">Current Status:</span> <span class="text-slate-800">${escapeHtml(expectedStatus)}</span></div>
+          <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"><span class="font-black text-slate-500">Target Status:</span> <span class="text-slate-800">${escapeHtml(targetStatus)}</span></div>
+          <label class="block text-[10px] font-black uppercase tracking-wide text-slate-500">Response Note
+            <textarea id="transitionResponseNote" maxlength="1000" rows="4" class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs" ${requiredNote ? 'required' : ''} placeholder="${requiredNote ? 'Required response note' : 'Optional response note'}"></textarea>
+          </label>
+          <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-black text-slate-600">
+            <span class="text-slate-500">Handling as:</span> <span class="text-slate-800">${escapeHtml(displayName)}</span>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" id="cancelTransitionModal" class="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600">Cancel</button>
+            <button type="button" id="confirmTransition" class="rounded-lg bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-white">Confirm Update</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const close = () => modal.remove();
+    modal.querySelector('#closeTransitionModal')?.addEventListener('click', close);
+    modal.querySelector('#cancelTransitionModal')?.addEventListener('click', close);
+
+    modal.querySelector('#confirmTransition')?.addEventListener('click', () => {
+      const note = modal.querySelector('#transitionResponseNote')?.value || '';
+      if (requiredNote && note.trim() === '') {
+        modal.querySelector('#transitionResponseNote')?.focus();
+        return;
+      }
+      const confirmButton = modal.querySelector('#confirmTransition');
+      if (confirmButton) {
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'UPDATING...';
+      }
+      const payload = {
+        request_id: row.id,
+        expected_status: expectedStatus,
+        target_status: targetStatus,
+        response_note: note.trim()
+      };
+
+      fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrfToken},
+        body: JSON.stringify({action: 'transition_assistance_request', ...payload})
+      }).then((response) => response.json()).then((payload) => {
+        if (!payload.success) {
+          if (confirmButton) {
+            confirmButton.disabled = false;
+            confirmButton.textContent = 'Confirm Update';
+          }
+          showLoadError(payload.message || 'Unable to update assistance request.');
+          return;
+        }
+        close();
+        fetchData();
+      }).catch(() => {
+        if (confirmButton) {
+          confirmButton.disabled = false;
+          confirmButton.textContent = 'Confirm Update';
+        }
+        showLoadError('Request could not be completed.');
+      });
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+    if (target.getAttribute('data-action') !== 'transition') return;
+    const rowId = target.getAttribute('data-request-id');
+    const expectedStatus = target.getAttribute('data-expected');
+    const targetStatus = target.getAttribute('data-status');
+    if (!rowId || !expectedStatus || !targetStatus) return;
+    const request = (Array.isArray(window.__coordinationRequests) ? window.__coordinationRequests : []).find((r) => String(r.id) === String(rowId));
+    if (!request) return;
+    openTransitionModal(request, expectedStatus, targetStatus);
+  });
 
   if (canCreate) {
     const statusForm = document.getElementById('statusReportForm');

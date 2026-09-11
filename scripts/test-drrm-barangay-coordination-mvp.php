@@ -39,6 +39,8 @@ class FakeCoordinationStore implements DrrmDataStoreInterface
     public array $posted = [];
     public array $lastPostPayload = [];
     public array $lastPostResource = [];
+    public string $lastRpcFunction = '';
+    public array $lastRpcPayload = [];
     public array $records = [
         'barangays' => [
             ['barangay_id' => '11111111-1111-1111-1111-111111111111', 'name' => 'Barangay 56', 'barangay_code' => 'B56'],
@@ -70,6 +72,8 @@ class FakeCoordinationStore implements DrrmDataStoreInterface
 
     public function rpc(string $function, array $payload = []): array
     {
+        $this->lastRpcFunction = $function;
+        $this->lastRpcPayload = $payload;
         return [];
     }
 }
@@ -88,17 +92,48 @@ try {
         session_start();
     }
     $_SESSION = [];
-    $_SESSION['user_permissions_map'] = ['barangay drrm coordination tool' => ['VIEW', 'CREATE']];
+    $_SESSION['user_permissions_map'] = ['barangay drrm coordination tool' => ['VIEW', 'CREATE', 'EDIT']];
     $_SESSION['current_user_details'] = ['is_superadmin' => false];
 
     $auth = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
     assertTrue($auth->canView(), 'VIEW allowed when permission exists');
     assertTrue($auth->canCreate(), 'CREATE allowed when permission exists');
+    assertTrue($auth->canEdit(), 'EDIT recognized when capability is present in the trusted map');
+
+    $_SESSION['user_permissions_map'] = ['barangay drrm coordination tool' => ['CREATE']];
+    $auth = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
+    assertTrue(!$auth->canView(), 'VIEW denied when absent');
+    assertTrue($auth->canCreate(), 'CREATE allowed when permission exists');
+    assertTrue(!$auth->canEdit(), 'EDIT denied when absent from CREATE-only map');
+
+    $_SESSION['user_permissions_map'] = ['barangay drrm coordination tool' => ['VIEW', 'EDIT']];
+    $auth = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
+    assertTrue($auth->canView(), 'VIEW allowed when permission exists');
+    assertTrue(!$auth->canCreate(), 'CREATE denied when absent in EDIT-only map');
+    assertTrue($auth->canEdit(), 'EDIT allowed when permission exists');
 
     $_SESSION['user_permissions_map'] = [];
     $auth = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
     assertTrue(!$auth->canView(), 'VIEW denied when absent');
     assertTrue(!$auth->canCreate(), 'CREATE denied when absent');
+    assertTrue(!$auth->canEdit(), 'EDIT denied when absent');
+
+    assertTrue(DrrmBarangayCoordinationService::transitionIsAllowed('PENDING', 'ACKNOWLEDGED'), 'PENDING → ACKNOWLEDGED true');
+    assertTrue(DrrmBarangayCoordinationService::transitionIsAllowed('PENDING', 'CANCELLED'), 'PENDING → CANCELLED true');
+    assertTrue(DrrmBarangayCoordinationService::transitionIsAllowed('ACKNOWLEDGED', 'IN_PROGRESS'), 'ACKNOWLEDGED → IN_PROGRESS true');
+    assertTrue(DrrmBarangayCoordinationService::transitionIsAllowed('ACKNOWLEDGED', 'CANCELLED'), 'ACKNOWLEDGED → CANCELLED true');
+    assertTrue(DrrmBarangayCoordinationService::transitionIsAllowed('IN_PROGRESS', 'COMPLETED'), 'IN_PROGRESS → COMPLETED true');
+    assertTrue(DrrmBarangayCoordinationService::transitionIsAllowed('IN_PROGRESS', 'CANCELLED'), 'IN_PROGRESS → CANCELLED true');
+
+    assertTrue(!DrrmBarangayCoordinationService::transitionIsAllowed('PENDING', 'IN_PROGRESS'), 'PENDING → IN_PROGRESS false');
+    assertTrue(!DrrmBarangayCoordinationService::transitionIsAllowed('PENDING', 'COMPLETED'), 'PENDING → COMPLETED false');
+    assertTrue(!DrrmBarangayCoordinationService::transitionIsAllowed('ACKNOWLEDGED', 'COMPLETED'), 'ACKNOWLEDGED → COMPLETED false');
+    assertTrue(!DrrmBarangayCoordinationService::transitionIsAllowed('COMPLETED', 'ACKNOWLEDGED'), 'backwards false');
+    assertTrue(!DrrmBarangayCoordinationService::transitionIsAllowed('CANCELLED', 'ACKNOWLEDGED'), 'cancelled terminal false');
+    assertTrue(!DrrmBarangayCoordinationService::transitionIsAllowed('COMPLETED', 'CANCELLED'), 'completed terminal false');
+
+    assertTrue(DrrmBarangayCoordinationAuthorizationService::ACTION_CREATE === 'CREATE', 'create action symbol preserved');
+    assertTrue(DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT === 'EDIT', 'edit action symbol preserved');
 
     $_SESSION = [];
     $csrf = new DrrmBarangayCoordinationCsrfService();

@@ -15,7 +15,12 @@ final class DrrmBarangayCoordinationService
     public const ACCESS_CONDITIONS = ['ACCESSIBLE', 'PARTIALLY_BLOCKED', 'BLOCKED', 'UNKNOWN'];
     public const REQUEST_CATEGORIES = ['RELIEF_GOODS', 'RESCUE', 'MEDICAL', 'EVACUATION', 'EQUIPMENT', 'ROAD_ACCESS', 'INFORMATION', 'OTHER'];
     public const PRIORITIES = ['NORMAL', 'HIGH', 'URGENT'];
+    public const REQUEST_STATUSES = ['PENDING', 'ACKNOWLEDGED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
     public const REQUEST_STATUS_PENDING = 'PENDING';
+    public const REQUEST_STATUS_ACKNOWLEDGED = 'ACKNOWLEDGED';
+    public const REQUEST_STATUS_IN_PROGRESS = 'IN_PROGRESS';
+    public const REQUEST_STATUS_COMPLETED = 'COMPLETED';
+    public const REQUEST_STATUS_CANCELLED = 'CANCELLED';
 
     public function __construct(private readonly DrrmDataStoreInterface $client) {}
 
@@ -129,6 +134,11 @@ final class DrrmBarangayCoordinationService
         return $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,barangay_id,request_category,priority,description,status,requested_at,requested_by_reference,created_at,updated_at', 'order' => 'requested_at.desc']);
     }
 
+    public function assistanceRequestHistory(): array
+    {
+        return $this->client->get('drrm_barangay_assistance_request_updates', ['select' => 'id,request_id,from_status,to_status,response_note,handled_by_reference,created_at', 'order' => 'created_at.desc,id.desc']);
+    }
+
     public function createStatusReport(array $input, string $actor): array
     {
         $actor = $this->requiredActor($actor, 'Authenticated user is required.');
@@ -172,6 +182,52 @@ final class DrrmBarangayCoordinationService
             'requested_at' => $requestedAt,
             'requested_by_reference' => $actor,
         ], ['select' => 'id,barangay_id,request_category,priority,description,status,requested_at,requested_by_reference']);
+    }
+
+    public function transitionAssistanceRequest(array $input, string $actor): array
+    {
+        $actor = $this->requiredActor($actor, 'Authenticated user is required.');
+        $requestId = $this->requiredUuid($input['request_id'] ?? null, 'Assistance request is required.');
+        $expectedStatus = $this->requiredEnum($input['expected_status'] ?? null, self::REQUEST_STATUSES, 'Expected status is required.');
+        $targetStatus = $this->requiredEnum($input['target_status'] ?? null, self::REQUEST_STATUSES, 'Target status is required.');
+        $responseNote = $this->optionalText($input['response_note'] ?? null, 1000);
+
+        if (!self::transitionIsAllowed($expectedStatus, $targetStatus)) {
+            throw new DrrmBarangayCoordinationValidationException('Illegal assistance request transition.');
+        }
+
+        if (in_array($targetStatus, [self::REQUEST_STATUS_COMPLETED, self::REQUEST_STATUS_CANCELLED], true) && trim($responseNote) === '') {
+            throw new DrrmBarangayCoordinationValidationException('Response note is required for completed or cancelled requests.');
+        }
+
+        $result = $this->client->rpc('transition_assistance_request', [
+            'p_request_id' => $requestId,
+            'p_expected_status' => $expectedStatus,
+            'p_target_status' => $targetStatus,
+            'p_response_note' => $responseNote,
+            'p_handled_by_reference' => $actor,
+        ]);
+
+        if (isset($result[0]) && is_array($result[0])) {
+            return $result[0];
+        }
+        if (isset($result['data']) && is_array($result['data'])) {
+            return $result['data'];
+        }
+        return $result;
+    }
+
+    public static function transitionIsAllowed(string $fromStatus, string $toStatus): bool
+    {
+        return match (true) {
+            $fromStatus === self::REQUEST_STATUS_PENDING && $toStatus === self::REQUEST_STATUS_ACKNOWLEDGED => true,
+            $fromStatus === self::REQUEST_STATUS_PENDING && $toStatus === self::REQUEST_STATUS_CANCELLED => true,
+            $fromStatus === self::REQUEST_STATUS_ACKNOWLEDGED && $toStatus === self::REQUEST_STATUS_IN_PROGRESS => true,
+            $fromStatus === self::REQUEST_STATUS_ACKNOWLEDGED && $toStatus === self::REQUEST_STATUS_CANCELLED => true,
+            $fromStatus === self::REQUEST_STATUS_IN_PROGRESS && $toStatus === self::REQUEST_STATUS_COMPLETED => true,
+            $fromStatus === self::REQUEST_STATUS_IN_PROGRESS && $toStatus === self::REQUEST_STATUS_CANCELLED => true,
+            default => false,
+        };
     }
 
     private function requiredActor(string $actor, string $message): string

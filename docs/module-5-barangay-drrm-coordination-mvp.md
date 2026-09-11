@@ -56,15 +56,24 @@ The implementation keeps the tables additive and does not modify existing Module
 
 ## Permissions
 
-The authorization service follows the existing server-side permission map and resource/action model. The resource name used is "barangay drrm coordination tool" and the actions follow the repository convention: VIEW and CREATE.
+The authorization service follows the existing server-side permission map and resource/action model. The resource name used is "barangay drrm coordination tool" and the actions follow the repository convention: VIEW, CREATE, and EDIT for Phase 5B transition operations. VIEW and CREATE remain Phase 5A artifacts. Phase 5B adds EDIT as the authenticated server-side permission that gates assistance request response transitions.
 
-## Future Phase 5B workflow
+## Phase 5B scope
 
-Phase 5B may add acknowledgment, assignment, response action planning, and workflow transitions such as PENDING → ACKNOWLEDGED → IN_PROGRESS → COMPLETED, with cancellation later. Current Phase 5A deliberately stops at creating and viewing the request and report records.
+Phase 5B extends the assistance request workflow by adding the server-side CDRRMO response workflow and immutable request-response history:
 
-## Planned GSMS integration hooks
+- PENDING → ACKNOWLEDGED
+- PENDING → CANCELLED
+- ACKNOWLEDGED → IN_PROGRESS
+- ACKNOWLEDGED → CANCELLED
+- IN_PROGRESS → COMPLETED
+- IN_PROGRESS → CANCELLED
 
-The scope is intentionally integration-ready but not connected live. Planned hooks include `RELIEF_GOODS` mapping to Module 2 relief workflows, `MEDICAL` and `ROAD_ACCESS` mapping to cross-GSMS services, and `EVACUATION` or `INFORMATION` requests as future operational coordination points. No fake APIs, external URLs, or subsystem dependencies are added.
+The workflow remains strictly constrained to the legal status pair matrix and is guarded by the trusted actor identity from the authenticated session. The request row remains authoritative in the requests table, while update rows are stored in the separate immutable request-update history table.
+
+## Phase 5C future
+
+Future Phase 5C work remains explicitly outside this scope. Planned hooks include `RELIEF_GOODS` mapping to Module 2 relief workflows, `MEDICAL` and `ROAD_ACCESS` mapping to cross-GSMS services, and `EVACUATION` or `INFORMATION` requests as future operational coordination points. No fake APIs, external URLs, or subsystem dependencies are added for the Phase 5B request-response transition workflow.
 
 ## Limitations
 

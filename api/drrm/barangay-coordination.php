@@ -48,7 +48,19 @@ try {
     if ($method === 'GET') {
         $authorization->requireAction(DrrmBarangayCoordinationAuthorizationService::ACTION_VIEW);
     } elseif ($method === 'POST') {
-        $authorization->requireAction(DrrmBarangayCoordinationAuthorizationService::ACTION_CREATE);
+        $payload = json_decode((string) file_get_contents('php://input'), true);
+        if (!is_array($payload) || !isset($payload['action'])) {
+            barangayCoordinationResponse(false, null, 'Invalid request.', 400);
+        }
+
+        $authorizedAction = match ($payload['action']) {
+            'create_situation_report' => DrrmBarangayCoordinationAuthorizationService::ACTION_CREATE,
+            'create_assistance_request' => DrrmBarangayCoordinationAuthorizationService::ACTION_CREATE,
+            'transition_assistance_request' => DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT,
+            default => throw new DrrmBarangayCoordinationValidationException('Invalid request action.'),
+        };
+        $authorization->requireAction($authorizedAction);
+
         try {
             (new DrrmBarangayCoordinationCsrfService())->requireValidHeader();
         } catch (DrrmBarangayCoordinationCsrfException) {
@@ -67,6 +79,7 @@ try {
         $payload['current_situations'] = $service->currentSituations();
         $payload['situation_history'] = $service->situationHistory();
         $payload['assistance_requests'] = $service->assistanceRequests();
+        $payload['assistance_request_history'] = $service->assistanceRequestHistory();
         $payload['capabilities'] = $authorization->capabilities();
         barangayCoordinationResponse(true, $payload, '', 200);
     }
@@ -84,6 +97,7 @@ try {
     $result = match ($payload['action']) {
         'create_situation_report' => $service->createStatusReport($payload, $actor),
         'create_assistance_request' => $service->createAssistanceRequest($payload, $actor),
+        'transition_assistance_request' => $service->transitionAssistanceRequest($payload, $actor),
         default => throw new DrrmBarangayCoordinationValidationException('Invalid request action.'),
     };
 
