@@ -57,20 +57,26 @@ try {
             'create_situation_report' => DrrmBarangayCoordinationAuthorizationService::ACTION_CREATE,
             'create_assistance_request' => DrrmBarangayCoordinationAuthorizationService::ACTION_CREATE,
             'transition_assistance_request' => DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT,
+            'get_assignment_barangays' => DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT,
+            'get_barangay_assignment' => DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT,
+            'set_barangay_assignment' => DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT,
+            'deactivate_barangay_assignment' => DrrmBarangayCoordinationAuthorizationService::ACTION_EDIT,
             default => throw new DrrmBarangayCoordinationValidationException('Invalid request action.'),
         };
         $authorization->requireAction($authorizedAction);
 
-        try {
-            (new DrrmBarangayCoordinationCsrfService())->requireValidHeader();
-        } catch (DrrmBarangayCoordinationCsrfException) {
-            barangayCoordinationResponse(false, null, 'Security token expired. Refresh and try again.', 403);
+        if (in_array(($payload['action'] ?? ''), ['set_barangay_assignment', 'deactivate_barangay_assignment'], true)) {
+            try {
+                (new DrrmBarangayCoordinationCsrfService())->requireValidHeader();
+            } catch (DrrmBarangayCoordinationCsrfException) {
+                barangayCoordinationResponse(false, null, 'Security token expired. Refresh and try again.', 403);
+            }
         }
     } else {
         barangayCoordinationResponse(false, null, 'Method not allowed.', 405);
     }
 
-    $service = new DrrmBarangayCoordinationService(new SupabaseRestClient(SupabaseConfig::fromEnvironment(__DIR__ . '/../../.env')));
+    $service = new DrrmBarangayCoordinationService(new SupabaseRestClient(SupabaseConfig::fromEnvironment(__DIR__ . '/../../.env')), $auth);
 
     if ($method === 'GET') {
         $payload = [];
@@ -98,10 +104,14 @@ try {
         'create_situation_report' => $service->createStatusReport($payload, $actor),
         'create_assistance_request' => $service->createAssistanceRequest($payload, $actor),
         'transition_assistance_request' => $service->transitionAssistanceRequest($payload, $actor),
+        'get_assignment_barangays' => $service->assignmentBarangays(),
+        'get_barangay_assignment' => $service->readAssignment((string) ($payload['user_reference'] ?? '')),
+        'set_barangay_assignment' => $service->assignUserBarangay((string) ($payload['user_reference'] ?? ''), (string) ($payload['barangay_id'] ?? '')),
+        'deactivate_barangay_assignment' => $service->deactivateUserBarangay((string) ($payload['user_reference'] ?? '')),
         default => throw new DrrmBarangayCoordinationValidationException('Invalid request action.'),
     };
 
-    barangayCoordinationResponse(true, $result, '', 201);
+    barangayCoordinationResponse(true, $result, '', $payload['action'] === 'get_assignment_barangays' || $payload['action'] === 'get_barangay_assignment' ? 200 : 201);
 } catch (DrrmBarangayCoordinationValidationException $exception) {
     barangayCoordinationResponse(false, null, $exception->getMessage(), 422);
 } catch (DrrmBarangayCoordinationAuthorizationException) {

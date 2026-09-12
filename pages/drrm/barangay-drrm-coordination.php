@@ -167,6 +167,12 @@ include '../../includes/sidebar.php';
       <?php endif; ?>
     </section>
 
+    <?php if ($canEdit): ?>
+    <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <?php include __DIR__ . '/../../assets/html/drrm/barangay-assignment-admin.html'; ?>
+    </section>
+    <?php endif; ?>
+
     <section class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-black text-slate-800">Assistance Requests</h2>

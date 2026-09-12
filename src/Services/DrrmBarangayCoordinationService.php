@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+require_once __DIR__ . '/AuthService.php';
+require_once __DIR__ . '/DrrmBarangayAssignmentResolver.php';
+require_once __DIR__ . '/DrrmBarangayCoordinationAuthorizationService.php';
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -22,17 +25,122 @@ final class DrrmBarangayCoordinationService
     public const REQUEST_STATUS_COMPLETED = 'COMPLETED';
     public const REQUEST_STATUS_CANCELLED = 'CANCELLED';
 
-    public function __construct(private readonly DrrmDataStoreInterface $client) {}
+    private readonly DrrmDataStoreInterface $client;
+    private readonly DrrmBarangayAssignmentResolver $resolver;
+    private readonly ?AuthService $auth;
+
+    public function __construct(DrrmDataStoreInterface $client, ?AuthService $auth = null, ?DrrmBarangayAssignmentResolver $resolver = null)
+    {
+        $this->client = $client;
+        $this->auth = $auth;
+        $this->resolver = $resolver ?? new DrrmBarangayAssignmentResolver($client);
+    }
+
+    private function currentUserDetails(): array
+    {
+        return is_array($_SESSION['current_user_details'] ?? null) ? $_SESSION['current_user_details'] : [];
+    }
+
+    private function globalActorByProfile(): bool
+    {
+        $details = $this->currentUserDetails();
+        return filter_var($details['is_superadmin'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            || filter_var($details['is_global_access'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    private function module5AllBarangaysActor(): bool
+    {
+        if ($this->globalActorByProfile()) {
+            return true;
+        }
+
+        $authorization = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
+        return $authorization->canEdit();
+    }
+
+    private function scopedBarangayId(): ?string
+    {
+        $userReference = '';
+        if ($this->auth instanceof AuthService) {
+            $source = $this->auth->currentUserId();
+            if (is_string($source)) {
+                $userReference = trim($source);
+            }
+        }
+
+        if ($userReference === '') {
+            return null;
+        }
+
+        return $this->resolver->activeBarangayIdForUser($userReference);
+    }
+
+    private function filterRowsByBarangay(array $rows): array
+    {
+        if ($this->module5AllBarangaysActor()) {
+            return $rows;
+        }
+        $scope = $this->scopedBarangayId();
+        if ($scope === null) {
+            return [];
+        }
+        return array_values(array_filter($rows, static fn (array $row): bool => (string) ($row['barangay_id'] ?? '') === $scope));
+    }
+
+    private function readScopeForCreate(array $input): string
+    {
+        if ($this->module5AllBarangaysActor()) {
+            return $this->requiredUuid($input['barangay_id'] ?? null, 'Barangay is required.');
+        }
+
+        $scope = $this->scopedBarangayId();
+        if ($scope !== null) {
+            return $scope;
+        }
+
+        throw new DrrmBarangayCoordinationValidationException('Barangay assignment is required.');
+    }
 
     public function availableBarangays(): array
     {
-        return $this->client->get('barangays', ['select' => 'barangay_id,name,barangay_code', 'order' => 'name.asc']);
+        if ($this->module5AllBarangaysActor()) {
+            return $this->client->get('barangays', ['select' => 'barangay_id,name,barangay_code', 'order' => 'name.asc']);
+        }
+
+        $scope = $this->scopedBarangayId();
+        if ($scope === null) {
+            return [];
+        }
+
+        return $this->client->get('barangays', [
+            'select' => 'barangay_id,name,barangay_code',
+            'order' => 'name.asc',
+            'barangay_id' => 'eq.' . $scope,
+        ]);
+    }
+
+    public function assignmentBarangays(): array
+    {
+        $this->requireAssignmentAdminEdit();
+        return $this->client->get('barangays', [
+            'select' => 'barangay_id,name,barangay_code',
+            'order' => 'name.asc',
+        ]);
     }
 
     public function summary(): array
     {
-        $reports = $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,evacuees,reported_at,created_at', 'order' => 'reported_at.desc,created_at.desc,id.desc']);
-        $requests = $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,status,priority,barangay_id,requested_at,created_at,updated_at', 'order' => 'requested_at.desc,created_at.desc,id.desc']);
+        if ($this->module5AllBarangaysActor()) {
+            $reports = $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,evacuees,reported_at,created_at', 'order' => 'reported_at.desc,created_at.desc,id.desc']);
+            $requests = $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,status,priority,barangay_id,requested_at,created_at,updated_at', 'order' => 'requested_at.desc,created_at.desc,id.desc']);
+        } else {
+            $scope = $this->scopedBarangayId();
+            if ($scope === null) {
+                return ['barangays_reporting' => 0, 'active_requests' => 0, 'urgent_requests' => 0, 'total_evacuees' => 0];
+            }
+            $reports = $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,evacuees,reported_at,created_at', 'order' => 'reported_at.desc,created_at.desc,id.desc', 'barangay_id' => 'eq.' . $scope]);
+            $requests = $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,status,priority,barangay_id,requested_at,created_at,updated_at', 'order' => 'requested_at.desc,created_at.desc,id.desc', 'barangay_id' => 'eq.' . $scope]);
+        }
         $activeRequests = 0;
         $urgent = 0;
         foreach ($requests as $row) {
@@ -66,12 +174,20 @@ final class DrrmBarangayCoordinationService
             $totalEvacuees += (int) ($row['evacuees'] ?? 0);
         }
 
-        return ['barangays_reporting' => count($latestByBarangay), 'active_requests' => $activeRequests, 'urgent_requests' => $urgent, 'total_evacuees' => $totalEvacuees, 'capabilities' => ['canView' => true, 'canCreate' => true]];
+        return ['barangays_reporting' => count($latestByBarangay), 'active_requests' => $activeRequests, 'urgent_requests' => $urgent, 'total_evacuees' => $totalEvacuees];
     }
 
     public function currentSituations(): array
     {
-        $reports = $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,situation_level,affected_households,evacuees,access_condition,situation_summary,notes,reported_at,reported_by_reference,created_at', 'order' => 'reported_at.desc,created_at.desc,id.desc']);
+        if ($this->module5AllBarangaysActor()) {
+            $reports = $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,situation_level,affected_households,evacuees,access_condition,situation_summary,notes,reported_at,reported_by_reference,created_at', 'order' => 'reported_at.desc,created_at.desc,id.desc']);
+        } else {
+            $scope = $this->scopedBarangayId();
+            if ($scope === null) {
+                return [];
+            }
+            $reports = $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,situation_level,affected_households,evacuees,access_condition,situation_summary,notes,reported_at,reported_by_reference,created_at', 'order' => 'reported_at.desc,created_at.desc,id.desc', 'barangay_id' => 'eq.' . $scope]);
+        }
         $latest = [];
         foreach ($reports as $row) {
             $barangayId = (string) ($row['barangay_id'] ?? '');
@@ -126,23 +242,114 @@ final class DrrmBarangayCoordinationService
 
     public function situationHistory(): array
     {
-        return $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,situation_level,affected_households,evacuees,access_condition,situation_summary,notes,reported_at,reported_by_reference', 'order' => 'reported_at.desc']);
+        if ($this->module5AllBarangaysActor()) {
+            return $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,situation_level,affected_households,evacuees,access_condition,situation_summary,notes,reported_at,reported_by_reference', 'order' => 'reported_at.desc']);
+        }
+        $scope = $this->scopedBarangayId();
+        if ($scope === null) {
+            return [];
+        }
+        return $this->client->get('drrm_barangay_status_reports', ['select' => 'id,barangay_id,situation_level,affected_households,evacuees,access_condition,situation_summary,notes,reported_at,reported_by_reference', 'order' => 'reported_at.desc', 'barangay_id' => 'eq.' . $scope]);
     }
 
     public function assistanceRequests(): array
     {
-        return $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,barangay_id,request_category,priority,description,status,requested_at,requested_by_reference,created_at,updated_at', 'order' => 'requested_at.desc']);
+        if ($this->module5AllBarangaysActor()) {
+            return $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,barangay_id,request_category,priority,description,status,requested_at,requested_by_reference,created_at,updated_at', 'order' => 'requested_at.desc']);
+        }
+        $scope = $this->scopedBarangayId();
+        if ($scope === null) {
+            return [];
+        }
+        return $this->client->get('drrm_barangay_assistance_requests', ['select' => 'id,barangay_id,request_category,priority,description,status,requested_at,requested_by_reference,created_at,updated_at', 'order' => 'requested_at.desc', 'barangay_id' => 'eq.' . $scope]);
     }
 
     public function assistanceRequestHistory(): array
     {
-        return $this->client->get('drrm_barangay_assistance_request_updates', ['select' => 'id,request_id,from_status,to_status,response_note,handled_by_reference,created_at', 'order' => 'created_at.desc,id.desc']);
+        if ($this->module5AllBarangaysActor()) {
+            return $this->client->get('drrm_barangay_assistance_request_updates', ['select' => 'id,request_id,from_status,to_status,response_note,handled_by_reference,created_at', 'order' => 'created_at.desc,id.desc']);
+        }
+
+        $scope = $this->scopedBarangayId();
+        if ($scope === null) {
+            return [];
+        }
+
+        $updates = $this->client->get('drrm_barangay_assistance_request_updates', ['select' => 'id,request_id,from_status,to_status,response_note,handled_by_reference,created_at', 'order' => 'created_at.desc,id.desc']);
+        $requests = $this->client->get('drrm_barangay_assistance_requests', [
+            'select' => 'id,barangay_id',
+            'barangay_id' => 'eq.' . $scope,
+            'order' => 'requested_at.desc',
+        ]);
+
+        $allowedRequestIds = [];
+        foreach ($requests as $row) {
+            $allowedRequestIds[(string) ($row['id'] ?? '')] = true;
+        }
+
+        return array_values(array_filter($updates, static fn(array $row): bool => isset($allowedRequestIds[(string) ($row['request_id'] ?? '')])));
+    }
+
+    private function requireAssignmentAdminEdit(): void
+    {
+        $auth = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
+        if (!$auth->canEdit()) {
+            throw new DrrmBarangayCoordinationAuthorizationException('Module 5 permission denied.');
+        }
+    }
+
+    private function requireUserReference(string $userReference, string $message = 'User reference is required.'): string
+    {
+        $userReference = trim((string) $userReference);
+        if ($userReference === '') {
+            throw new DrrmBarangayCoordinationValidationException($message);
+        }
+        if (mb_strlen($userReference) > 180) {
+            throw new DrrmBarangayCoordinationValidationException('Input is too long.');
+        }
+        return $userReference;
+    }
+
+    public function readAssignment(string $userReference): array
+    {
+        $this->requireAssignmentAdminEdit();
+        $userReference = $this->requireUserReference($userReference);
+        return $this->client->get('drrm_barangay_user_assignments', [
+            'select' => 'id,user_reference,barangay_id,is_active,created_at,updated_at',
+            'user_reference' => 'eq.' . $userReference,
+            'order' => 'created_at.desc,id.desc',
+        ]);
+    }
+
+    public function assignUserBarangay(string $userReference, string $barangayId): array
+    {
+        $this->requireAssignmentAdminEdit();
+        $userReference = $this->requireUserReference($userReference);
+        $barangayId = $this->requiredUuid($barangayId, 'Barangay is required.');
+        return $this->client->rpc('set_drrm_barangay_user_assignment', [
+            'p_user_reference' => $userReference,
+            'p_barangay_id' => $barangayId,
+        ]);
+    }
+
+    public function changeUserBarangay(string $userReference, string $barangayId): array
+    {
+        return $this->assignUserBarangay($userReference, $barangayId);
+    }
+
+    public function deactivateUserBarangay(string $userReference): array
+    {
+        $this->requireAssignmentAdminEdit();
+        $userReference = $this->requireUserReference($userReference);
+        return $this->client->rpc('deactivate_drrm_barangay_user_assignment', [
+            'p_user_reference' => $userReference,
+        ]);
     }
 
     public function createStatusReport(array $input, string $actor): array
     {
         $actor = $this->requiredActor($actor, 'Authenticated user is required.');
-        $barangayId = $this->requiredUuid($input['barangay_id'] ?? null, 'Barangay is required.');
+        $barangayId = $this->readScopeForCreate($input);
         $level = $this->requiredEnum($input['situation_level'] ?? null, self::SITUATION_LEVELS, 'Situation level is required.');
         $access = $this->requiredEnum($input['access_condition'] ?? null, self::ACCESS_CONDITIONS, 'Access condition is required.');
         $affected = $this->nonNegativeInt($input['affected_households'] ?? null, 'Affected households must be zero or greater.');
@@ -167,7 +374,7 @@ final class DrrmBarangayCoordinationService
     public function createAssistanceRequest(array $input, string $actor): array
     {
         $actor = $this->requiredActor($actor, 'Authenticated user is required.');
-        $barangayId = $this->requiredUuid($input['barangay_id'] ?? null, 'Barangay is required.');
+        $barangayId = $this->readScopeForCreate($input);
         $category = $this->requiredEnum($input['request_category'] ?? null, self::REQUEST_CATEGORIES, 'Request category is required.');
         $priority = $this->requiredEnum($input['priority'] ?? null, self::PRIORITIES, 'Priority is required.');
         $description = $this->requiredText($input['description'] ?? null, 1000, 'Request description is required.');

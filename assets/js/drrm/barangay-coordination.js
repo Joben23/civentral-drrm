@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const canCreate = Boolean(config.canCreate);
   const canEdit = Boolean(config.canEdit);
 
+  const state = {
+    barangays: [],
+    assignmentBarangays: []
+  };
+
   function buildTableRow(data, type) {
     return type === 'request' ? `
       <tr><td class="px-2 py-3 font-bold text-slate-700">${data.barangay || 'Unknown'}</td>
@@ -44,8 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fillBarangays(barangays) {
-    const ids = Array.from(document.querySelectorAll('select[name="barangay_id"]'));
+    const ids = Array.from(document.querySelectorAll('select[name="barangay_id"]:not([data-assignment-barangay])'));
     const rows = Array.isArray(barangays) ? barangays : [];
+    state.barangays = rows;
+
     for (const select of ids) {
       const selected = select.getAttribute('data-selected') || '';
       select.disabled = false;
@@ -57,6 +64,17 @@ document.addEventListener('DOMContentLoaded', () => {
         option.disabled = true;
         option.selected = true;
         option.textContent = 'No barangays available';
+        select.appendChild(option);
+        select.disabled = true;
+        continue;
+      }
+
+      if (rows.length === 1) {
+        const row = rows[0];
+        const option = document.createElement('option');
+        option.value = row.barangay_id;
+        option.textContent = row.name || row.barangay_code || 'Barangay';
+        option.selected = true;
         select.appendChild(option);
         select.disabled = true;
         continue;
@@ -193,7 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const summary = data.summary || {};
     renderSummary(summary);
     const barangays = data.barangays || [];
-    fillBarangays(barangays);
+    state.barangays = barangays;
+    window.__coordinationBarangays = barangays;
+    fillBarangays(state.barangays);
     const map = new Map();
     barangays.forEach((b) => map.set(b.barangay_id, b.name));
 
@@ -380,6 +400,204 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
+
+  function wireAssignmentAdmin() {
+    if (!canEdit) return;
+    const adminSection = document.querySelector('[data-assignment-current]')?.closest('section');
+    if (!adminSection) return;
+
+    const userReferenceInput = adminSection.querySelector('input[name="user_reference"]');
+    const barangaySelect = adminSection.querySelector('[data-assignment-barangay]');
+    const currentAssignment = adminSection.querySelector('[data-assignment-current]');
+    const setButton = adminSection.querySelector('[data-assignment-set]');
+    const deactivateButton = adminSection.querySelector('[data-assignment-deactivate]');
+    const feedback = adminSection.querySelector('[data-assignment-feedback]');
+
+    if (!userReferenceInput || !barangaySelect || !currentAssignment || !setButton || !deactivateButton || !feedback) return;
+
+    function showAssignmentFeedback(message) {
+      feedback.textContent = message || '';
+      feedback.classList.remove('hidden');
+    }
+
+    function hideAssignmentFeedback() {
+      feedback.textContent = '';
+      feedback.classList.add('hidden');
+    }
+
+    function barangayNameLookup(id) {
+      const rows = Array.isArray(state.assignmentBarangays) ? state.assignmentBarangays : [];
+      const found = rows.find((row) => String(row.barangay_id) === String(id));
+      return found ? (found.name || found.barangay_code || 'Barangay') : 'Unknown Barangay';
+    }
+
+    function loadCatalog() {
+      fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: JSON.stringify({action: 'get_assignment_barangays'})
+      })
+        .then((response) => response.json())
+        .then((payload) => {
+          if (!payload.success) {
+            state.assignmentBarangays = [];
+            window.__coordinationAssignmentBarangays = [];
+            barangaySelect.innerHTML = '';
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No barangays available';
+            option.disabled = true;
+            option.selected = true;
+            barangaySelect.appendChild(option);
+            showAssignmentFeedback(payload.message || 'Unable to load assignment catalog.');
+            return;
+          }
+          const rows = Array.isArray(payload.data) ? payload.data : [];
+          state.assignmentBarangays = rows;
+          window.__coordinationAssignmentBarangays = rows;
+          barangaySelect.innerHTML = '';
+          if (!rows.length) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No barangays available';
+            option.disabled = true;
+            option.selected = true;
+            barangaySelect.appendChild(option);
+            hideAssignmentFeedback();
+            return;
+          }
+          const defaultOption = document.createElement('option');
+          defaultOption.value = '';
+          defaultOption.textContent = 'Select barangay';
+          barangaySelect.appendChild(defaultOption);
+          rows.forEach((row) => {
+            const option = document.createElement('option');
+            option.value = row.barangay_id;
+            option.textContent = row.name || row.barangay_code || 'Barangay';
+            barangaySelect.appendChild(option);
+          });
+          hideAssignmentFeedback();
+        })
+        .catch(() => {
+          state.assignmentBarangays = [];
+          window.__coordinationAssignmentBarangays = [];
+          barangaySelect.innerHTML = '';
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No barangays available';
+          option.disabled = true;
+          option.selected = true;
+          barangaySelect.appendChild(option);
+          showAssignmentFeedback('Unable to load assignment catalog.');
+        });
+    }
+
+    function loadCurrentAssignment(reference) {
+      const target = String(reference || '').trim();
+      currentAssignment.textContent = 'None';
+
+      if (target === '') {
+        hideAssignmentFeedback();
+        return;
+      }
+
+      fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrfToken},
+        body: JSON.stringify({action: 'get_barangay_assignment', user_reference: target})
+      })
+        .then((response) => response.json())
+        .then((payload) => {
+          if (!payload.success) {
+            currentAssignment.textContent = 'None';
+            showAssignmentFeedback(payload.message || 'Unable to load current assignment.');
+            return;
+          }
+          const rows = Array.isArray(payload.data) ? payload.data : [];
+          const active = rows.find((row) => Boolean(row.is_active) && String(row.user_reference) === target) || rows.find((row) => String(row.user_reference) === target);
+          if (!active || !active.barangay_id) {
+            currentAssignment.textContent = 'None';
+            hideAssignmentFeedback();
+            return;
+          }
+          currentAssignment.textContent = barangayNameLookup(active.barangay_id);
+          hideAssignmentFeedback();
+        })
+        .catch(() => {
+          currentAssignment.textContent = 'None';
+          showAssignmentFeedback('Unable to load current assignment.');
+        });
+    }
+
+    loadCatalog();
+
+    userReferenceInput.addEventListener('change', () => loadCurrentAssignment(userReferenceInput.value));
+    userReferenceInput.addEventListener('input', () => {
+      const value = String(userReferenceInput.value || '').trim();
+      if (value === '') {
+        currentAssignment.textContent = 'None';
+        hideAssignmentFeedback();
+      }
+    });
+
+    setButton.addEventListener('click', () => {
+      const targetReference = String(userReferenceInput.value || '').trim();
+      const selectedBarangay = String(barangaySelect.value || '').trim();
+      if (targetReference === '') {
+        showAssignmentFeedback('User reference is required.');
+        return;
+      }
+      if (selectedBarangay === '') {
+        showAssignmentFeedback('Barangay is required.');
+        return;
+      }
+      fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrfToken},
+        body: JSON.stringify({action: 'set_barangay_assignment', user_reference: targetReference, barangay_id: selectedBarangay})
+      })
+        .then((response) => response.json())
+        .then((payload) => {
+          if (!payload.success) {
+            showAssignmentFeedback(payload.message || 'Unable to assign barangay.');
+            return;
+          }
+          showAssignmentFeedback('Assignment saved.');
+          loadCurrentAssignment(targetReference);
+        })
+        .catch(() => {
+          showAssignmentFeedback('Unable to assign barangay.');
+        });
+    });
+
+    deactivateButton.addEventListener('click', () => {
+      const targetReference = String(userReferenceInput.value || '').trim();
+      if (targetReference === '') {
+        showAssignmentFeedback('User reference is required.');
+        return;
+      }
+      fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': csrfToken},
+        body: JSON.stringify({action: 'deactivate_barangay_assignment', user_reference: targetReference})
+      })
+        .then((response) => response.json())
+        .then((payload) => {
+          if (!payload.success) {
+            showAssignmentFeedback(payload.message || 'Unable to deactivate assignment.');
+            return;
+          }
+          showAssignmentFeedback('Assignment deactivated.');
+          currentAssignment.textContent = 'None';
+          loadCurrentAssignment(targetReference);
+        })
+        .catch(() => {
+          showAssignmentFeedback('Unable to deactivate assignment.');
+        });
+    });
+  }
+
+  wireAssignmentAdmin();
 
   const refresh = document.getElementById('refreshCoordination');
   if (refresh) refresh.addEventListener('click', fetchData);
