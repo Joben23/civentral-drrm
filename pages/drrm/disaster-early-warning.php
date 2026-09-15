@@ -434,8 +434,8 @@ include '../../includes/sidebar.php';
     <header class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
       <div>
         <p class="text-[9px] font-black uppercase tracking-widest text-brand-dark dark:text-brand-medium">Human-reviewed workflow</p>
-        <h2 id="createWarningModalTitle" class="mt-1 text-base font-black text-slate-900 dark:text-white">Create Warning Draft</h2>
-        <p class="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">Saving creates a DRAFT only. No alert is delivered or activated automatically.</p>
+        <h2 id="createWarningModalTitle" class="mt-1 text-base font-black text-slate-900 dark:text-white" data-warning-form-title>Create Warning Draft</h2>
+        <p class="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400" data-warning-form-description>Saving creates a DRAFT only. No alert is delivered or activated automatically.</p>
       </div>
       <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800" data-close-create-warning aria-label="Close Create Warning">
         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -556,11 +556,20 @@ include '../../includes/sidebar.php';
         <div class="sm:col-span-2 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950"><dt class="text-[9px] font-black uppercase tracking-wider text-slate-400">Summary</dt><dd class="mt-1 whitespace-pre-wrap text-xs font-medium leading-relaxed text-slate-700 dark:text-slate-300" data-review-field="summary">Not available</dd></div>
       </dl>
 
+      <section class="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700" aria-labelledby="warningHistoryTitle">
+        <div class="flex items-center justify-between gap-3">
+          <h3 id="warningHistoryTitle" class="text-[10px] font-black uppercase tracking-wider text-slate-500">Lifecycle History</h3>
+          <span class="text-[9px] font-medium text-slate-400" data-warning-history-status>Loading recorded events...</span>
+        </div>
+        <div class="space-y-2" data-warning-history-list></div>
+      </section>
+
       <p class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[9px] font-bold leading-relaxed text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">Activation changes only the CIVENTRAL warning status. Alert delivery is not connected yet.</p>
       <p class="hidden rounded-xl border px-3 py-2 text-[10px] font-bold" data-review-workflow-status role="status" aria-live="polite"></p>
 
       <footer class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
         <button type="button" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300" data-close-review-warning>Close</button>
+        <button type="button" class="hidden rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800" data-edit-warning-draft hidden>Edit Draft</button>
         <button type="button" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-black text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-400" data-cancel-warning hidden>Cancel Warning</button>
         <button type="button" class="hidden rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-black text-white hover:bg-slate-800 dark:bg-brand-medium dark:text-slate-950" data-activate-warning hidden>Activate Warning</button>
       </footer>
@@ -592,6 +601,14 @@ include '../../includes/sidebar.php';
     ); ?>,
     createEndpoint: <?php echo json_encode(
         $basePath . 'api/drrm/early-warning-create.php',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
+    updateEndpoint: <?php echo json_encode(
+        $basePath . 'api/drrm/early-warning-update.php',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
+    historyEndpoint: <?php echo json_encode(
+        $basePath . 'api/drrm/early-warning-history.php',
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>,
     statusEndpoint: <?php echo json_encode(

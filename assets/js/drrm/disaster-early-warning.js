@@ -12,6 +12,7 @@
   const securityCapabilities = Object.freeze({
     canView: configuredCapabilities.canView === true,
     canCreateWarning: configuredCapabilities.canCreateWarning === true,
+    canEditDraft: configuredCapabilities.canEditDraft === true,
     canActivateWarning: configuredCapabilities.canActivateWarning === true,
     canCancelWarning: configuredCapabilities.canCancelWarning === true
   });
@@ -34,6 +35,9 @@
     recentWarnings: [],
     barangays: null,
     selectedWarningId: null,
+    editingWarningId: null,
+    editingExpectedRevision: null,
+    editingBarangayIds: [],
     mutationInFlight: false,
     lastResult: 'NOT_STARTED'
   };
@@ -172,6 +176,14 @@
       throw new Error('Enter a valid warning date and time.');
     }
     return date.toISOString();
+  }
+
+  function isoToLocalDateTimeInput(value) {
+    if (typeof value !== 'string' || value.trim() === '') {
+      return '';
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : localDateTimeValue(date);
   }
 
   function formatDateTime(value) {
@@ -477,6 +489,7 @@
       checkbox.type = 'checkbox';
       checkbox.value = barangay.barangay_id;
       checkbox.dataset.barangayId = barangay.barangay_id;
+      checkbox.checked = state.editingBarangayIds.includes(barangay.barangay_id);
       checkbox.className = 'h-4 w-4 accent-slate-900';
       text.textContent = barangay.name;
       label.append(checkbox, text);
@@ -521,7 +534,47 @@
     }
   }
 
-  function toggleCreateWarningModal(show) {
+  function populateWarningForm(form, warning) {
+    const level = warning.warning_level && typeof warning.warning_level === 'object'
+      ? warning.warning_level
+      : {};
+    const source = warning.source && typeof warning.source === 'object' ? warning.source : {};
+    const areas = Array.isArray(warning.affected_areas) ? warning.affected_areas : [];
+    const scopeType = areas.some((area) => area && area.scope_type === 'BARANGAY')
+      ? 'BARANGAY'
+      : 'CITY';
+    const values = {
+      title: warning.title || '',
+      hazard_type: warning.hazard_type || '',
+      warning_level: level.code || '',
+      source_code: source.code || '',
+      source_reference: warning.source_reference || '',
+      issued_at: isoToLocalDateTimeInput(warning.issued_at),
+      valid_until: isoToLocalDateTimeInput(warning.valid_until),
+      summary: warning.summary || ''
+    };
+
+    Object.entries(values).forEach(([name, value]) => {
+      const control = form.elements.namedItem(name);
+      if (control && 'value' in control) {
+        control.value = String(value);
+      }
+    });
+    const scope = form.querySelector(`input[name="scope_type"][value="${scopeType}"]`);
+    if (scope) {
+      scope.checked = true;
+    }
+
+    if (scopeType === 'BARANGAY') {
+      state.editingBarangayIds = areas
+        .map((area) => (area && typeof area.barangay_id === 'string' ? area.barangay_id : ''))
+        .filter(Boolean);
+    } else {
+      state.editingBarangayIds = [];
+    }
+  }
+
+  function toggleCreateWarningModal(show, warning = null) {
     const modal = document.querySelector('[data-create-warning-modal]');
     if (!modal) {
       return;
@@ -529,14 +582,41 @@
     setElementVisible(modal, show, true);
     document.body.classList.toggle('module4-modal-open', show);
 
+    if (!show) {
+      state.editingWarningId = null;
+      state.editingExpectedRevision = null;
+      state.editingBarangayIds = [];
+      return;
+    }
+
     if (show) {
       const form = modal.querySelector('[data-create-warning-form]');
       if (form) {
         form.reset();
-        const issuedAt = form.elements.namedItem('issued_at');
-        if (issuedAt instanceof HTMLInputElement) {
-          issuedAt.value = localDateTimeValue();
+        if (warning) {
+          state.editingWarningId = warning.id;
+          state.editingExpectedRevision = warning.revision;
+          populateWarningForm(form, warning);
+        } else {
+          state.editingWarningId = null;
+          state.editingExpectedRevision = null;
+          state.editingBarangayIds = [];
+          const issuedAt = form.elements.namedItem('issued_at');
+          if (issuedAt instanceof HTMLInputElement) {
+            issuedAt.value = localDateTimeValue();
+          }
         }
+      }
+      setText('[data-warning-form-title]', warning ? 'Edit Warning Draft' : 'Create Warning Draft');
+      setText(
+        '[data-warning-form-description]',
+        warning
+          ? 'Only this DRAFT definition is editable. Saving records a new immutable history event.'
+          : 'Saving creates a DRAFT only. No alert is delivered or activated automatically.'
+      );
+      const saveButton = modal.querySelector('[data-save-warning-draft]');
+      if (saveButton) {
+        saveButton.textContent = warning ? 'Save Draft Changes' : 'Save as Draft';
       }
       clearWorkflowStatus(modal.querySelector('[data-warning-workflow-status]'));
       updateSourceReferenceRequirement();
@@ -556,12 +636,70 @@
     setText(`[data-review-field="${name}"]`, value);
   }
 
+  function renderWarningHistory(events) {
+    const list = document.querySelector('[data-warning-history-list]');
+    if (!list) {
+      return;
+    }
+    list.replaceChildren();
+    if (events.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'text-[10px] font-medium text-slate-400';
+      empty.textContent = 'No recorded lifecycle events (legacy warnings were not backfilled).';
+      list.appendChild(empty);
+      setText('[data-warning-history-status]', 'No recorded events');
+      return;
+    }
+
+    events.forEach((event) => {
+      const item = document.createElement('article');
+      const heading = document.createElement('div');
+      const action = document.createElement('p');
+      const time = document.createElement('time');
+      const detail = document.createElement('p');
+      item.className = 'rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-950';
+      heading.className = 'flex flex-wrap items-center justify-between gap-2';
+      action.className = 'text-[10px] font-black text-slate-700 dark:text-slate-200';
+      time.className = 'text-[9px] font-medium text-slate-400';
+      detail.className = 'mt-1 text-[9px] font-medium text-slate-500 dark:text-slate-400';
+      action.textContent = formatCode(event.event_type);
+      time.textContent = formatDateTime(event.occurred_at);
+      detail.textContent = `${String(event.actor_reference || 'Actor unavailable')} · Result: ${formatCode(event.resulting_status)} · Revision ${Number(event.resulting_revision) || '?'}`;
+      heading.append(action, time);
+      item.append(heading, detail);
+      list.appendChild(item);
+    });
+    setText('[data-warning-history-status]', `${events.length} recorded event${events.length === 1 ? '' : 's'}`);
+  }
+
+  async function loadWarningHistory(warningId) {
+    if (typeof config.historyEndpoint !== 'string' || config.historyEndpoint === '') {
+      throw new Error('Warning history is unavailable.');
+    }
+    const response = await window.fetch(
+      `${config.historyEndpoint}?warning_id=${encodeURIComponent(warningId)}`,
+      { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } }
+    );
+    const payload = await response.json();
+    if (!response.ok || !payload || payload.success !== true) {
+      throw new Error('Warning history could not be loaded.');
+    }
+    const data = requireObject(payload.data, 'The warning-history response is malformed.');
+    const events = requireArray(data.events, 'The warning-history event list is malformed.');
+    if (state.selectedWarningId === warningId) {
+      renderWarningHistory(events);
+    }
+  }
+
   function updateReviewActions(warning) {
+    const edit = document.querySelector('[data-edit-warning-draft]');
     const activate = document.querySelector('[data-activate-warning]');
     const cancel = document.querySelector('[data-cancel-warning]');
     const storedStatus = warningStoredStatus(warning);
+    const canEdit = storedStatus === 'DRAFT' && securityCapabilities.canEditDraft;
     const canActivate = storedStatus === 'DRAFT' && securityCapabilities.canActivateWarning;
     const canCancel = ['DRAFT', 'ACTIVE'].includes(storedStatus) && securityCapabilities.canCancelWarning;
+    setElementVisible(edit, canEdit);
     setElementVisible(activate, canActivate);
     setElementVisible(cancel, canCancel);
   }
@@ -589,9 +727,19 @@
     setReviewField('valid_until', warning.valid_until ? formatDateTime(warning.valid_until) : 'No expiry specified');
     setReviewField('summary', String(warning.summary || 'Not available'));
     clearWorkflowStatus(modal.querySelector('[data-review-workflow-status]'));
+    const historyList = modal.querySelector('[data-warning-history-list]');
+    if (historyList) {
+      historyList.replaceChildren();
+    }
+    setText('[data-warning-history-status]', 'Loading recorded events...');
     updateReviewActions(warning);
     setElementVisible(modal, true, true);
     document.body.classList.add('module4-modal-open');
+    loadWarningHistory(warningId).catch(() => {
+      if (state.selectedWarningId === warningId) {
+        setText('[data-warning-history-status]', 'History unavailable');
+      }
+    });
   }
 
   function closeReviewWarning() {
@@ -603,7 +751,10 @@
 
   async function submitCreateWarning(event) {
     event.preventDefault();
-    if (state.mutationInFlight || !securityCapabilities.canCreateWarning) {
+    const isEditing = typeof state.editingWarningId === 'string';
+    if (state.mutationInFlight
+      || (isEditing && !securityCapabilities.canEditDraft)
+      || (!isEditing && !securityCapabilities.canCreateWarning)) {
       return;
     }
 
@@ -638,6 +789,13 @@
         scope_type: scopeType,
         barangay_ids: barangayIds
       };
+      if (isEditing) {
+        if (!Number.isInteger(state.editingExpectedRevision) || state.editingExpectedRevision < 1) {
+          throw new Error('The loaded warning revision is invalid. Refresh the warning list.');
+        }
+        payload.warning_id = state.editingWarningId;
+        payload.expected_revision = state.editingExpectedRevision;
+      }
     } catch (error) {
       setWorkflowStatus(status, error.message, 'error');
       return;
@@ -647,22 +805,32 @@
     state.mutationInFlight = true;
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = 'Saving Draft...';
+      submitButton.textContent = isEditing ? 'Saving Changes...' : 'Saving Draft...';
     }
     clearWorkflowStatus(status);
 
     try {
-      await mutationRequest(config.createEndpoint, payload);
-      setWorkflowStatus(status, 'Warning saved as DRAFT. No alert was delivered.', 'success');
+      const editedWarningId = isEditing ? state.editingWarningId : null;
+      await mutationRequest(isEditing ? config.updateEndpoint : config.createEndpoint, payload);
+      setWorkflowStatus(
+        status,
+        isEditing ? 'Draft changes saved and recorded in history.' : 'Warning saved as DRAFT. No alert was delivered.',
+        'success'
+      );
       await loadDashboard();
-      window.setTimeout(() => toggleCreateWarningModal(false), 650);
+      if (editedWarningId) {
+        toggleCreateWarningModal(false);
+        openReviewWarning(editedWarningId);
+      } else {
+        window.setTimeout(() => toggleCreateWarningModal(false), 650);
+      }
     } catch (error) {
       setWorkflowStatus(status, error.message || 'Unable to save warning.', 'error');
     } finally {
       state.mutationInFlight = false;
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = 'Save as Draft';
+        submitButton.textContent = isEditing ? 'Save Draft Changes' : 'Save as Draft';
       }
     }
   }
@@ -690,6 +858,7 @@
     try {
       await mutationRequest(config.statusEndpoint, {
         warning_id: warning.id,
+        expected_revision: warning.revision,
         action
       });
       setWorkflowStatus(status, action === 'ACTIVATE'
@@ -916,6 +1085,11 @@
         if (event.target && event.target.name === 'scope_type') {
           updateAffectedAreaSelector();
         }
+        if (event.target && event.target.matches('[data-barangay-id]')) {
+          state.editingBarangayIds = Array.from(
+            createForm.querySelectorAll('[data-barangay-id]:checked')
+          ).map((input) => input.value);
+        }
       });
     }
     if (source) {
@@ -947,6 +1121,17 @@
 
     const activateButton = document.querySelector('[data-activate-warning]');
     const cancelButton = document.querySelector('[data-cancel-warning]');
+    const editButton = document.querySelector('[data-edit-warning-draft]');
+    if (editButton) {
+      editButton.addEventListener('click', () => {
+        const warning = warningById(state.selectedWarningId);
+        if (!warning || warningStoredStatus(warning) !== 'DRAFT' || !securityCapabilities.canEditDraft) {
+          return;
+        }
+        closeReviewWarning();
+        toggleCreateWarningModal(true, warning);
+      });
+    }
     if (activateButton) {
       activateButton.addEventListener('click', () => submitWarningAction('ACTIVATE'));
     }
@@ -1011,6 +1196,7 @@
         ndrrmcSourceStatus: state.ndrrmcSourceStatus,
         ndrrmcAdvisoryCount: state.ndrrmcAdvisoryCount,
         warningManagementEnabled: securityCapabilities.canCreateWarning
+          || securityCapabilities.canEditDraft
           || securityCapabilities.canActivateWarning
           || securityCapabilities.canCancelWarning,
         barangayCount: Array.isArray(state.barangays) ? state.barangays.length : 0,

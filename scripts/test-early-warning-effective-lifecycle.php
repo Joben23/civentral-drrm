@@ -130,6 +130,7 @@ function lifecycleWarning(
         'issued_at' => $issuedAt,
         'valid_until' => $validUntil,
         'source_reference' => 'https://www.pagasa.dost.gov.ph/',
+        'revision' => 1,
         'updated_at' => '2026-09-15T00:00:00+00:00',
     ];
 }

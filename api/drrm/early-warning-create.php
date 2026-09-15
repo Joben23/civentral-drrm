@@ -69,6 +69,12 @@ if (!is_array($input) || array_is_list($input)) {
     drrmApiRespond(false, null, 'Invalid warning request.', 400);
 }
 
+try {
+    $actorReference = DrrmEarlyWarningWriteService::actorReferenceFromSession();
+} catch (DrrmEarlyWarningValidationException $exception) {
+    drrmApiRespond(false, null, $exception->getMessage(), 422);
+}
+
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
@@ -77,7 +83,7 @@ try {
     $service = new DrrmEarlyWarningWriteService(
         new SupabaseRestClient(SupabaseConfig::fromEnvironment(__DIR__ . '/../../.env'))
     );
-    drrmApiRespond(true, $service->createDraft($input), null, 201);
+    drrmApiRespond(true, $service->createDraft($input, $actorReference), null, 201);
 } catch (DrrmEarlyWarningValidationException $exception) {
     drrmApiRespond(false, null, $exception->getMessage(), 422);
 } catch (DrrmEarlyWarningWriteException) {

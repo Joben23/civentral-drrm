@@ -9,8 +9,10 @@ use DateTimeZone;
 use RuntimeException;
 use Throwable;
 
+require_once __DIR__ . '/DrrmDataStoreInterface.php';
 require_once __DIR__ . '/DrrmBarangayCatalogService.php';
 require_once __DIR__ . '/DrrmEarlyWarningLifecyclePolicy.php';
+require_once __DIR__ . '/SupabaseRestException.php';
 
 final class DrrmEarlyWarningValidationException extends RuntimeException
 {
@@ -20,12 +22,16 @@ final class DrrmEarlyWarningLifecycleException extends RuntimeException
 {
 }
 
+final class DrrmEarlyWarningConflictException extends RuntimeException
+{
+}
+
 final class DrrmEarlyWarningWriteException extends RuntimeException
 {
 }
 
 /**
- * Server-only write boundary for human-reviewed Module 4 warnings.
+ * Server-only transactional write boundary for human-reviewed Module 4 warnings.
  */
 final class DrrmEarlyWarningWriteService
 {
@@ -51,102 +57,103 @@ final class DrrmEarlyWarningWriteService
 
     private const EXTERNAL_SOURCE_CODES = ['PAGASA', 'PHIVOLCS', 'NDRRMC'];
 
-    public function __construct(private readonly SupabaseRestClient $client)
+    public function __construct(private readonly DrrmDataStoreInterface $client)
     {
     }
 
     /**
-     * @param array<string, mixed> $input
-     * @return array<string, mixed>
+     * Resolve the actor only from trusted server-side session data. Module 4's
+     * Supabase database does not own CIVENTRAL identities, so this deliberately
+     * follows the established USER:/EMPLOYEE: external-reference convention.
+     *
+     * @param array<string, mixed>|null $trustedSession
      */
-    public function createDraft(array $input): array
+    public static function actorReferenceFromSession(?array $trustedSession = null): string
+    {
+        $session = $trustedSession ?? $_SESSION;
+        $userId = $session['user_id'] ?? null;
+        $employeeId = $session['employee_id'] ?? null;
+
+        $prefix = is_scalar($userId) && trim((string) $userId) !== '' ? 'USER:' : 'EMPLOYEE:';
+        $value = $prefix === 'USER:' ? $userId : $employeeId;
+        $value = is_scalar($value) ? trim((string) $value) : '';
+
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:@\/-]{0,149}$/', $value) !== 1) {
+            throw new DrrmEarlyWarningValidationException('A trusted warning actor could not be resolved.');
+        }
+
+        return $prefix . $value;
+    }
+
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function createDraft(array $input, string $actorReference): array
     {
         $draft = $this->validateDraftInput($input);
-        $warningId = null;
+        $actorReference = $this->trustedActorReference($actorReference);
 
-        try {
-            $created = $this->client->post('early_warnings', [
-                'source_id' => $draft['source']['id'],
-                'external_reference_id' => null,
-                'title' => $draft['title'],
-                'hazard_type' => $draft['hazard_type'],
-                'warning_level_id' => $draft['risk_level']['risk_level_id'],
-                'summary' => $draft['summary'],
-                'status' => 'DRAFT',
-                'issued_at' => $draft['issued_at'],
-                'valid_until' => $draft['valid_until'],
-                'source_reference' => $draft['source_reference'],
-            ], [
-                'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
-            ]);
+        $result = $this->callRpc('create_module4_warning_draft', $this->draftRpcPayload(
+            $draft,
+            $actorReference
+        ));
 
-            if (count($created) !== 1 || !is_array($created[0])) {
-                throw new DrrmEarlyWarningWriteException('The warning draft was not created uniquely.');
-            }
-
-            $warningId = (string) ($created[0]['id'] ?? '');
-            if (!$this->isUuid($warningId) || ($created[0]['status'] ?? null) !== 'DRAFT') {
-                throw new DrrmEarlyWarningWriteException('The warning draft response was invalid.');
-            }
-
-            $areaPayload = [];
-            foreach ($draft['areas'] as $area) {
-                $areaPayload[] = [
-                    'warning_id' => $warningId,
-                    'scope_type' => $area['scope_type'],
-                    'barangay_id' => $area['barangay_id'],
-                    'area_name' => $area['area_name'],
-                ];
-            }
-
-            $createdAreas = $this->client->post('early_warning_areas', $areaPayload, [
-                'select' => 'id,warning_id,scope_type,barangay_id,area_name',
-            ]);
-
-            if (count($createdAreas) !== count($areaPayload)) {
-                throw new DrrmEarlyWarningWriteException('Not all warning areas were created.');
-            }
-
-            foreach ($createdAreas as $area) {
-                if (!is_array($area) || ($area['warning_id'] ?? null) !== $warningId) {
-                    throw new DrrmEarlyWarningWriteException('A warning area response was invalid.');
-                }
-            }
-
-            return [
-                'id' => $warningId,
-                'title' => $draft['title'],
-                'status' => 'DRAFT',
-                'hazard_type' => $draft['hazard_type'],
-                'warning_level' => $draft['risk_level']['code'],
-                'source_code' => $draft['source']['source_code'],
-                'affected_area_count' => count($createdAreas),
-            ];
-        } catch (DrrmEarlyWarningValidationException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            if ($warningId !== null) {
-                $this->rollbackDraft($warningId);
-            }
-
-            if ($exception instanceof DrrmEarlyWarningWriteException) {
-                throw $exception;
-            }
-
-            throw new DrrmEarlyWarningWriteException('Unable to save warning.', 0, $exception);
+        if (($result['outcome'] ?? null) !== 'CREATED') {
+            throw new DrrmEarlyWarningWriteException('The warning draft was not created transactionally.');
         }
+
+        return $this->mutationResult($result, 'DRAFT');
+    }
+
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function updateDraft(array $input, string $actorReference): array
+    {
+        $allowedKeys = [
+            'warning_id', 'expected_revision', 'title', 'hazard_type', 'warning_level',
+            'source_code', 'summary', 'issued_at', 'valid_until', 'source_reference',
+            'scope_type', 'barangay_ids',
+        ];
+        if (array_diff(array_keys($input), $allowedKeys) !== []) {
+            throw new DrrmEarlyWarningValidationException('Unsupported warning fields were supplied.');
+        }
+
+        $warningId = $this->warningId($input['warning_id'] ?? null);
+        $expectedRevision = $this->expectedRevision($input['expected_revision'] ?? null);
+        $definitionInput = array_diff_key($input, array_flip(['warning_id', 'expected_revision']));
+        $draft = $this->validateDraftInput($definitionInput);
+        $actorReference = $this->trustedActorReference($actorReference);
+
+        $payload = $this->draftRpcPayload($draft, $actorReference);
+        $payload = ['p_warning_id' => $warningId, 'p_expected_revision' => $expectedRevision] + $payload;
+        $result = $this->callRpc('update_module4_warning_draft', $payload);
+        $outcome = (string) ($result['outcome'] ?? '');
+
+        if ($outcome === 'REVISION_CONFLICT') {
+            throw new DrrmEarlyWarningConflictException(
+                'This warning changed after it was loaded. Refresh and review the latest version before trying again.'
+            );
+        }
+        if ($outcome === 'NOT_DRAFT') {
+            throw new DrrmEarlyWarningLifecycleException('Only a persisted DRAFT warning can be edited.');
+        }
+        if ($outcome === 'NOT_FOUND') {
+            throw new DrrmEarlyWarningLifecycleException('The warning could not be found.');
+        }
+        if ($outcome !== 'UPDATED') {
+            throw new DrrmEarlyWarningWriteException('The warning draft was not updated transactionally.');
+        }
+
+        return $this->mutationResult($result, 'DRAFT');
     }
 
     /** @return array<string, mixed> */
-    public function activate(string $warningId): array
+    public function activate(string $warningId, int $expectedRevision, string $actorReference): array
     {
-        return $this->changeStatus($warningId, 'ACTIVATE');
+        return $this->changeStatus($warningId, $expectedRevision, 'ACTIVATE', $actorReference);
     }
 
     /** @return array<string, mixed> */
-    public function cancel(string $warningId): array
+    public function cancel(string $warningId, int $expectedRevision, string $actorReference): array
     {
-        return $this->changeStatus($warningId, 'CANCEL');
+        return $this->changeStatus($warningId, $expectedRevision, 'CANCEL', $actorReference);
     }
 
     /** @return list<array{barangay_id: string, barangay_code: string, name: string}> */
@@ -189,7 +196,6 @@ final class DrrmEarlyWarningWriteService
 
         $issuedAt = $this->timestamp($input['issued_at'] ?? null, 'Issued At is invalid.', false);
         $validUntil = $this->timestamp($input['valid_until'] ?? null, 'Valid Until is invalid.', true);
-
         if ($validUntil !== null && $validUntil <= $issuedAt) {
             throw new DrrmEarlyWarningValidationException('Valid Until must be later than Issued At.');
         }
@@ -214,65 +220,84 @@ final class DrrmEarlyWarningWriteService
     }
 
     /** @return array<string, mixed> */
-    private function changeStatus(string $warningId, string $action): array
-    {
-        if (!$this->isUuid($warningId)) {
-            throw new DrrmEarlyWarningValidationException('Invalid warning identifier.');
-        }
+    private function changeStatus(
+        string $warningId,
+        int $expectedRevision,
+        string $action,
+        string $actorReference
+    ): array {
+        $warningId = $this->warningId($warningId);
+        $expectedRevision = $this->expectedRevision($expectedRevision);
+        $actorReference = $this->trustedActorReference($actorReference);
 
         if (!in_array($action, ['ACTIVATE', 'CANCEL'], true)) {
             throw new DrrmEarlyWarningValidationException('Invalid warning lifecycle action.');
         }
 
         $warnings = $this->client->get('early_warnings', [
-            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
+            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference,revision',
             'id' => 'eq.' . $warningId,
             'limit' => 2,
         ]);
-
         if (count($warnings) !== 1 || !is_array($warnings[0])) {
             throw new DrrmEarlyWarningLifecycleException('The warning could not be found.');
         }
 
         $warning = $warnings[0];
         $currentStatus = (string) ($warning['status'] ?? '');
+        $currentRevision = $this->recordRevision($warning['revision'] ?? null);
+        if ($currentRevision !== $expectedRevision) {
+            throw new DrrmEarlyWarningConflictException(
+                'This warning changed after it was loaded. Refresh and review the latest version before trying again.'
+            );
+        }
 
         if ($action === 'ACTIVATE') {
             if ($currentStatus !== 'DRAFT') {
                 throw new DrrmEarlyWarningLifecycleException('This warning can no longer be activated.');
             }
             $this->validateActivation($warning);
-            $targetStatus = 'ACTIVE';
-        } else {
-            if (!in_array($currentStatus, ['DRAFT', 'ACTIVE'], true)) {
-                throw new DrrmEarlyWarningLifecycleException('This warning can no longer be cancelled.');
-            }
-            $targetStatus = 'CANCELLED';
+        } elseif (!in_array($currentStatus, ['DRAFT', 'ACTIVE'], true)) {
+            throw new DrrmEarlyWarningLifecycleException('This warning can no longer be cancelled.');
         }
 
-        try {
-            $updated = $this->client->patch('early_warnings', [
-                'status' => $targetStatus,
-            ], [
-                'id' => 'eq.' . $warningId,
-                'status' => 'eq.' . $currentStatus,
-                'select' => 'id,title,status,updated_at',
-            ]);
-        } catch (Throwable $exception) {
-            throw new DrrmEarlyWarningWriteException('Unable to update warning status.', 0, $exception);
-        }
+        $result = $this->callRpc('change_module4_warning_status', [
+            'p_warning_id' => $warningId,
+            'p_expected_revision' => $expectedRevision,
+            'p_action' => $action,
+            'p_actor_reference' => $actorReference,
+        ]);
+        $outcome = (string) ($result['outcome'] ?? '');
 
-        if (count($updated) !== 1 || ($updated[0]['id'] ?? null) !== $warningId
-            || ($updated[0]['status'] ?? null) !== $targetStatus) {
+        if ($outcome === 'REVISION_CONFLICT') {
+            throw new DrrmEarlyWarningConflictException(
+                'This warning changed after it was loaded. Refresh and review the latest version before trying again.'
+            );
+        }
+        if ($outcome === 'NOT_FOUND') {
+            throw new DrrmEarlyWarningLifecycleException('The warning could not be found.');
+        }
+        if ($outcome === 'INVALID_STATUS') {
             throw new DrrmEarlyWarningLifecycleException('The warning status changed before this action completed.');
         }
+        if ($outcome !== 'CHANGED') {
+            $messages = [
+                'FUTURE_ISSUED_AT' => 'The warning issue time is in the future and cannot be activated.',
+                'INVALID_VALIDITY_ORDER' => 'The warning validity period must be later than the issue time.',
+                'ALREADY_EXPIRED' => 'The warning validity period has already expired.',
+                'INCOMPLETE' => 'The warning is incomplete and cannot be activated.',
+                'INVALID_SOURCE' => 'The warning source is no longer valid.',
+                'MISSING_SOURCE_REFERENCE' => 'The external warning source reference is missing.',
+                'INVALID_WARNING_LEVEL' => 'The warning level is no longer valid.',
+                'NO_AFFECTED_AREA' => 'The warning has no affected area.',
+            ];
+            if (isset($messages[$outcome])) {
+                throw new DrrmEarlyWarningLifecycleException($messages[$outcome]);
+            }
+            throw new DrrmEarlyWarningWriteException('The warning lifecycle action was not completed transactionally.');
+        }
 
-        return [
-            'id' => $warningId,
-            'title' => (string) ($updated[0]['title'] ?? $warning['title']),
-            'previous_status' => $currentStatus,
-            'status' => $targetStatus,
-        ];
+        return $this->mutationResult($result, $action === 'ACTIVATE' ? 'ACTIVE' : 'CANCELLED');
     }
 
     /** @param array<string, mixed> $warning */
@@ -282,28 +307,20 @@ final class DrrmEarlyWarningWriteService
         $summary = trim((string) ($warning['summary'] ?? ''));
         $hazardType = (string) ($warning['hazard_type'] ?? '');
         $sourceReference = $this->optionalText($warning['source_reference'] ?? null, 1000);
-
         if ($title === '' || $summary === '' || !in_array($hazardType, self::HAZARD_TYPES, true)) {
             throw new DrrmEarlyWarningLifecycleException('The warning is incomplete and cannot be activated.');
         }
 
         $issuedAt = $this->timestamp($warning['issued_at'] ?? null, 'The warning issue time is invalid.', false);
         $validUntil = $this->timestamp($warning['valid_until'] ?? null, 'The warning validity period is invalid.', true);
-        $timestampViolation = DrrmEarlyWarningLifecyclePolicy::activationTimestampViolation(
-            $issuedAt,
-            $validUntil
-        );
-        if ($timestampViolation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_VALIDITY_ORDER_INVALID) {
-            throw new DrrmEarlyWarningLifecycleException(
-                'The warning validity period must be later than the issue time.'
-            );
+        $violation = DrrmEarlyWarningLifecyclePolicy::activationTimestampViolation($issuedAt, $validUntil);
+        if ($violation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_VALIDITY_ORDER_INVALID) {
+            throw new DrrmEarlyWarningLifecycleException('The warning validity period must be later than the issue time.');
         }
-        if ($timestampViolation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_FUTURE_ISSUED_AT) {
-            throw new DrrmEarlyWarningLifecycleException(
-                'The warning issue time is in the future and cannot be activated.'
-            );
+        if ($violation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_FUTURE_ISSUED_AT) {
+            throw new DrrmEarlyWarningLifecycleException('The warning issue time is in the future and cannot be activated.');
         }
-        if ($timestampViolation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_ALREADY_EXPIRED) {
+        if ($violation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_ALREADY_EXPIRED) {
             throw new DrrmEarlyWarningLifecycleException('The warning validity period has already expired.');
         }
 
@@ -320,8 +337,86 @@ final class DrrmEarlyWarningWriteService
         if (in_array($source['source_code'], self::EXTERNAL_SOURCE_CODES, true) && $sourceReference === null) {
             throw new DrrmEarlyWarningLifecycleException('The external warning source reference is missing.');
         }
-
         $this->resolveRiskLevelById($warning['warning_level_id'] ?? null);
+    }
+
+    /** @param array<string, mixed> $draft @return array<string, mixed> */
+    private function draftRpcPayload(array $draft, string $actorReference): array
+    {
+        return [
+            'p_source_id' => $draft['source']['id'],
+            'p_title' => $draft['title'],
+            'p_hazard_type' => $draft['hazard_type'],
+            'p_warning_level_id' => $draft['risk_level']['risk_level_id'],
+            'p_summary' => $draft['summary'],
+            'p_issued_at' => $draft['issued_at'],
+            'p_valid_until' => $draft['valid_until'],
+            'p_source_reference' => $draft['source_reference'],
+            'p_areas' => $draft['areas'],
+            'p_actor_reference' => $actorReference,
+        ];
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function callRpc(string $function, array $payload): array
+    {
+        try {
+            $result = $this->client->rpc($function, $payload);
+        } catch (SupabaseRestException $exception) {
+            if ($exception->sqlState() === '23505') {
+                throw new DrrmEarlyWarningValidationException(
+                    'The warning contains duplicate or conflicting constrained values.',
+                    0,
+                    $exception
+                );
+            }
+            if (in_array($exception->sqlState(), ['22023', '23502', '23503', '23514'], true)) {
+                throw new DrrmEarlyWarningValidationException(
+                    'The warning failed server-side validation.',
+                    0,
+                    $exception
+                );
+            }
+            throw new DrrmEarlyWarningWriteException('Unable to save warning.', 0, $exception);
+        } catch (Throwable $exception) {
+            throw new DrrmEarlyWarningWriteException('Unable to save warning.', 0, $exception);
+        }
+
+        if (array_is_list($result)) {
+            if (count($result) !== 1 || !is_array($result[0])) {
+                throw new DrrmEarlyWarningWriteException('The warning mutation response was invalid.');
+            }
+            $result = $result[0];
+        }
+        if ($result === []) {
+            throw new DrrmEarlyWarningWriteException('The warning mutation response was empty.');
+        }
+
+        /** @var array<string, mixed> $result */
+        return $result;
+    }
+
+    /** @param array<string, mixed> $result @return array<string, mixed> */
+    private function mutationResult(array $result, string $expectedStatus): array
+    {
+        $id = (string) ($result['id'] ?? '');
+        $status = (string) ($result['status'] ?? '');
+        $revision = $this->recordRevision($result['revision'] ?? null);
+        if (!$this->isUuid($id) || $status !== $expectedStatus) {
+            throw new DrrmEarlyWarningWriteException('The warning mutation response was invalid.');
+        }
+
+        return [
+            'id' => $id,
+            'title' => (string) ($result['title'] ?? ''),
+            'previous_status' => $result['previous_status'] ?? null,
+            'status' => $status,
+            'revision' => $revision,
+            'updated_at' => isset($result['updated_at']) ? (string) $result['updated_at'] : null,
+            'affected_area_count' => isset($result['affected_area_count'])
+                ? (int) $result['affected_area_count']
+                : null,
+        ];
     }
 
     /** @return array{id: string, source_code: string} */
@@ -333,12 +428,10 @@ final class DrrmEarlyWarningWriteService
             'is_active' => 'eq.true',
             'limit' => 2,
         ]);
-
         if (count($rows) !== 1 || !is_array($rows[0]) || !$this->isUuid((string) ($rows[0]['id'] ?? ''))
             || ($rows[0]['source_code'] ?? null) !== $sourceCode || ($rows[0]['is_active'] ?? null) !== true) {
             throw new DrrmEarlyWarningValidationException('Invalid warning source.');
         }
-
         return ['id' => (string) $rows[0]['id'], 'source_code' => $sourceCode];
     }
 
@@ -348,22 +441,18 @@ final class DrrmEarlyWarningWriteService
         if (!$this->isUuid($sourceId)) {
             throw new DrrmEarlyWarningLifecycleException('The warning source is invalid.');
         }
-
         $rows = $this->client->get('early_warning_sources', [
             'select' => 'id,source_code,is_active',
             'id' => 'eq.' . $sourceId,
             'is_active' => 'eq.true',
             'limit' => 2,
         ]);
-
         $sourceCode = count($rows) === 1 && is_array($rows[0])
             ? (string) ($rows[0]['source_code'] ?? '')
             : '';
-
         if (!in_array($sourceCode, self::SOURCE_CODES, true)) {
             throw new DrrmEarlyWarningLifecycleException('The warning source is no longer valid.');
         }
-
         return ['id' => $sourceId, 'source_code' => $sourceCode];
     }
 
@@ -376,12 +465,11 @@ final class DrrmEarlyWarningWriteService
             'is_active' => 'eq.true',
             'limit' => 2,
         ]);
-
-        if (count($rows) !== 1 || !is_array($rows[0]) || !is_int($rows[0]['risk_level_id'] ?? null)
+        if (count($rows) !== 1 || !is_array($rows[0])
+            || !is_int($rows[0]['risk_level_id'] ?? null)
             || ($rows[0]['code'] ?? null) !== $code || ($rows[0]['is_active'] ?? null) !== true) {
             throw new DrrmEarlyWarningValidationException('Invalid warning level.');
         }
-
         return ['risk_level_id' => $rows[0]['risk_level_id'], 'code' => $code];
     }
 
@@ -390,14 +478,12 @@ final class DrrmEarlyWarningWriteService
         if (!is_int($riskLevelId) && !(is_string($riskLevelId) && ctype_digit($riskLevelId))) {
             throw new DrrmEarlyWarningLifecycleException('The warning level is invalid.');
         }
-
         $rows = $this->client->get('risk_levels', [
             'select' => 'risk_level_id,code,is_active',
             'risk_level_id' => 'eq.' . (int) $riskLevelId,
             'is_active' => 'eq.true',
             'limit' => 2,
         ]);
-
         if (count($rows) !== 1 || !is_array($rows[0])
             || !in_array($rows[0]['code'] ?? null, self::WARNING_LEVELS, true)) {
             throw new DrrmEarlyWarningLifecycleException('The warning level is no longer valid.');
@@ -410,12 +496,7 @@ final class DrrmEarlyWarningWriteService
         if ($barangayIds !== null && $barangayIds !== []) {
             throw new DrrmEarlyWarningValidationException('CITY scope must not include barangay identifiers.');
         }
-
-        return [[
-            'scope_type' => 'CITY',
-            'barangay_id' => null,
-            'area_name' => 'Caloocan City',
-        ]];
+        return [['scope_type' => 'CITY', 'barangay_id' => null, 'area_name' => 'Caloocan City']];
     }
 
     /** @return list<array{scope_type: string, barangay_id: string, area_name: string}> */
@@ -424,7 +505,6 @@ final class DrrmEarlyWarningWriteService
         if (!is_array($barangayIds) || !array_is_list($barangayIds) || $barangayIds === []) {
             throw new DrrmEarlyWarningValidationException('Select at least one validated barangay.');
         }
-
         if (count($barangayIds) > DrrmBarangayCatalogService::CURRENT_OPERATIONAL_COUNT) {
             throw new DrrmEarlyWarningValidationException('Too many barangays were selected.');
         }
@@ -436,7 +516,6 @@ final class DrrmEarlyWarningWriteService
             }
             $uniqueIds[$barangayId] = true;
         }
-
         if (count($uniqueIds) !== count($barangayIds)) {
             throw new DrrmEarlyWarningValidationException('Duplicate barangay selections are not allowed.');
         }
@@ -445,13 +524,8 @@ final class DrrmEarlyWarningWriteService
             $records = (new DrrmBarangayCatalogService($this->client))
                 ->writeEligibleBarangaysById(array_keys($uniqueIds));
         } catch (Throwable $exception) {
-            throw new DrrmEarlyWarningWriteException(
-                'The validated barangay catalog is unavailable.',
-                0,
-                $exception
-            );
+            throw new DrrmEarlyWarningWriteException('The validated barangay catalog is unavailable.', 0, $exception);
         }
-
         if (count($records) !== count($uniqueIds)) {
             throw new DrrmEarlyWarningValidationException('One or more selected barangays are invalid.');
         }
@@ -467,51 +541,45 @@ final class DrrmEarlyWarningWriteService
                 || preg_match('/^Barangay (?:[1-9]|[1-9]\d|1\d\d)(?:-[A-F])?$/', $name) !== 1) {
                 throw new DrrmEarlyWarningValidationException('One or more selected barangays are invalid.');
             }
-            $areas[] = [
-                'scope_type' => 'BARANGAY',
-                'barangay_id' => $id,
-                'area_name' => $name,
-            ];
+            $areas[] = ['scope_type' => 'BARANGAY', 'barangay_id' => $id, 'area_name' => $name];
         }
-
         return $areas;
     }
 
-    private function rollbackDraft(string $warningId): void
+    private function warningId(mixed $value): string
     {
-        try {
-            $this->client->delete('early_warning_areas', [
-                'warning_id' => 'eq.' . $warningId,
-                'select' => 'id',
-            ]);
-
-            $deletedWarnings = $this->client->delete('early_warnings', [
-                'id' => 'eq.' . $warningId,
-                'status' => 'eq.DRAFT',
-                'select' => 'id',
-            ]);
-
-            $remainingWarnings = $this->client->get('early_warnings', [
-                'select' => 'id',
-                'id' => 'eq.' . $warningId,
-                'limit' => 1,
-            ]);
-            $remainingAreas = $this->client->get('early_warning_areas', [
-                'select' => 'id',
-                'warning_id' => 'eq.' . $warningId,
-                'limit' => 1,
-            ]);
-
-            if (count($deletedWarnings) !== 1 || $remainingWarnings !== [] || $remainingAreas !== []) {
-                throw new RuntimeException('Rollback verification failed.');
-            }
-        } catch (Throwable $exception) {
-            throw new DrrmEarlyWarningWriteException(
-                'Unable to save warning and automatic rollback could not be verified.',
-                0,
-                $exception
-            );
+        if (!is_string($value) || !$this->isUuid($value)) {
+            throw new DrrmEarlyWarningValidationException('Invalid warning identifier.');
         }
+        return $value;
+    }
+
+    private function expectedRevision(mixed $value): int
+    {
+        if (!is_int($value) || $value < 1) {
+            throw new DrrmEarlyWarningValidationException('A valid expected warning revision is required.');
+        }
+        return $value;
+    }
+
+    private function recordRevision(mixed $value): int
+    {
+        if (is_string($value) && ctype_digit($value)) {
+            $value = (int) $value;
+        }
+        if (!is_int($value) || $value < 1) {
+            throw new DrrmEarlyWarningWriteException('The warning revision response was invalid.');
+        }
+        return $value;
+    }
+
+    private function trustedActorReference(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^(?:USER|EMPLOYEE):[A-Za-z0-9][A-Za-z0-9._:@\/-]{0,149}$/', $value) !== 1) {
+            throw new DrrmEarlyWarningValidationException('A trusted warning actor could not be resolved.');
+        }
+        return $value;
     }
 
     private function requiredText(mixed $value, string $message, int $maxLength): string
@@ -563,7 +631,6 @@ final class DrrmEarlyWarningWriteService
         if ($timestamp === null) {
             throw new DrrmEarlyWarningValidationException($message);
         }
-
         return $timestamp;
     }
 

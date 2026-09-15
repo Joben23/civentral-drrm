@@ -102,6 +102,15 @@ final class DrrmEarlyWarningAuthorizationService
         return $this->allows(self::ACTION_CREATE_WARNING);
     }
 
+    /**
+     * The central permission catalog has no separate edit action. Maintaining
+     * a warning definition while it remains DRAFT belongs to CREATE_WARNING.
+     */
+    public function canEditDraft(): bool
+    {
+        return $this->canCreateWarning();
+    }
+
     public function canActivateWarning(): bool
     {
         return $this->allows(self::ACTION_ACTIVATE_WARNING);
@@ -140,12 +149,13 @@ final class DrrmEarlyWarningAuthorizationService
         }
     }
 
-    /** @return array{canView: bool, canCreateWarning: bool, canActivateWarning: bool, canCancelWarning: bool} */
+    /** @return array{canView: bool, canCreateWarning: bool, canEditDraft: bool, canActivateWarning: bool, canCancelWarning: bool} */
     public function capabilities(): array
     {
         return [
             'canView' => $this->canView(),
             'canCreateWarning' => $this->canCreateWarning(),
+            'canEditDraft' => $this->canEditDraft(),
             'canActivateWarning' => $this->canActivateWarning(),
             'canCancelWarning' => $this->canCancelWarning(),
         ];

@@ -178,12 +178,44 @@ final class DrrmEarlyWarningReadService
         }
 
         $rows = $this->assertRecordList($this->client->get('early_warnings', [
-            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
+            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference,revision,updated_at',
             'order' => 'issued_at.desc',
             'limit' => $limit,
         ]));
 
         return $this->normalizeWarnings($rows);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function warningHistory(string $warningId, int $limit = 100): array
+    {
+        if (preg_match(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+            $warningId
+        ) !== 1) {
+            throw new RuntimeException('Invalid warning identifier.');
+        }
+        if ($limit < 1 || $limit > 100) {
+            throw new RuntimeException('The warning-history limit is outside the supported range.');
+        }
+
+        $rows = $this->assertRecordList($this->client->get('early_warning_history', [
+            'select' => 'id,warning_id,event_type,actor_reference,occurred_at,resulting_status,resulting_revision,details',
+            'warning_id' => 'eq.' . $warningId,
+            'order' => 'occurred_at.desc,resulting_revision.desc',
+            'limit' => $limit,
+        ]));
+
+        foreach ($rows as $row) {
+            if (($row['warning_id'] ?? null) !== $warningId
+                || !isset($row['id'], $row['event_type'], $row['actor_reference'], $row['occurred_at'], $row['resulting_status'], $row['resulting_revision'])
+                || !in_array($row['event_type'], ['CREATED', 'DRAFT_UPDATED', 'ACTIVATED', 'CANCELLED'], true)
+                || !is_array($row['details'] ?? null)) {
+                throw new RuntimeException('A warning-history record has an unexpected structure.');
+            }
+        }
+
+        return $rows;
     }
 
     /** @return list<array<string, mixed>> */
@@ -241,7 +273,7 @@ final class DrrmEarlyWarningReadService
         }
 
         $rows = $this->assertRecordList($this->client->get('early_warnings', [
-            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
+            'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference,revision,updated_at',
             'status' => 'eq.ACTIVE',
             'issued_at' => 'lte.' . $this->asOf->format('Y-m-d\TH:i:sP'),
             'or' => '(valid_until.is.null,valid_until.gt.' . $this->asOf->format('Y-m-d\TH:i:sP') . ')',
@@ -296,6 +328,7 @@ final class DrrmEarlyWarningReadService
             $warningId = (string) $area['warning_id'];
             $areasByWarningId[$warningId][] = [
                 'scope_type' => (string) $area['scope_type'],
+                'barangay_id' => $area['barangay_id'] === null ? null : (string) $area['barangay_id'],
                 'area_name' => (string) $area['area_name'],
             ];
         }
@@ -311,7 +344,16 @@ final class DrrmEarlyWarningReadService
                 $warningId === ''
                 || !is_array($source)
                 || !is_array($riskLevel)
-                || !isset($warning['title'], $warning['hazard_type'], $warning['summary'], $warning['status'], $warning['issued_at'])
+                || !isset(
+                    $warning['title'],
+                    $warning['hazard_type'],
+                    $warning['summary'],
+                    $warning['status'],
+                    $warning['issued_at'],
+                    $warning['revision'],
+                    $warning['updated_at']
+                )
+                || (int) $warning['revision'] < 1
             ) {
                 throw new RuntimeException('An early-warning record has an unexpected structure.');
             }
@@ -340,6 +382,8 @@ final class DrrmEarlyWarningReadService
                 ),
                 'issued_at' => (string) $warning['issued_at'],
                 'valid_until' => $warning['valid_until'] === null ? null : (string) $warning['valid_until'],
+                'revision' => (int) $warning['revision'],
+                'updated_at' => (string) $warning['updated_at'],
                 'source_reference' => $warning['source_reference'] === null
                     ? null
                     : (string) $warning['source_reference'],
@@ -373,13 +417,14 @@ final class DrrmEarlyWarningReadService
         }
 
         $rows = $this->assertRecordList($this->client->get('early_warning_areas', [
-            'select' => 'warning_id,scope_type,area_name',
+            'select' => 'warning_id,scope_type,barangay_id,area_name',
             'warning_id' => 'in.(' . implode(',', $warningIds) . ')',
             'order' => 'created_at.asc',
         ]));
 
         foreach ($rows as $row) {
-            if (!isset($row['warning_id'], $row['scope_type'], $row['area_name'])) {
+            if (!isset($row['warning_id'], $row['scope_type'], $row['area_name'])
+                || !array_key_exists('barangay_id', $row)) {
                 throw new RuntimeException('An early-warning affected-area record has an unexpected structure.');
             }
         }

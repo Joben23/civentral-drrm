@@ -9,6 +9,7 @@ use JsonException;
 use RuntimeException;
 
 require_once __DIR__ . '/DrrmDataStoreInterface.php';
+require_once __DIR__ . '/SupabaseRestException.php';
 
 /**
  * Minimal server-side client for Supabase Data REST API requests.
@@ -211,7 +212,22 @@ final class SupabaseRestClient implements DrrmDataStoreInterface
         curl_close($handle);
 
         if ($httpStatus < 200 || $httpStatus >= 300) {
-            throw new RuntimeException('The Supabase REST request failed with HTTP status ' . $httpStatus . '.');
+            $sqlState = null;
+            try {
+                $errorPayload = json_decode($responseBody, true, 8, JSON_THROW_ON_ERROR);
+                $candidate = is_array($errorPayload) ? ($errorPayload['code'] ?? null) : null;
+                if (is_string($candidate) && preg_match('/^[0-9A-Z]{5}$/', $candidate) === 1) {
+                    $sqlState = $candidate;
+                }
+            } catch (JsonException) {
+                // Keep malformed or non-JSON error bodies outside the exception boundary.
+            }
+
+            throw new SupabaseRestException(
+                'The Supabase REST request failed with HTTP status ' . $httpStatus . '.',
+                $httpStatus,
+                $sqlState
+            );
         }
 
         if ($responseBody === '') {
