@@ -130,6 +130,8 @@ function openEditModal(userId) {
   const editStatus = document.getElementById('editStatus');
   if (editStatus) editStatus.value = user.status || 'Active';
 
+  if (editDept && editDept.options.length === 1) editDept.selectedIndex = 0;
+
   openModal('editModal');
 }
 

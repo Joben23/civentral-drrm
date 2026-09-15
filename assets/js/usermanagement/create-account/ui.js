@@ -5,11 +5,11 @@ function applyUserScopeRules() {
   const roleAlertBox = document.getElementById('roleAlertBox');
   if (!currentUserScope) return;
 
-  const isSuperAdmin = !!currentUserScope.is_superadmin;
+  const isGlobalScope = !!currentUserScope.is_superadmin || !!currentUserScope.is_global_access;
   const userDeptId = currentUserScope.department_id;
   const userDeptName = currentUserScope.department_name || 'your department';
 
-  if (!isSuperAdmin && userDeptId && deptSelect) {
+  if (!isGlobalScope && userDeptId && deptSelect) {
     deptSelect.value = userDeptId;
     deptSelect.disabled = true;
     deptSelect.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
@@ -28,78 +28,86 @@ function applyUserScopeRules() {
     if (typeof fetchRolesForDepartment === 'function') {
       fetchRolesForDepartment(userDeptId);
     }
-  } else if (isSuperAdmin && deptSelect) {
+    if (typeof populatePositions === 'function') populatePositions(userDeptId);
+  } else if (isGlobalScope && deptSelect) {
     deptSelect.disabled = false;
     deptSelect.onchange = function() {
       const selectedDeptId = this.value;
       if (typeof fetchRolesForDepartment === 'function') {
         fetchRolesForDepartment(selectedDeptId);
       }
+      if (typeof populatePositions === 'function') populatePositions(selectedDeptId);
     };
   }
+
+  if (deptSelect.options.length === 1) deptSelect.selectedIndex = 0;
+}
+
+// POPULATE POSITIONS SELECT
+function populatePositions(deptId = '') {
+  const positionSelect = document.getElementById('position');
+  if (!positionSelect) return;
+
+  const isGlobalScope = currentUserScope
+    ? (!!currentUserScope.is_superadmin || !!currentUserScope.is_global_access)
+    : false;
+  const userDeptId = currentUserScope ? currentUserScope.department_id : null;
+  const effectiveDeptId = !isGlobalScope && userDeptId ? userDeptId : deptId;
+  const currentVal = positionSelect.value;
+
+  positionSelect.innerHTML = '<option value="">Choose position...</option>';
+  systemPositions
+    .filter(p => !effectiveDeptId || String(p.department_id) === String(effectiveDeptId))
+    .forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.position_name;
+      opt.textContent = p.position_name;
+      positionSelect.appendChild(opt);
+    });
+
+  if (currentVal) positionSelect.value = currentVal;
 }
 
 // POPULATE ROLES SELECT
 function populateRoles() {
   const roleSelect = document.getElementById('role');
   if (!roleSelect) return;
-  const currentVal = roleSelect.value;
-  roleSelect.innerHTML = '<option value="">Choose system role...</option>';
+  const drrmRole = systemRoles.find(r =>
+    String(r.role_id) === '18' &&
+    String(r.role_name).trim() === 'DRRM Administrator' &&
+    String(r.role_prefix).trim().toUpperCase() === 'DA' &&
+    (!Object.prototype.hasOwnProperty.call(r, 'department_id') || String(r.department_id) === '9')
+  );
 
-  const isSuperAdmin = currentUserScope ? !!currentUserScope.is_superadmin : false;
+  roleSelect.innerHTML = '';
+  if (!drrmRole) return;
 
-  systemRoles.forEach(r => {
-    if (!isSuperAdmin && (r.is_superadmin == 1 || r.is_superadmin === true || r.is_global_access == 1 || ['SA', 'SADM'].includes((r.role_prefix || '').toUpperCase()))) {
-      return;
-    }
-
-    const opt = document.createElement('option');
-    opt.value = r.role_id;
-    opt.dataset.prefix = r.role_prefix || 'STF';
-    opt.dataset.name = r.role_name;
-    opt.textContent = `${r.role_name} (${r.role_prefix})`;
-    roleSelect.appendChild(opt);
-  });
-
-  if (currentVal) {
-    roleSelect.value = currentVal;
-  }
+  const opt = document.createElement('option');
+  opt.value = drrmRole.role_id;
+  opt.dataset.prefix = drrmRole.role_prefix;
+  opt.dataset.name = drrmRole.role_name;
+  opt.textContent = `${drrmRole.role_name} (${drrmRole.role_prefix})`;
+  opt.selected = true;
+  roleSelect.appendChild(opt);
 }
 
 // POPULATE DEPARTMENTS SELECT
 function populateDepartments() {
   const deptSelect = document.getElementById('department');
   if (!deptSelect) return;
-
-  const isSuperAdmin = currentUserScope ? !!currentUserScope.is_superadmin : false;
-  const userDeptId = currentUserScope ? currentUserScope.department_id : null;
-
   deptSelect.innerHTML = '';
 
-  if (isSuperAdmin || !userDeptId) {
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = '';
-    defaultOpt.textContent = 'Choose department...';
-    deptSelect.appendChild(defaultOpt);
-  }
+  const drrmDepartment = systemDepartments.find(d =>
+    String(d.department_id) === '9' &&
+    String(d.department_name).trim() === 'Disaster Risk Reduction & Emergency Response'
+  );
+  if (!drrmDepartment) return;
 
-  systemDepartments.forEach(d => {
-    if (!isSuperAdmin && userDeptId && String(d.department_id) !== String(userDeptId)) {
-      return;
-    }
-
-    const opt = document.createElement('option');
-    opt.value = d.department_id;
-    opt.textContent = d.department_name;
-    if (userDeptId && String(d.department_id) === String(userDeptId)) {
-      opt.selected = true;
-    }
-    deptSelect.appendChild(opt);
-  });
-
-  if (userDeptId) {
-    deptSelect.value = userDeptId;
-  }
+  const opt = document.createElement('option');
+  opt.value = drrmDepartment.department_id;
+  opt.textContent = drrmDepartment.department_name;
+  opt.selected = true;
+  deptSelect.appendChild(opt);
 }
 
 // AUTO-GENERATE EMPLOYEE ID BASED ON ROLE PREFIX, YEAR & SEQUENCE (e.g. SDA-2026-002)

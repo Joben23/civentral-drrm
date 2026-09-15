@@ -138,7 +138,9 @@ include '../../includes/sidebar.php';
         <!-- Position Input -->
         <div class="space-y-1.5">
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Assign Designation / Position</label>
-          <input type="text" id="position" required placeholder="e.g. Senior Administrative Assistant" class="border border-slate-200 rounded-xl px-3 py-2.5 text-xs w-full focus:outline-none focus:border-brand-medium focus:ring-2 focus:ring-brand-medium/10 transition font-medium text-slate-800">
+          <select id="position" required class="border border-slate-200 rounded-xl px-3 py-2.5 text-xs w-full bg-white focus:outline-none focus:border-brand-medium focus:ring-2 focus:ring-brand-medium/10 transition cursor-pointer font-medium text-slate-800">
+            <option value="">Choose position...</option>
+          </select>
         </div>
 
         <!-- System Role Select -->

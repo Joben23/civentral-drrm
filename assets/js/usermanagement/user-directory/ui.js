@@ -35,28 +35,37 @@ function populateEditFormOptions() {
   const editRole = document.getElementById('editRole');
   const editDept = document.getElementById('editDept');
   const editPosition = document.getElementById('editPosition');
+  const drrmDepartment = availableDepartments.find(d =>
+    String(d.department_id) === '9' &&
+    String(d.department_name).trim() === 'Disaster Risk Reduction & Emergency Response'
+  );
+  const drrmRole = availableRoles.find(r =>
+    String(r.role_id) === '18' &&
+    String(r.role_name).trim() === 'DRRM Administrator' &&
+    String(r.role_prefix).trim().toUpperCase() === 'DA' &&
+    (!Object.prototype.hasOwnProperty.call(r, 'department_id') || String(r.department_id) === '9')
+  );
 
   if (editRole) {
-    editRole.innerHTML = '<option value="">Select Role...</option>';
-    availableRoles.forEach(r => {
-      if (r.is_superadmin == 1 || r.is_superadmin === true) {
-        return;
-      }
+    editRole.innerHTML = '';
+    if (drrmRole) {
       const opt = document.createElement('option');
-      opt.value = r.role_id;
-      opt.textContent = `${r.role_name} (${r.role_prefix})`;
+      opt.value = drrmRole.role_id;
+      opt.textContent = `${drrmRole.role_name} (${drrmRole.role_prefix})`;
+      opt.selected = true;
       editRole.appendChild(opt);
-    });
+    }
   }
 
   if (editDept) {
-    editDept.innerHTML = '<option value="">Select Department...</option>';
-    availableDepartments.forEach(d => {
+    editDept.innerHTML = '';
+    if (drrmDepartment) {
       const opt = document.createElement('option');
-      opt.value = d.department_id;
-      opt.textContent = d.department_name;
+      opt.value = drrmDepartment.department_id;
+      opt.textContent = drrmDepartment.department_name;
+      opt.selected = true;
       editDept.appendChild(opt);
-    });
+    }
   }
 
   // Handle department change to filter position options
@@ -71,9 +80,15 @@ function updatePositionDropdown(deptId, selectedPositionId = '') {
   const editPosition = document.getElementById('editPosition');
   if (!editPosition) return;
 
+  const isGlobalScope = currentUserScope
+    ? (!!currentUserScope.is_superadmin || !!currentUserScope.is_global_access)
+    : false;
+  const userDeptId = currentUserScope ? currentUserScope.department_id : null;
+  const effectiveDeptId = !isGlobalScope && userDeptId ? userDeptId : deptId;
+
   editPosition.innerHTML = '<option value="">Select Position...</option>';
-  const filteredPositions = deptId 
-    ? availablePositions.filter(p => p.department_id == deptId)
+  const filteredPositions = effectiveDeptId
+    ? availablePositions.filter(p => p.department_id == effectiveDeptId)
     : availablePositions;
 
   filteredPositions.forEach(p => {

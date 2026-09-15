@@ -45,6 +45,7 @@ async function handleEditStaff(e) {
   const phone = document.getElementById('editPhone').value.trim();
   const positionId = parseInt(document.getElementById('editPosition').value) || 0;
   const roleId = parseInt(document.getElementById('editRole').value) || 0;
+  const departmentId = parseInt(document.getElementById('editDept').value) || 0;
   const status = document.getElementById('editStatus').value;
 
   const nameParts = nameInput.split(/\s+/);
@@ -57,6 +58,7 @@ async function handleEditStaff(e) {
     last_name: lastName,
     email: email,
     mobile_number: phone,
+    department_id: departmentId,
     role_id: roleId,
     position_id: positionId,
     status: status

@@ -2,6 +2,7 @@
 
 var systemRoles = [];
 var systemDepartments = [];
+var systemPositions = [];
 var currentUserScope = null;
 
 // FETCH ROLES & DEPARTMENTS FROM Database API
@@ -13,10 +14,12 @@ async function fetchFormData() {
     if (result.status === 'success') {
       systemRoles = result.roles || [];
       systemDepartments = result.departments || [];
+      systemPositions = result.positions || [];
       currentUserScope = result.current_user || null;
 
       if (typeof populateDepartments === 'function') populateDepartments();
       if (typeof populateRoles === 'function') populateRoles();
+      if (typeof populatePositions === 'function') populatePositions();
       if (typeof applyUserScopeRules === 'function') applyUserScopeRules();
     } else {
       console.warn('Fetch form data notice:', result.message);
