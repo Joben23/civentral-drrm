@@ -10,6 +10,7 @@ use RuntimeException;
 use Throwable;
 
 require_once __DIR__ . '/DrrmBarangayCatalogService.php';
+require_once __DIR__ . '/DrrmEarlyWarningLifecyclePolicy.php';
 
 final class DrrmEarlyWarningValidationException extends RuntimeException
 {
@@ -189,8 +190,8 @@ final class DrrmEarlyWarningWriteService
         $issuedAt = $this->timestamp($input['issued_at'] ?? null, 'Issued At is invalid.', false);
         $validUntil = $this->timestamp($input['valid_until'] ?? null, 'Valid Until is invalid.', true);
 
-        if ($validUntil !== null && $validUntil < $issuedAt) {
-            throw new DrrmEarlyWarningValidationException('Valid Until must not be before Issued At.');
+        if ($validUntil !== null && $validUntil <= $issuedAt) {
+            throw new DrrmEarlyWarningValidationException('Valid Until must be later than Issued At.');
         }
 
         $source = $this->resolveSource($sourceCode);
@@ -288,13 +289,22 @@ final class DrrmEarlyWarningWriteService
 
         $issuedAt = $this->timestamp($warning['issued_at'] ?? null, 'The warning issue time is invalid.', false);
         $validUntil = $this->timestamp($warning['valid_until'] ?? null, 'The warning validity period is invalid.', true);
-        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
-
-        if ($validUntil !== null && $validUntil <= $now) {
-            throw new DrrmEarlyWarningLifecycleException('The warning validity period has already expired.');
+        $timestampViolation = DrrmEarlyWarningLifecyclePolicy::activationTimestampViolation(
+            $issuedAt,
+            $validUntil
+        );
+        if ($timestampViolation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_VALIDITY_ORDER_INVALID) {
+            throw new DrrmEarlyWarningLifecycleException(
+                'The warning validity period must be later than the issue time.'
+            );
         }
-        if ($validUntil !== null && $validUntil < $issuedAt) {
-            throw new DrrmEarlyWarningLifecycleException('The warning validity period is invalid.');
+        if ($timestampViolation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_FUTURE_ISSUED_AT) {
+            throw new DrrmEarlyWarningLifecycleException(
+                'The warning issue time is in the future and cannot be activated.'
+            );
+        }
+        if ($timestampViolation === DrrmEarlyWarningLifecyclePolicy::ACTIVATION_ALREADY_EXPIRED) {
+            throw new DrrmEarlyWarningLifecycleException('The warning validity period has already expired.');
         }
 
         $areas = $this->client->get('early_warning_areas', [
@@ -549,24 +559,12 @@ final class DrrmEarlyWarningWriteService
         if (($value === null || $value === '') && $nullable) {
             return null;
         }
-        if (!is_string($value) || preg_match(
-            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:\d{2})$/',
-            $value
-        ) !== 1) {
+        $timestamp = DrrmEarlyWarningLifecyclePolicy::parseTimestamp($value);
+        if ($timestamp === null) {
             throw new DrrmEarlyWarningValidationException($message);
         }
-        try {
-            $timestamp = new DateTimeImmutable($value);
-            $errors = DateTimeImmutable::getLastErrors();
-            if (is_array($errors) && (($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0)) {
-                throw new DrrmEarlyWarningValidationException($message);
-            }
-            return $timestamp;
-        } catch (DrrmEarlyWarningValidationException $exception) {
-            throw $exception;
-        } catch (Throwable) {
-            throw new DrrmEarlyWarningValidationException($message);
-        }
+
+        return $timestamp;
     }
 
     private function isUuid(string $value): bool

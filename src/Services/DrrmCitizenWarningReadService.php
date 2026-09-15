@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use DateTimeImmutable;
-use DateTimeZone;
 use RuntimeException;
-use Throwable;
 
+require_once __DIR__ . '/DrrmDataStoreInterface.php';
 require_once __DIR__ . '/DrrmBarangayCatalogService.php';
+require_once __DIR__ . '/DrrmEarlyWarningLifecyclePolicy.php';
 
 /**
  * Public-safe, read-only projection of human-activated CIVENTRAL warnings.
@@ -44,7 +44,7 @@ final class DrrmCitizenWarningReadService
     /** @var list<string> */
     private const SOURCE_CODES = ['PAGASA', 'PHIVOLCS', 'NDRRMC', 'CIVENTRAL'];
 
-    public function __construct(private readonly SupabaseRestClient $client)
+    public function __construct(private readonly DrrmDataStoreInterface $client)
     {
     }
 
@@ -59,12 +59,12 @@ final class DrrmCitizenWarningReadService
      */
     public function activeWarnings(?DateTimeImmutable $asOf = null): array
     {
-        $asOf = ($asOf ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
-            ->setTimezone(new DateTimeZone('UTC'));
+        $asOf = DrrmEarlyWarningLifecyclePolicy::asUtc($asOf);
 
         $warningRows = $this->records($this->client->get('early_warnings', [
             'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference,updated_at',
             'status' => 'eq.ACTIVE',
+            'issued_at' => 'lte.' . $asOf->format('Y-m-d\TH:i:sP'),
             'or' => '(valid_until.is.null,valid_until.gt.' . $asOf->format('Y-m-d\TH:i:sP') . ')',
             'order' => 'issued_at.desc',
             'limit' => self::MAX_ACTIVE_WARNINGS + 1,
@@ -273,15 +273,15 @@ final class DrrmCitizenWarningReadService
             return null;
         }
 
-        $issuedAt = $this->timestamp($row['issued_at'] ?? null);
+        $issuedAt = DrrmEarlyWarningLifecyclePolicy::parseTimestamp($row['issued_at'] ?? null);
         $validUntil = ($row['valid_until'] ?? null) === null
             ? null
-            : $this->timestamp($row['valid_until']);
-        $updatedAt = $this->timestamp($row['updated_at'] ?? null);
+            : DrrmEarlyWarningLifecyclePolicy::parseTimestamp($row['valid_until']);
+        $updatedAt = DrrmEarlyWarningLifecyclePolicy::parseTimestamp($row['updated_at'] ?? null);
 
         if ($issuedAt === null || $updatedAt === null
             || (($row['valid_until'] ?? null) !== null && $validUntil === null)
-            || ($validUntil !== null && $validUntil <= $asOf)) {
+            || !DrrmEarlyWarningLifecyclePolicy::isEffectivelyActive($row, $asOf)) {
             return null;
         }
 
@@ -398,19 +398,6 @@ final class DrrmCitizenWarningReadService
         }
 
         return null;
-    }
-
-    private function timestamp(mixed $value): ?DateTimeImmutable
-    {
-        if (!is_string($value) || trim($value) === '') {
-            return null;
-        }
-
-        try {
-            return (new DateTimeImmutable($value))->setTimezone(new DateTimeZone('UTC'));
-        } catch (Throwable) {
-            return null;
-        }
     }
 
     private function isValidatedBarangayName(string $name): bool

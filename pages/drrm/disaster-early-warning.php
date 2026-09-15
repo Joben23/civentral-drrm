@@ -135,7 +135,7 @@ include '../../includes/sidebar.php';
 
         <div class="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/50">
           <p class="text-xs font-black text-slate-700 dark:text-slate-200" data-current-warning-title>No active local warning</p>
-          <p class="mt-1 text-[10px] font-medium leading-relaxed text-slate-500 dark:text-slate-400" data-current-warning-summary>No ACTIVE warning records are currently stored.</p>
+          <p class="mt-1 text-[10px] font-medium leading-relaxed text-slate-500 dark:text-slate-400" data-current-warning-summary>No warning is currently within its effective issue and validity window.</p>
         </div>
 
         <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

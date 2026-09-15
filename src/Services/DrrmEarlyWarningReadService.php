@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use DateTimeImmutable;
 use RuntimeException;
+
+require_once __DIR__ . '/DrrmDataStoreInterface.php';
+require_once __DIR__ . '/DrrmEarlyWarningLifecyclePolicy.php';
 
 /**
  * Read-only projection of DRRM Module 4 data for the early-warning dashboard.
@@ -23,8 +27,13 @@ final class DrrmEarlyWarningReadService
     /** @var list<array<string, mixed>>|null */
     private ?array $activeWarningRows = null;
 
-    public function __construct(private readonly SupabaseRestClient $client)
-    {
+    private readonly DateTimeImmutable $asOf;
+
+    public function __construct(
+        private readonly DrrmDataStoreInterface $client,
+        ?DateTimeImmutable $asOf = null
+    ) {
+        $this->asOf = DrrmEarlyWarningLifecyclePolicy::asUtc($asOf);
     }
 
     /**
@@ -53,15 +62,15 @@ final class DrrmEarlyWarningReadService
             'metric_metadata' => [
                 'active_warnings' => [
                     'implemented' => true,
-                    'definition' => 'Warning records whose status is ACTIVE.',
+                    'definition' => 'Stored ACTIVE warnings already issued and not expired as of the server UTC time.',
                 ],
                 'high_risk_areas' => [
                     'implemented' => true,
-                    'definition' => 'Affected-area records attached to ACTIVE HIGH or CRITICAL warnings.',
+                    'definition' => 'Affected-area records attached to effectively active HIGH or CRITICAL warnings.',
                 ],
                 'weather_advisories' => [
                     'implemented' => true,
-                    'definition' => 'ACTIVE warning records attributed to the PAGASA source.',
+                    'definition' => 'Effectively active warning records attributed to the PAGASA source.',
                 ],
                 'alerts_sent_today' => [
                     'implemented' => false,
@@ -234,9 +243,12 @@ final class DrrmEarlyWarningReadService
         $rows = $this->assertRecordList($this->client->get('early_warnings', [
             'select' => 'id,source_id,title,hazard_type,warning_level_id,summary,status,issued_at,valid_until,source_reference',
             'status' => 'eq.ACTIVE',
+            'issued_at' => 'lte.' . $this->asOf->format('Y-m-d\TH:i:sP'),
+            'or' => '(valid_until.is.null,valid_until.gt.' . $this->asOf->format('Y-m-d\TH:i:sP') . ')',
             'order' => 'issued_at.desc',
         ]));
 
+        $activeRows = [];
         foreach ($rows as $row) {
             if (
                 !isset($row['id'], $row['source_id'], $row['title'], $row['hazard_type'], $row['warning_level_id'], $row['summary'], $row['issued_at'])
@@ -244,9 +256,14 @@ final class DrrmEarlyWarningReadService
             ) {
                 throw new RuntimeException('An active early-warning record has an unexpected structure.');
             }
+
+            // Enforce the fixed query rule again at the projection boundary.
+            if (DrrmEarlyWarningLifecyclePolicy::isEffectivelyActive($row, $this->asOf)) {
+                $activeRows[] = $row;
+            }
         }
 
-        return $this->activeWarningRows = $rows;
+        return $this->activeWarningRows = $activeRows;
     }
 
     /**
@@ -299,6 +316,7 @@ final class DrrmEarlyWarningReadService
                 throw new RuntimeException('An early-warning record has an unexpected structure.');
             }
 
+            $storedStatus = (string) $warning['status'];
             $normalized[] = [
                 'id' => $warningId,
                 'title' => (string) $warning['title'],
@@ -308,7 +326,18 @@ final class DrrmEarlyWarningReadService
                     'name' => (string) $riskLevel['name'],
                 ],
                 'summary' => (string) $warning['summary'],
-                'status' => (string) $warning['status'],
+                // Preserve the persisted lifecycle value while making display
+                // semantics explicit for expired stored-ACTIVE rows.
+                'status' => $storedStatus,
+                'stored_status' => $storedStatus,
+                'effective_status' => DrrmEarlyWarningLifecyclePolicy::effectiveStatus(
+                    $warning,
+                    $this->asOf
+                ),
+                'is_effectively_active' => DrrmEarlyWarningLifecyclePolicy::isEffectivelyActive(
+                    $warning,
+                    $this->asOf
+                ),
                 'issued_at' => (string) $warning['issued_at'],
                 'valid_until' => $warning['valid_until'] === null ? null : (string) $warning['valid_until'],
                 'source_reference' => $warning['source_reference'] === null

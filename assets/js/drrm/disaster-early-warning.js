@@ -190,6 +190,20 @@
     }).format(date);
   }
 
+  function warningDisplayStatus(warning) {
+    if (warning && typeof warning.effective_status === 'string' && warning.effective_status !== '') {
+      return warning.effective_status;
+    }
+    return warning && typeof warning.status === 'string' ? warning.status : '';
+  }
+
+  function warningStoredStatus(warning) {
+    if (warning && typeof warning.stored_status === 'string' && warning.stored_status !== '') {
+      return warning.stored_status;
+    }
+    return warning && typeof warning.status === 'string' ? warning.status : '';
+  }
+
   function formatCode(value) {
     return typeof value === 'string' && value.trim() !== ''
       ? value.replaceAll('_', ' ')
@@ -368,7 +382,7 @@
     if (warning === null) {
       setText('[data-current-warning-badge-text]', 'No Active Local Warning');
       setText('[data-current-warning-title]', 'No active local warning');
-      setText('[data-current-warning-summary]', 'No ACTIVE warning records are currently stored.');
+      setText('[data-current-warning-summary]', 'No warning is currently within its effective issue and validity window.');
 
       document.querySelectorAll('[data-current-warning-field]').forEach((field) => {
         field.textContent = 'Not available';
@@ -545,8 +559,9 @@
   function updateReviewActions(warning) {
     const activate = document.querySelector('[data-activate-warning]');
     const cancel = document.querySelector('[data-cancel-warning]');
-    const canActivate = warning.status === 'DRAFT' && securityCapabilities.canActivateWarning;
-    const canCancel = ['DRAFT', 'ACTIVE'].includes(warning.status) && securityCapabilities.canCancelWarning;
+    const storedStatus = warningStoredStatus(warning);
+    const canActivate = storedStatus === 'DRAFT' && securityCapabilities.canActivateWarning;
+    const canCancel = ['DRAFT', 'ACTIVE'].includes(storedStatus) && securityCapabilities.canCancelWarning;
     setElementVisible(activate, canActivate);
     setElementVisible(cancel, canCancel);
   }
@@ -568,7 +583,7 @@
     setReviewField('level', String(level.name || level.code || 'Not available'));
     setReviewField('areas', affectedAreaText(warning));
     setReviewField('source', String(source.name || source.code || 'Not available'));
-    setReviewField('status', formatCode(warning.status));
+    setReviewField('status', formatCode(warningDisplayStatus(warning)));
     setReviewField('source_reference', String(warning.source_reference || 'Not provided'));
     setReviewField('issued_at', formatDateTime(warning.issued_at));
     setReviewField('valid_until', warning.valid_until ? formatDateTime(warning.valid_until) : 'No expiry specified');
@@ -745,7 +760,7 @@
       appendCell(row, String(level.name || level.code || 'Not available'), 'px-4 py-3 font-bold');
       appendCell(row, String(source.name || source.code || 'Not available'), 'px-4 py-3');
       appendCell(row, formatDateTime(warning.issued_at), 'px-4 py-3');
-      appendCell(row, formatCode(warning.status), 'px-5 py-3 font-bold');
+      appendCell(row, formatCode(warningDisplayStatus(warning)), 'px-5 py-3 font-bold');
       appendActionsCell(row, warning.id);
       body.appendChild(row);
     });

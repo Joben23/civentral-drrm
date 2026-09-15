@@ -164,6 +164,13 @@ try {
             'valid_until' => $now->modify('-1 hour')->format('Y-m-d\TH:i:sP'),
         ])
     ));
+    assertValidationRejected('EqualValidityRejected', fn () => $writeService->createDraft(
+        array_replace($basePayload, [
+            'title' => 'TEST - equal validity',
+            'issued_at' => $now->format('Y-m-d\TH:i:sP'),
+            'valid_until' => $now->format('Y-m-d\TH:i:sP'),
+        ])
+    ));
     assertValidationRejected('ExternalReferenceRequired', fn () => $writeService->createDraft(
         array_replace($basePayload, ['title' => 'TEST - missing reference', 'source_code' => 'PAGASA'])
     ));
@@ -239,6 +246,24 @@ try {
         throw new RuntimeException('Expired draft was activated.');
     } catch (DrrmEarlyWarningLifecycleException) {
         echo "ExpiredActivationRejected=PASS\n";
+    }
+    $futureTitle = 'TEST - Module 4 FUTURE ' . $testSuffix;
+    $futureDraft = $writeService->createDraft(array_replace($basePayload, [
+        'title' => $futureTitle,
+        'issued_at' => $now->modify('+1 hour')->format('Y-m-d\TH:i:sP'),
+        'valid_until' => $now->modify('+2 hours')->format('Y-m-d\TH:i:sP'),
+    ]));
+    $createdWarnings[$futureDraft['id']] = $futureTitle;
+    try {
+        $writeService->activate($futureDraft['id']);
+        throw new RuntimeException('Future-issued draft was activated.');
+    } catch (DrrmEarlyWarningLifecycleException $exception) {
+        assertWorkflowResult(
+            'FutureIssuedActivationMessage',
+            $exception->getMessage(),
+            'The warning issue time is in the future and cannot be activated.'
+        );
+        echo 'FutureIssuedActivationRejected=PASS' . PHP_EOL;
     }
 } finally {
     cleanupTestWarnings($client, $createdWarnings);
