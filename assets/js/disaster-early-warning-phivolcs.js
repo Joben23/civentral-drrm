@@ -62,7 +62,10 @@
     setText('[data-phivolcs-feed-status]', `Official machine-readable event feed: ${sourceConfirmed ? 'Available' : 'Not Confirmed'}`);
     setText('[data-phivolcs-runtime-badge]', sourceConfirmed ? 'Official Feed Available' : 'Integration Pending');
     setText('[data-phivolcs-source-status]', sourceConfirmed ? 'Confirmed' : 'Not confirmed');
-    setText('[data-phivolcs-event-count]', String(events.length));
+    setText(
+      '[data-phivolcs-event-count]',
+      sourceConfirmed ? String(events.length) : 'Not available - no verified feed'
+    );
     setText(
       '[data-phivolcs-relevance-status]',
       relevance.status === 'NOT_APPLIED_NO_FEED' ? 'Not applied — no feed' : String(relevance.status || 'Unknown')
@@ -89,7 +92,7 @@
     setText('[data-phivolcs-feed-status]', 'Official machine-readable event feed: Unavailable');
     setText('[data-phivolcs-runtime-badge]', 'Temporarily Unavailable');
     setText('[data-phivolcs-source-status]', 'Temporarily unavailable');
-    setText('[data-phivolcs-event-count]', '0');
+    setText('[data-phivolcs-event-count]', 'Unavailable');
     setText('[data-phivolcs-relevance-status]', 'Not available');
     setText('[data-phivolcs-information-title]', 'PHIVOLCS information is temporarily unavailable.');
     setText('[data-phivolcs-information-message]', 'The warning dashboard, PAGASA information, and NDRRMC status remain available.');

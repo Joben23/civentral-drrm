@@ -60,10 +60,17 @@ try {
         'The dashboard warning source identities changed unexpectedly.'
     );
 
+    $expectedSourceStatuses = [
+        'CIVENTRAL' => 'CONNECTED',
+        'NDRRMC' => 'PENDING',
+        'PAGASA' => 'PARTIAL',
+        'PHIVOLCS' => 'PENDING',
+    ];
     foreach ($sources as $source) {
         assertEarlyWarningRead(
-            ($source['integration_status'] ?? null) === 'PENDING',
-            'A warning source was incorrectly reported as connected.'
+            ($source['integration_status'] ?? null)
+                === ($expectedSourceStatuses[$source['source_code']] ?? null),
+            'A warning source integration classification is incorrect.'
         );
     }
 
@@ -85,7 +92,7 @@ try {
 
     echo "DRRM early-warning read service: OK\n";
     echo 'sources: ' . count($sources) . " records\n";
-    echo "source_statuses: PENDING=4\n";
+    echo "source_statuses: CONNECTED=1, PARTIAL=1, PENDING=2\n";
     echo 'active_warnings: ' . $expectedMetrics['active_warnings'] . PHP_EOL;
     echo 'high_risk_areas: ' . $expectedMetrics['high_risk_areas'] . PHP_EOL;
     echo 'weather_advisories: ' . $expectedMetrics['weather_advisories'] . PHP_EOL;

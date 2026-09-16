@@ -183,20 +183,21 @@ include '../../includes/sidebar.php';
     <section class="space-y-3" aria-labelledby="advisorySourcesTitle">
       <div>
         <h2 id="advisorySourcesTitle" class="text-sm font-black text-slate-800 dark:text-white">Advisory Sources</h2>
-        <p class="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">Read-only official-source availability; external information remains separate from local CIVENTRAL warnings.</p>
+        <p class="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">Provider capability and runtime availability are shown separately. External items require staging and administrative review before the existing warning lifecycle.</p>
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900" data-source-card="PAGASA">
           <div class="flex items-start justify-between gap-3">
             <span class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-400"><i class="fa-solid fa-cloud-sun-rain" aria-hidden="true"></i></span>
-            <span class="rounded-lg bg-amber-50 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" data-source-status>Integration Pending</span>
+            <span class="rounded-lg bg-amber-50 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" data-source-status>Checking</span>
           </div>
           <h3 class="mt-3 text-xs font-black text-slate-800 dark:text-white" data-source-name>DOST-PAGASA</h3>
-          <p class="mt-1 text-[10px] font-medium leading-relaxed text-slate-500 dark:text-slate-400">Weather / rainfall / tropical cyclone information</p>
+          <p class="mt-1 text-[10px] font-medium leading-relaxed text-slate-500 dark:text-slate-400">Ten-Day forecast metadata is separate from operational advisories.</p>
           <div class="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-[9px] font-bold dark:border-slate-800">
-            <p class="text-slate-500 dark:text-slate-400" data-pagasa-public-feed-status>Official public feed: Checking</p>
-            <p class="text-slate-500 dark:text-slate-400" data-pagasa-detailed-api-status>Detailed API: Checking</p>
+            <p class="text-slate-500 dark:text-slate-400" data-pagasa-public-feed-status>PAGASA forecast issuance metadata: Checking</p>
+            <p class="text-slate-500 dark:text-slate-400" data-pagasa-detailed-api-status>Detailed Caloocan forecast API: Checking</p>
+            <p class="text-slate-500 dark:text-slate-400" data-pagasa-operational-advisory-status>PAGASA operational advisories: Pending verified source</p>
           </div>
         </article>
 

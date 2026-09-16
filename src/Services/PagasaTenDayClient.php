@@ -29,6 +29,8 @@ final class PagasaUnavailableException extends RuntimeException
  */
 final class PagasaTenDayClient
 {
+    private const MAX_RESPONSE_BYTES = 1048576;
+
     public function __construct(
         private readonly PagasaConfig $config,
         private readonly int $connectionTimeoutSeconds = 5,
@@ -112,9 +114,11 @@ final class PagasaTenDayClient
         if ($requiresToken) {
             $headers[] = 'token: ' . $this->config->apiToken();
         }
+        $body = '';
+        $responseTooLarge = false;
         $options = [
             CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_RETURNTRANSFER => false,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_CONNECTTIMEOUT => $this->connectionTimeoutSeconds,
             CURLOPT_TIMEOUT => $this->requestTimeoutSeconds,
@@ -124,16 +128,30 @@ final class PagasaTenDayClient
             CURLOPT_USERAGENT => 'CIVENTRAL-DRRM/1.0',
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_HTTPGET => true,
+            CURLOPT_WRITEFUNCTION => static function ($curlHandle, string $chunk) use (
+                &$body,
+                &$responseTooLarge
+            ): int {
+                if (strlen($body) + strlen($chunk) > self::MAX_RESPONSE_BYTES) {
+                    $responseTooLarge = true;
+                    return 0;
+                }
+                $body .= $chunk;
+                return strlen($chunk);
+            },
         ];
         if (defined('CURLOPT_PROTOCOLS') && defined('CURLPROTO_HTTPS')) {
             $options[CURLOPT_PROTOCOLS] = CURLPROTO_HTTPS;
         }
 
         curl_setopt_array($handle, $options);
-        $body = curl_exec($handle);
-        if ($body === false) {
+        $requestSucceeded = curl_exec($handle);
+        if ($requestSucceeded === false) {
             $code = curl_errno($handle);
             curl_close($handle);
+            if ($responseTooLarge) {
+                throw new PagasaUnavailableException('The PAGASA response exceeded the safe size limit.');
+            }
             throw new PagasaUnavailableException('The PAGASA request failed at the network layer (cURL code ' . $code . ').');
         }
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);

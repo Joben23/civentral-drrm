@@ -6,6 +6,10 @@ namespace App\Services;
 
 use App\Config\PagasaConfig;
 
+require_once __DIR__ . '/ExternalAdvisoryProviderInterface.php';
+require_once __DIR__ . '/ExternalAdvisoryFetchResult.php';
+require_once __DIR__ . '/PagasaExternalAdvisoryProvider.php';
+
 /**
  * Read-only Module 4 projection of official PAGASA information.
  *
@@ -18,8 +22,13 @@ final class DrrmPagasaAdvisoryService
     private const ISSUANCE_REFERENCE = 'https://tenday.pagasa.dost.gov.ph/api/v1/tenday/issuance';
     private const DETAILED_REFERENCE = 'https://tenday.pagasa.dost.gov.ph/api/v1/tenday/full';
 
-    public function __construct(private readonly PagasaTenDayClient $client)
-    {
+    private readonly ExternalAdvisoryProviderInterface $advisoryProvider;
+
+    public function __construct(
+        private readonly PagasaTenDayClient $client,
+        ?ExternalAdvisoryProviderInterface $advisoryProvider = null
+    ) {
+        $this->advisoryProvider = $advisoryProvider ?? new PagasaExternalAdvisoryProvider();
     }
 
     /** @return array<string, mixed> */
@@ -88,6 +97,7 @@ final class DrrmPagasaAdvisoryService
                 'agency' => 'DOST-PAGASA',
                 'product' => 'TenDay Weather Forecast',
             ],
+            'source_classification' => $this->advisoryProvider->classification(),
             'public_information_status' => $publicStatus,
             'public_information' => $publicInformation,
             'detailed_api' => $detailedApi,

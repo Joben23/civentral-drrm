@@ -111,6 +111,16 @@ final class DrrmEarlyWarningAuthorizationService
         return $this->canCreateWarning();
     }
 
+    /**
+     * The central catalog has no external-sync action. A synchronization run
+     * writes provider staging/audit records, so CREATE_WARNING is the least
+     * surprising existing owner; VIEW remains strictly read-only.
+     */
+    public function canSynchronizeExternalAdvisories(): bool
+    {
+        return $this->canCreateWarning();
+    }
+
     public function canActivateWarning(): bool
     {
         return $this->allows(self::ACTION_ACTIVATE_WARNING);
@@ -149,13 +159,14 @@ final class DrrmEarlyWarningAuthorizationService
         }
     }
 
-    /** @return array{canView: bool, canCreateWarning: bool, canEditDraft: bool, canActivateWarning: bool, canCancelWarning: bool} */
+    /** @return array{canView: bool, canCreateWarning: bool, canEditDraft: bool, canSynchronizeExternalAdvisories: bool, canActivateWarning: bool, canCancelWarning: bool} */
     public function capabilities(): array
     {
         return [
             'canView' => $this->canView(),
             'canCreateWarning' => $this->canCreateWarning(),
             'canEditDraft' => $this->canEditDraft(),
+            'canSynchronizeExternalAdvisories' => $this->canSynchronizeExternalAdvisories(),
             'canActivateWarning' => $this->canActivateWarning(),
             'canCancelWarning' => $this->canCancelWarning(),
         ];

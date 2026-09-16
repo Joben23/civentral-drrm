@@ -52,6 +52,7 @@ $viewOnly = DrrmEarlyWarningAuthorizationService::fromTrustedSession();
 assertSecurityResult('ViewOnlyCanView', $viewOnly->canView(), true);
 assertSecurityResult('ViewOnlyCanCreate', $viewOnly->canCreateWarning(), false);
 assertSecurityResult('ViewOnlyCanEditDraft', $viewOnly->canEditDraft(), false);
+assertSecurityResult('ViewOnlyCannotSynchronizeExternalAdvisories', $viewOnly->canSynchronizeExternalAdvisories(), false);
 assertSecurityResult('ViewOnlyCanActivate', $viewOnly->canActivateWarning(), false);
 assertSecurityResult('ViewOnlyCanCancel', $viewOnly->canCancelWarning(), false);
 
@@ -65,6 +66,7 @@ $superadmin = DrrmEarlyWarningAuthorizationService::fromTrustedSession();
 assertSecurityResult('SuperadminCanView', $superadmin->canView(), true);
 assertSecurityResult('SuperadminCanCreate', $superadmin->canCreateWarning(), true);
 assertSecurityResult('SuperadminCanEditDraft', $superadmin->canEditDraft(), true);
+assertSecurityResult('SuperadminCanSynchronizeExternalAdvisories', $superadmin->canSynchronizeExternalAdvisories(), true);
 assertSecurityResult('SuperadminCanActivate', $superadmin->canActivateWarning(), true);
 assertSecurityResult('SuperadminCanCancel', $superadmin->canCancelWarning(), true);
 
@@ -93,6 +95,7 @@ $allPermissions = DrrmEarlyWarningAuthorizationService::fromTrustedSession();
 assertSecurityResult('ExactResourcePresent', $allPermissions->hasModuleResource(), true);
 assertSecurityResult('ExactCreateAllowed', $allPermissions->canCreateWarning(), true);
 assertSecurityResult('CreatePermissionOwnsDraftEditing', $allPermissions->canEditDraft(), true);
+assertSecurityResult('CreatePermissionOwnsExternalSynchronization', $allPermissions->canSynchronizeExternalAdvisories(), true);
 assertSecurityResult('ExactActivateAllowed', $allPermissions->canActivateWarning(), true);
 assertSecurityResult('ExactCancelAllowed', $allPermissions->canCancelWarning(), true);
 

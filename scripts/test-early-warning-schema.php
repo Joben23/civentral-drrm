@@ -39,7 +39,7 @@ function fetchModule4CatalogVerification(SupabaseConfig $config): array
         throw new RuntimeException('The PHP cURL extension is required for Supabase verification.');
     }
 
-    $handle = curl_init($config->restBaseUrl() . '/rpc/verify_module4_early_warning_schema');
+    $handle = curl_init($config->restBaseUrl() . '/rpc/verify_module4_external_advisory_schema');
 
     if ($handle === false) {
         throw new RuntimeException('The Module 4 schema verification request could not be initialized.');
@@ -98,10 +98,10 @@ function fetchModule4CatalogVerification(SupabaseConfig $config): array
 function assertModule4Sources(array $sources): void
 {
     $expected = [
-        'CIVENTRAL' => ['CIVENTRAL DRRM', 'INTERNAL_SYSTEM'],
-        'NDRRMC' => ['National Disaster Risk Reduction and Management Council', 'GOVERNMENT_AGENCY'],
-        'PAGASA' => ['DOST-PAGASA', 'GOVERNMENT_AGENCY'],
-        'PHIVOLCS' => ['DOST-PHIVOLCS', 'GOVERNMENT_AGENCY'],
+        'CIVENTRAL' => ['CIVENTRAL DRRM', 'INTERNAL_SYSTEM', 'CONNECTED'],
+        'NDRRMC' => ['National Disaster Risk Reduction and Management Council', 'GOVERNMENT_AGENCY', 'PENDING'],
+        'PAGASA' => ['DOST-PAGASA', 'GOVERNMENT_AGENCY', 'PARTIAL'],
+        'PHIVOLCS' => ['DOST-PHIVOLCS', 'GOVERNMENT_AGENCY', 'PENDING'],
     ];
 
     if (count($sources) !== count($expected)) {
@@ -121,7 +121,7 @@ function assertModule4Sources(array $sources): void
             || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $id)
             || ($source['source_name'] ?? null) !== $expected[$code][0]
             || ($source['source_type'] ?? null) !== $expected[$code][1]
-            || ($source['integration_status'] ?? null) !== 'PENDING'
+            || ($source['integration_status'] ?? null) !== $expected[$code][2]
             || ($source['is_active'] ?? null) !== true
         ) {
             throw new RuntimeException('A Module 4 warning source did not match its controlled definition.');
@@ -144,6 +144,14 @@ try {
         'area_scope_type_check_valid',
         'indexes_valid',
         'direct_client_privileges_restricted',
+        'external_service_role_privileges_restricted',
+        'staging_rpc_hardened',
+        'staging_rpc_service_role_execute',
+        'phase4b_security_definer_functions_hardened',
+        'phase4b_rpc_service_role_execute',
+        'phase4b_rpc_public_execute_revoked',
+        'phase4b_rpc_anon_execute_revoked',
+        'phase4b_rpc_authenticated_execute_revoked',
         'source_seed_valid',
         'risk_levels_reused',
     ]);

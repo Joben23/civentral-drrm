@@ -256,11 +256,16 @@
     switch (status) {
       case 'CONNECTED':
         return 'Connected';
+      case 'PARTIAL':
+        return 'Partial';
+      case 'UNAVAILABLE':
+        return 'Unavailable';
       case 'DISABLED':
         return 'Disabled';
       case 'PENDING':
+        return 'Pending';
       default:
-        return 'Integration Pending';
+        return 'Unknown';
     }
   }
 
@@ -309,11 +314,22 @@
 
   function renderPagasaOverview(data) {
     const source = requireObject(data.source, 'The PAGASA source is malformed.');
+    const classification = requireObject(
+      data.source_classification,
+      'The PAGASA source classification is malformed.'
+    );
     const detailedApi = requireObject(data.detailed_api, 'The PAGASA API status is malformed.');
     const advisories = requireArray(data.advisories, 'The PAGASA advisory list is malformed.');
 
     if (source.agency !== 'DOST-PAGASA' || source.product !== 'TenDay Weather Forecast') {
       throw new Error('The PAGASA source identity is invalid.');
+    }
+    if (classification.source_code !== 'PAGASA'
+      || classification.integration_status !== 'PARTIAL'
+      || classification.source_kind !== 'FORECAST_METADATA_API'
+      || classification.operational_advisory_status !== 'PENDING'
+      || classification.supports_operational_advisory_fetch !== false) {
+      throw new Error('The PAGASA source capability classification is invalid.');
     }
     if (data.external_information_only !== true) {
       throw new Error('The PAGASA response did not preserve external-information separation.');
@@ -323,8 +339,15 @@
     state.pagasaDetailedStatus = String(detailedApi.status || 'TEMPORARILY_UNAVAILABLE');
     state.pagasaAdvisoryCount = advisories.length;
 
-    setText('[data-pagasa-public-feed-status]', `Official public feed: ${pagasaStatusLabel(state.pagasaPublicStatus)}`);
-    setText('[data-pagasa-detailed-api-status]', `Detailed API: ${pagasaStatusLabel(state.pagasaDetailedStatus)}`);
+    const metadataStatus = state.pagasaPublicStatus === 'AVAILABLE'
+      ? 'Connected'
+      : pagasaStatusLabel(state.pagasaPublicStatus);
+    setText('[data-pagasa-public-feed-status]', `PAGASA forecast issuance metadata: ${metadataStatus}`);
+    setText('[data-pagasa-detailed-api-status]', `Detailed Caloocan forecast API: ${pagasaStatusLabel(state.pagasaDetailedStatus)}`);
+    setText(
+      '[data-pagasa-operational-advisory-status]',
+      'PAGASA operational advisories: Pending verified machine-readable source'
+    );
     setText('[data-pagasa-detailed-status]', pagasaStatusLabel(state.pagasaDetailedStatus));
     setText('[data-pagasa-runtime-badge]', state.pagasaPublicStatus === 'AVAILABLE' ? 'Official Info Available' : 'Temporarily Unavailable');
 
@@ -375,7 +398,10 @@
     setText('[data-ndrrmc-feed-status]', `Official machine-readable feed: ${sourceConfirmed ? 'Available' : 'Not Confirmed'}`);
     setText('[data-ndrrmc-runtime-badge]', sourceConfirmed ? 'Official Feed Available' : 'Integration Pending');
     setText('[data-ndrrmc-source-status]', sourceConfirmed ? 'Confirmed' : 'Not confirmed');
-    setText('[data-ndrrmc-advisory-count]', String(advisories.length));
+    setText(
+      '[data-ndrrmc-advisory-count]',
+      sourceConfirmed ? String(advisories.length) : 'Not available - no verified feed'
+    );
     setText('[data-ndrrmc-relevance-status]', relevance.status === 'NOT_APPLIED_NO_FEED' ? 'Not applied — no feed' : formatCode(relevance.status));
 
     if (advisories.length === 0) {
@@ -1043,8 +1069,12 @@
     state.pagasaLoaded = false;
     state.pagasaPublicStatus = 'TEMPORARILY_UNAVAILABLE';
     state.pagasaDetailedStatus = 'TEMPORARILY_UNAVAILABLE';
-    setText('[data-pagasa-public-feed-status]', 'Official public feed: Temporarily Unavailable');
-    setText('[data-pagasa-detailed-api-status]', 'Detailed API: Temporarily Unavailable');
+    setText('[data-pagasa-public-feed-status]', 'PAGASA forecast issuance metadata: Temporarily Unavailable');
+    setText('[data-pagasa-detailed-api-status]', 'Detailed Caloocan forecast API: Temporarily Unavailable');
+    setText(
+      '[data-pagasa-operational-advisory-status]',
+      'PAGASA operational advisories: Pending verified machine-readable source'
+    );
     setText('[data-pagasa-runtime-badge]', 'Temporarily Unavailable');
     setText('[data-pagasa-issued-at]', 'Temporarily unavailable');
     setText('[data-pagasa-forecast-period]', 'Temporarily unavailable');
@@ -1061,7 +1091,7 @@
     setText('[data-ndrrmc-feed-status]', 'Official machine-readable feed: Unavailable');
     setText('[data-ndrrmc-runtime-badge]', 'Official Feed Unavailable');
     setText('[data-ndrrmc-source-status]', 'Temporarily unavailable');
-    setText('[data-ndrrmc-advisory-count]', '0');
+    setText('[data-ndrrmc-advisory-count]', 'Unavailable');
     setText('[data-ndrrmc-relevance-status]', 'Not available');
     setText('[data-ndrrmc-advisory-title]', 'NDRRMC advisory information is temporarily unavailable.');
     setText('[data-ndrrmc-advisory-message]', 'The PAGASA and Module 4 summary sections remain available.');

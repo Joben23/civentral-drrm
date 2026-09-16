@@ -234,7 +234,9 @@ final class DrrmEarlyWarningReadService
             if (
                 !isset($row['id'], $row['source_code'], $row['source_name'], $row['source_type'], $row['integration_status'])
                 || !is_bool($row['is_active'] ?? null)
-                || !in_array($row['integration_status'], ['PENDING', 'CONNECTED', 'DISABLED'], true)
+                || !in_array($row['integration_status'], [
+                    'CONNECTED', 'PARTIAL', 'PENDING', 'UNAVAILABLE', 'DISABLED',
+                ], true)
             ) {
                 throw new RuntimeException('An early-warning source record has an unexpected structure.');
             }
