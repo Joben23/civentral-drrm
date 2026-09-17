@@ -14,7 +14,10 @@
     canCreateWarning: configuredCapabilities.canCreateWarning === true,
     canEditDraft: configuredCapabilities.canEditDraft === true,
     canActivateWarning: configuredCapabilities.canActivateWarning === true,
-    canCancelWarning: configuredCapabilities.canCancelWarning === true
+    canCancelWarning: configuredCapabilities.canCancelWarning === true,
+    canReviewExternalAdvisories: configuredCapabilities.canReviewExternalAdvisories === true,
+    canDismissExternalAdvisory: configuredCapabilities.canDismissExternalAdvisory === true,
+    canConvertExternalAdvisoryToDraft: configuredCapabilities.canConvertExternalAdvisoryToDraft === true
   });
   const state = {
     initialized: false,
@@ -38,6 +41,13 @@
     editingWarningId: null,
     editingExpectedRevision: null,
     editingBarangayIds: [],
+    externalAdvisories: [],
+    externalAdvisoryStatus: 'PENDING_REVIEW',
+    selectedExternalAdvisory: null,
+    externalDetailRequestSerial: 0,
+    convertingExternalAdvisoryId: null,
+    convertingExternalPayloadVersion: null,
+    convertingExternalSourceCode: null,
     mutationInFlight: false,
     lastResult: 'NOT_STARTED'
   };
@@ -466,6 +476,232 @@
     row.appendChild(cell);
   }
 
+  function appendExternalAdvisoryEmptyRow(body, status) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 8;
+    cell.className = 'px-5 py-10 text-center text-[10px] font-medium text-slate-400';
+    cell.textContent = status === 'PENDING_REVIEW'
+      ? 'No staged external advisories awaiting review.'
+      : `No staged external advisories with status ${formatCode(status)}.`;
+    row.appendChild(cell);
+    body.appendChild(row);
+  }
+
+  function renderExternalAdvisories(advisories, status) {
+    const body = document.querySelector('[data-external-advisory-body]');
+    if (!body) {
+      return;
+    }
+    body.replaceChildren();
+    state.externalAdvisories = advisories;
+    state.externalAdvisoryStatus = status;
+
+    if (advisories.length === 0) {
+      appendExternalAdvisoryEmptyRow(body, status);
+      setText('[data-external-advisory-status]', status === 'PENDING_REVIEW'
+        ? 'No staged external advisories awaiting review.'
+        : `No ${formatCode(status).toLowerCase()} staged advisories.`);
+      return;
+    }
+
+    advisories.forEach((advisory) => {
+      const source = requireObject(advisory.source, 'An external advisory source is malformed.');
+      if (typeof advisory.id !== 'string' || !Number.isInteger(advisory.payload_version)) {
+        throw new Error('A staged external advisory is malformed.');
+      }
+      const row = document.createElement('tr');
+      row.className = 'border-t border-slate-100 text-[10px] text-slate-600 dark:border-slate-800 dark:text-slate-300';
+      appendCell(row, String(advisory.title || 'Untitled advisory'), 'px-5 py-3 font-bold');
+      appendCell(row, String(source.name || source.code || 'Not available'), 'px-4 py-3');
+      appendCell(row, `${formatCode(advisory.advisory_type)} / ${formatCode(advisory.hazard_type)}`, 'px-4 py-3');
+      appendCell(row, formatDateTime(advisory.issued_at), 'px-4 py-3');
+      appendCell(row, formatDateTime(advisory.fetched_at), 'px-4 py-3');
+      appendCell(row, String(advisory.payload_version), 'px-4 py-3 font-bold');
+      appendCell(row, formatCode(advisory.review_status), 'px-4 py-3 font-bold');
+      const action = document.createElement('td');
+      const button = document.createElement('button');
+      action.className = 'px-5 py-3 text-right';
+      button.type = 'button';
+      button.className = 'rounded-lg border border-slate-200 px-2.5 py-1.5 text-[9px] font-black dark:border-slate-700';
+      button.dataset.externalAdvisoryId = advisory.id;
+      button.textContent = 'View Details';
+      action.appendChild(button);
+      row.appendChild(action);
+      body.appendChild(row);
+    });
+    setText('[data-external-advisory-status]', `${advisories.length} ${formatCode(status).toLowerCase()} staged advisor${advisories.length === 1 ? 'y' : 'ies'}.`);
+  }
+
+  async function loadExternalAdvisories(status = 'PENDING_REVIEW') {
+    if (!securityCapabilities.canReviewExternalAdvisories
+      || typeof config.externalAdvisoriesEndpoint !== 'string') {
+      return;
+    }
+    const response = await window.fetch(
+      `${config.externalAdvisoriesEndpoint}?status=${encodeURIComponent(status)}`,
+      { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } }
+    );
+    const payload = await response.json();
+    if (!response.ok || !payload || payload.success !== true) {
+      throw new Error('Staged external advisories could not be loaded.');
+    }
+    const data = requireObject(payload.data, 'The staged advisory response is malformed.');
+    renderExternalAdvisories(requireArray(data.advisories, 'The staged advisory list is malformed.'), status);
+  }
+
+  function setExternalField(name, value) {
+    setText(`[data-external-field="${name}"]`, value);
+  }
+
+  function renderExternalReviewHistory(events) {
+    const container = document.querySelector('[data-external-review-history]');
+    if (!container) {
+      return;
+    }
+    container.replaceChildren();
+    if (events.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'text-[10px] font-medium text-slate-400';
+      empty.textContent = 'No review decision has been recorded.';
+      container.appendChild(empty);
+      return;
+    }
+    events.forEach((event) => {
+      const item = document.createElement('p');
+      item.className = 'rounded-lg bg-slate-50 px-3 py-2 text-[10px] font-medium text-slate-600 dark:bg-slate-950 dark:text-slate-300';
+      item.textContent = `${formatCode(event.event_type)} by ${String(event.actor_reference || 'unknown actor')} at ${formatDateTime(event.occurred_at)} (payload v${Number(event.payload_version) || '?'})`;
+      container.appendChild(item);
+    });
+  }
+
+  function updateExternalReviewActions(advisory) {
+    const pending = advisory.review_status === 'PENDING_REVIEW';
+    setElementVisible(
+      document.querySelector('[data-dismiss-external-advisory]'),
+      pending && securityCapabilities.canDismissExternalAdvisory
+    );
+    setElementVisible(
+      document.querySelector('[data-convert-external-advisory]'),
+      pending && securityCapabilities.canConvertExternalAdvisoryToDraft
+    );
+  }
+
+  function renderExternalAdvisoryDetail(advisory) {
+    const source = requireObject(advisory.source, 'The external advisory source is malformed.');
+    const provenance = requireObject(advisory.provenance, 'The advisory provenance is malformed.');
+    const firstFetch = requireObject(provenance.first_fetch, 'The first fetch metadata is malformed.');
+    const latestFetch = requireObject(provenance.latest_fetch, 'The latest fetch metadata is malformed.');
+    setExternalField('title', String(advisory.title || 'Not available'));
+    setExternalField('source', String(source.name || source.code || 'Not available'));
+    setExternalField('status', formatCode(advisory.review_status));
+    setExternalField('type', `${formatCode(advisory.advisory_type)} / ${formatCode(advisory.hazard_type)}`);
+    setExternalField('version', String(advisory.payload_version));
+    setExternalField('issued_at', formatDateTime(advisory.issued_at));
+    setExternalField('valid_until', advisory.valid_until ? formatDateTime(advisory.valid_until) : 'Not provided');
+    setExternalField('source_reference', String(advisory.source_reference || 'Not provided'));
+    setExternalField('summary', String(advisory.summary || 'Not provided'));
+    setText(
+      '[data-external-provenance]',
+      `First fetch: ${formatDateTime(firstFetch.started_at)} (${formatCode(firstFetch.result)}). Latest fetch: ${formatDateTime(latestFetch.finished_at)} (${formatCode(latestFetch.result)}; ${Number(latestFetch.staged_item_count) || 0} staged).`
+    );
+    renderExternalReviewHistory(requireArray(advisory.review_history, 'The review audit is malformed.'));
+    updateExternalReviewActions(advisory);
+  }
+
+  async function openExternalAdvisory(advisoryId) {
+    const modal = document.querySelector('[data-external-advisory-modal]');
+    if (!modal || typeof config.externalAdvisoriesEndpoint !== 'string') {
+      return;
+    }
+    const requestSerial = ++state.externalDetailRequestSerial;
+    state.selectedExternalAdvisory = null;
+    updateExternalReviewActions({ review_status: '' });
+    setElementVisible(modal, true, true);
+    document.body.classList.add('module4-modal-open');
+    clearWorkflowStatus(modal.querySelector('[data-external-review-workflow-status]'));
+    setText('[data-external-provenance]', 'Loading safe fetch metadata...');
+    try {
+      const response = await window.fetch(
+        `${config.externalAdvisoriesEndpoint}?advisory_id=${encodeURIComponent(advisoryId)}`,
+        { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } }
+      );
+      const payload = await response.json();
+      if (!response.ok || !payload || payload.success !== true) {
+        throw new Error('The staged advisory details could not be loaded.');
+      }
+      const data = requireObject(payload.data, 'The advisory detail response is malformed.');
+      const advisory = requireObject(data.advisory, 'The advisory detail is malformed.');
+      if (requestSerial !== state.externalDetailRequestSerial || modal.hidden) {
+        return;
+      }
+      renderExternalAdvisoryDetail(advisory);
+      state.selectedExternalAdvisory = advisory;
+    } catch (error) {
+      if (requestSerial === state.externalDetailRequestSerial && !modal.hidden) {
+        setWorkflowStatus(modal.querySelector('[data-external-review-workflow-status]'), error.message, 'error');
+      }
+    }
+  }
+
+  function closeExternalAdvisory() {
+    const modal = document.querySelector('[data-external-advisory-modal]');
+    state.externalDetailRequestSerial += 1;
+    setElementVisible(modal, false, true);
+    state.selectedExternalAdvisory = null;
+    document.body.classList.remove('module4-modal-open');
+  }
+
+  async function dismissExternalAdvisory() {
+    const advisory = state.selectedExternalAdvisory;
+    const modal = document.querySelector('[data-external-advisory-modal]');
+    const status = modal ? modal.querySelector('[data-external-review-workflow-status]') : null;
+    if (state.mutationInFlight || !advisory
+      || advisory.review_status !== 'PENDING_REVIEW'
+      || !securityCapabilities.canDismissExternalAdvisory) {
+      return;
+    }
+    if (!window.confirm('Dismiss this staged advisory? This review decision is terminal in Phase 4B.2.')) {
+      return;
+    }
+    state.mutationInFlight = true;
+    clearWorkflowStatus(status);
+    let reviewSaved = false;
+    try {
+      await mutationRequest(config.externalAdvisoryReviewEndpoint, {
+        action: 'DISMISS',
+        external_advisory_id: advisory.id,
+        expected_payload_version: advisory.payload_version
+      });
+      reviewSaved = true;
+      advisory.review_status = 'DISMISSED';
+      updateExternalReviewActions(advisory);
+      setWorkflowStatus(status, 'The staged advisory was dismissed. No warning was created.', 'success');
+      await loadExternalAdvisories(state.externalAdvisoryStatus);
+      window.setTimeout(closeExternalAdvisory, 500);
+    } catch (error) {
+      setWorkflowStatus(
+        status,
+        reviewSaved
+          ? 'The advisory was dismissed, but the list could not be refreshed. Reload the page before continuing.'
+          : (error.message || 'Unable to dismiss the staged advisory.'),
+        reviewSaved ? 'success' : 'error'
+      );
+    } finally {
+      state.mutationInFlight = false;
+    }
+  }
+
+  function beginExternalDraftConversion() {
+    const advisory = state.selectedExternalAdvisory;
+    if (!advisory || advisory.review_status !== 'PENDING_REVIEW'
+      || !securityCapabilities.canConvertExternalAdvisoryToDraft) {
+      return;
+    }
+    closeExternalAdvisory();
+    toggleCreateWarningModal(true, null, advisory);
+  }
+
   async function loadBarangays() {
     if (Array.isArray(state.barangays)) {
       return state.barangays;
@@ -600,7 +836,35 @@
     }
   }
 
-  function toggleCreateWarningModal(show, warning = null) {
+  function populateExternalDraftForm(form, advisory) {
+    const source = requireObject(advisory.source, 'The external advisory source is unavailable.');
+    const values = {
+      title: advisory.title || '',
+      hazard_type: advisory.hazard_type || '',
+      warning_level: '',
+      source_code: source.code || '',
+      source_reference: advisory.source_reference || '',
+      issued_at: isoToLocalDateTimeInput(advisory.issued_at),
+      valid_until: isoToLocalDateTimeInput(advisory.valid_until),
+      summary: advisory.summary || ''
+    };
+    Object.entries(values).forEach(([name, value]) => {
+      const control = form.elements.namedItem(name);
+      if (control && 'value' in control) {
+        control.value = String(value);
+      }
+    });
+    form.querySelectorAll('input[name="scope_type"]').forEach((input) => {
+      input.checked = false;
+    });
+    const sourceControl = form.elements.namedItem('source_code');
+    if (sourceControl) {
+      sourceControl.disabled = true;
+    }
+    state.editingBarangayIds = [];
+  }
+
+  function toggleCreateWarningModal(show, warning = null, externalAdvisory = null) {
     const modal = document.querySelector('[data-create-warning-modal]');
     if (!modal) {
       return;
@@ -612,6 +876,13 @@
       state.editingWarningId = null;
       state.editingExpectedRevision = null;
       state.editingBarangayIds = [];
+      state.convertingExternalAdvisoryId = null;
+      state.convertingExternalPayloadVersion = null;
+      state.convertingExternalSourceCode = null;
+      const sourceControl = modal.querySelector('[data-warning-source]');
+      if (sourceControl) {
+        sourceControl.disabled = false;
+      }
       return;
     }
 
@@ -619,7 +890,18 @@
       const form = modal.querySelector('[data-create-warning-form]');
       if (form) {
         form.reset();
-        if (warning) {
+        const sourceControl = form.elements.namedItem('source_code');
+        if (sourceControl) {
+          sourceControl.disabled = false;
+        }
+        if (externalAdvisory) {
+          state.editingWarningId = null;
+          state.editingExpectedRevision = null;
+          state.convertingExternalAdvisoryId = externalAdvisory.id;
+          state.convertingExternalPayloadVersion = externalAdvisory.payload_version;
+          state.convertingExternalSourceCode = externalAdvisory.source.code;
+          populateExternalDraftForm(form, externalAdvisory);
+        } else if (warning) {
           state.editingWarningId = warning.id;
           state.editingExpectedRevision = warning.revision;
           populateWarningForm(form, warning);
@@ -627,22 +909,32 @@
           state.editingWarningId = null;
           state.editingExpectedRevision = null;
           state.editingBarangayIds = [];
+          state.convertingExternalAdvisoryId = null;
+          state.convertingExternalPayloadVersion = null;
+          state.convertingExternalSourceCode = null;
           const issuedAt = form.elements.namedItem('issued_at');
           if (issuedAt instanceof HTMLInputElement) {
             issuedAt.value = localDateTimeValue();
           }
         }
       }
-      setText('[data-warning-form-title]', warning ? 'Edit Warning Draft' : 'Create Warning Draft');
+      setText('[data-warning-form-title]', externalAdvisory
+        ? 'Create CIVENTRAL Draft from Advisory'
+        : (warning ? 'Edit Warning Draft' : 'Create Warning Draft'));
       setText(
         '[data-warning-form-description]',
-        warning
+        externalAdvisory
+          ? 'Confirm every CIVENTRAL field. The external advisory is only a source suggestion and this action never activates the warning.'
+          : warning
           ? 'Only this DRAFT definition is editable. Saving records a new immutable history event.'
           : 'Saving creates a DRAFT only. No alert is delivered or activated automatically.'
       );
       const saveButton = modal.querySelector('[data-save-warning-draft]');
       if (saveButton) {
-        saveButton.textContent = warning ? 'Save Draft Changes' : 'Save as Draft';
+        saveButton.disabled = false;
+        saveButton.textContent = externalAdvisory
+          ? 'Create CIVENTRAL Draft'
+          : (warning ? 'Save Draft Changes' : 'Save as Draft');
       }
       clearWorkflowStatus(modal.querySelector('[data-warning-workflow-status]'));
       updateSourceReferenceRequirement();
@@ -778,9 +1070,11 @@
   async function submitCreateWarning(event) {
     event.preventDefault();
     const isEditing = typeof state.editingWarningId === 'string';
+    const isConverting = typeof state.convertingExternalAdvisoryId === 'string';
     if (state.mutationInFlight
       || (isEditing && !securityCapabilities.canEditDraft)
-      || (!isEditing && !securityCapabilities.canCreateWarning)) {
+      || (isConverting && !securityCapabilities.canConvertExternalAdvisoryToDraft)
+      || (!isEditing && !isConverting && !securityCapabilities.canCreateWarning)) {
       return;
     }
 
@@ -807,7 +1101,9 @@
         title: String(data.get('title') || '').trim(),
         hazard_type: String(data.get('hazard_type') || ''),
         warning_level: String(data.get('warning_level') || ''),
-        source_code: String(data.get('source_code') || ''),
+        source_code: isConverting
+          ? String(state.convertingExternalSourceCode || '')
+          : String(data.get('source_code') || ''),
         summary: String(data.get('summary') || '').trim(),
         issued_at: dateTimeInputToIso(String(data.get('issued_at') || ''), true),
         valid_until: dateTimeInputToIso(String(data.get('valid_until') || ''), false),
@@ -821,6 +1117,17 @@
         }
         payload.warning_id = state.editingWarningId;
         payload.expected_revision = state.editingExpectedRevision;
+      } else if (isConverting) {
+        if (!Number.isInteger(state.convertingExternalPayloadVersion)
+          || state.convertingExternalPayloadVersion < 1) {
+          throw new Error('The loaded advisory version is invalid. Refresh the advisory before converting it.');
+        }
+        payload = {
+          action: 'CREATE_DRAFT',
+          external_advisory_id: state.convertingExternalAdvisoryId,
+          expected_payload_version: state.convertingExternalPayloadVersion,
+          ...payload
+        };
       }
     } catch (error) {
       setWorkflowStatus(status, error.message, 'error');
@@ -831,19 +1138,51 @@
     state.mutationInFlight = true;
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = isEditing ? 'Saving Changes...' : 'Saving Draft...';
+      submitButton.textContent = isEditing
+        ? 'Saving Changes...'
+        : (isConverting ? 'Creating Draft...' : 'Saving Draft...');
     }
     clearWorkflowStatus(status);
 
+    let conversionSaved = false;
+    let conversionRefreshFailed = false;
     try {
       const editedWarningId = isEditing ? state.editingWarningId : null;
-      await mutationRequest(isEditing ? config.updateEndpoint : config.createEndpoint, payload);
+      await mutationRequest(
+        isEditing
+          ? config.updateEndpoint
+          : (isConverting ? config.externalAdvisoryReviewEndpoint : config.createEndpoint),
+        payload
+      );
+      conversionSaved = isConverting;
       setWorkflowStatus(
         status,
-        isEditing ? 'Draft changes saved and recorded in history.' : 'Warning saved as DRAFT. No alert was delivered.',
+        isEditing
+          ? 'Draft changes saved and recorded in history.'
+          : (isConverting
+            ? 'CIVENTRAL warning created as DRAFT and linked to the reviewed advisory. It was not activated.'
+            : 'Warning saved as DRAFT. No alert was delivered.'),
         'success'
       );
-      await loadDashboard();
+      try {
+        await loadDashboard();
+        if (isConverting) {
+          await loadExternalAdvisories(state.externalAdvisoryStatus);
+        }
+      } catch (error) {
+        if (!isConverting) {
+          throw error;
+        }
+        conversionRefreshFailed = true;
+        setWorkflowStatus(
+          status,
+          'The CIVENTRAL draft was created, but the dashboard could not refresh. Reload the page before continuing; do not submit again.',
+          'success'
+        );
+      }
+      if (conversionRefreshFailed) {
+        return;
+      }
       if (editedWarningId) {
         toggleCreateWarningModal(false);
         openReviewWarning(editedWarningId);
@@ -851,12 +1190,21 @@
         window.setTimeout(() => toggleCreateWarningModal(false), 650);
       }
     } catch (error) {
-      setWorkflowStatus(status, error.message || 'Unable to save warning.', 'error');
+      setWorkflowStatus(
+        status,
+        conversionSaved
+          ? 'The CIVENTRAL draft was created, but its display could not refresh. Reload the page before continuing; do not submit again.'
+          : (error.message || 'Unable to save warning.'),
+        conversionSaved ? 'success' : 'error'
+      );
+      conversionRefreshFailed = conversionSaved;
     } finally {
       state.mutationInFlight = false;
       if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = isEditing ? 'Save Draft Changes' : 'Save as Draft';
+        submitButton.disabled = conversionRefreshFailed;
+        submitButton.textContent = isEditing
+          ? 'Save Draft Changes'
+          : (isConverting ? 'Create CIVENTRAL Draft' : 'Save as Draft');
       }
     }
   }
@@ -1103,6 +1451,9 @@
     const createForm = document.querySelector('[data-create-warning-form]');
     const reviewModal = document.querySelector('[data-review-warning-modal]');
     const recentBody = document.querySelector('[data-recent-warnings-body]');
+    const externalModal = document.querySelector('[data-external-advisory-modal]');
+    const externalBody = document.querySelector('[data-external-advisory-body]');
+    const externalFilter = document.querySelector('[data-external-advisory-filter]');
     const source = document.querySelector('[data-warning-source]');
     const barangaySearch = document.querySelector('[data-barangay-search]');
 
@@ -1148,6 +1499,32 @@
         }
       });
     }
+    if (externalBody) {
+      externalBody.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-external-advisory-id]');
+        if (button) {
+          openExternalAdvisory(button.dataset.externalAdvisoryId);
+        }
+      });
+    }
+    if (externalFilter) {
+      externalFilter.addEventListener('change', () => {
+        loadExternalAdvisories(externalFilter.value).catch(() => {
+          setText('[data-external-advisory-status]', 'Staged external advisories could not be loaded.');
+        });
+      });
+    }
+    document.querySelectorAll('[data-close-external-advisory]').forEach((button) => {
+      button.addEventListener('click', closeExternalAdvisory);
+    });
+    const dismissExternal = document.querySelector('[data-dismiss-external-advisory]');
+    const convertExternal = document.querySelector('[data-convert-external-advisory]');
+    if (dismissExternal) {
+      dismissExternal.addEventListener('click', dismissExternalAdvisory);
+    }
+    if (convertExternal) {
+      convertExternal.addEventListener('click', beginExternalDraftConversion);
+    }
 
     const activateButton = document.querySelector('[data-activate-warning]');
     const cancelButton = document.querySelector('[data-cancel-warning]');
@@ -1169,14 +1546,16 @@
       cancelButton.addEventListener('click', () => submitWarningAction('CANCEL'));
     }
 
-    [createModal, reviewModal].forEach((modal) => {
+    [createModal, reviewModal, externalModal].forEach((modal) => {
       if (modal) {
         modal.addEventListener('click', (event) => {
           if (event.target === modal) {
             if (modal === createModal) {
               toggleCreateWarningModal(false);
-            } else {
+            } else if (modal === reviewModal) {
               closeReviewWarning();
+            } else {
+              closeExternalAdvisory();
             }
           }
         });
@@ -1191,6 +1570,8 @@
         toggleCreateWarningModal(false);
       } else if (reviewModal && !reviewModal.hidden) {
         closeReviewWarning();
+      } else if (externalModal && !externalModal.hidden) {
+        closeExternalAdvisory();
       }
     });
   }
@@ -1203,6 +1584,9 @@
     state.initialized = true;
     bindWarningWorkflow();
     loadDashboard().catch(handleLoadFailure);
+    loadExternalAdvisories().catch(() => {
+      setText('[data-external-advisory-status]', 'Staged external advisories could not be loaded.');
+    });
     loadPagasaOverview().catch(handlePagasaFailure);
     loadNdrrmcOverview().catch(handleNdrrmcFailure);
   }

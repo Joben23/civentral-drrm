@@ -392,6 +392,30 @@ include '../../includes/sidebar.php';
       </section>
     </div>
 
+    <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900" aria-labelledby="externalAdvisoryReviewTitle">
+      <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 id="externalAdvisoryReviewTitle" class="text-sm font-black text-slate-800 dark:text-white">External Advisory Review</h2>
+          <p class="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400" data-external-advisory-status>Loading staged advisories...</p>
+        </div>
+        <label class="flex items-center gap-2 text-[9px] font-black uppercase tracking-wider text-slate-500">Review Status
+          <select class="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200" data-external-advisory-filter>
+            <option value="PENDING_REVIEW">Pending Review</option>
+            <option value="DISMISSED">Dismissed</option>
+            <option value="DRAFT_CREATED">Draft Created</option>
+          </select>
+        </label>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-[820px] w-full text-left">
+          <thead class="bg-slate-50 dark:bg-slate-800/70"><tr class="text-[9px] font-black uppercase tracking-wider text-slate-400">
+            <th class="px-5 py-3">Advisory</th><th class="px-4 py-3">Source</th><th class="px-4 py-3">Type / Hazard</th><th class="px-4 py-3">Issued At</th><th class="px-4 py-3">Latest Fetch</th><th class="px-4 py-3">Version</th><th class="px-4 py-3">Status</th><th class="px-5 py-3 text-right">Action</th>
+          </tr></thead>
+          <tbody data-external-advisory-body><tr><td colspan="8" class="px-5 py-10 text-center text-[10px] font-medium text-slate-400">Loading staged external advisories...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900" aria-labelledby="recentWarningsTitle">
       <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
         <h2 id="recentWarningsTitle" class="text-sm font-black text-slate-800 dark:text-white">Recent Warnings</h2>
@@ -512,7 +536,7 @@ include '../../includes/sidebar.php';
       <fieldset class="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
         <legend class="px-1 text-[10px] font-black uppercase tracking-wider text-slate-500">Affected Area</legend>
         <div class="flex flex-wrap gap-4 text-xs font-bold text-slate-700 dark:text-slate-200">
-          <label class="inline-flex items-center gap-2"><input type="radio" name="scope_type" value="CITY" checked class="h-4 w-4 accent-slate-900"> Entire Caloocan City</label>
+          <label class="inline-flex items-center gap-2"><input type="radio" name="scope_type" value="CITY" checked required class="h-4 w-4 accent-slate-900"> Entire Caloocan City</label>
           <label class="inline-flex items-center gap-2"><input type="radio" name="scope_type" value="BARANGAY" class="h-4 w-4 accent-slate-900"> Selected Barangays</label>
         </div>
 
@@ -533,6 +557,37 @@ include '../../includes/sidebar.php';
   </section>
 </div>
 <?php endif; ?>
+
+<div class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" data-external-advisory-modal hidden>
+  <section class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="externalAdvisoryModalTitle">
+    <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+      <div><p class="text-[9px] font-black uppercase tracking-widest text-brand-dark dark:text-brand-medium">Staged provider record</p><h2 id="externalAdvisoryModalTitle" class="mt-1 text-base font-black text-slate-900 dark:text-white">Review External Advisory</h2></div>
+      <button type="button" class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 dark:border-slate-700" data-close-external-advisory aria-label="Close External Advisory"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </header>
+    <div class="space-y-4 p-5">
+      <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="sm:col-span-2"><dt class="text-[9px] font-black uppercase text-slate-400">Title</dt><dd class="mt-1 text-sm font-black text-slate-800 dark:text-white" data-external-field="title">Not available</dd></div>
+        <div><dt class="text-[9px] font-black uppercase text-slate-400">Source</dt><dd class="mt-1 text-xs font-bold" data-external-field="source">Not available</dd></div>
+        <div><dt class="text-[9px] font-black uppercase text-slate-400">Review Status</dt><dd class="mt-1 text-xs font-bold" data-external-field="status">Not available</dd></div>
+        <div><dt class="text-[9px] font-black uppercase text-slate-400">Type / Hazard</dt><dd class="mt-1 text-xs font-bold" data-external-field="type">Not available</dd></div>
+        <div><dt class="text-[9px] font-black uppercase text-slate-400">Payload Version</dt><dd class="mt-1 text-xs font-bold" data-external-field="version">Not available</dd></div>
+        <div><dt class="text-[9px] font-black uppercase text-slate-400">Issued At</dt><dd class="mt-1 text-xs font-bold" data-external-field="issued_at">Not available</dd></div>
+        <div><dt class="text-[9px] font-black uppercase text-slate-400">Valid Until</dt><dd class="mt-1 text-xs font-bold" data-external-field="valid_until">Not provided</dd></div>
+        <div class="sm:col-span-2"><dt class="text-[9px] font-black uppercase text-slate-400">Source Reference</dt><dd class="mt-1 break-words text-xs font-bold" data-external-field="source_reference">Not provided</dd></div>
+        <div class="sm:col-span-2 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950"><dt class="text-[9px] font-black uppercase text-slate-400">Summary</dt><dd class="mt-1 whitespace-pre-wrap text-xs font-medium leading-relaxed" data-external-field="summary">Not available</dd></div>
+      </dl>
+      <section class="rounded-xl border border-slate-200 p-3 dark:border-slate-700"><h3 class="text-[10px] font-black uppercase text-slate-500">Fetch Provenance</h3><p class="mt-2 text-[10px] font-medium text-slate-500" data-external-provenance>Loading safe fetch metadata...</p></section>
+      <section class="rounded-xl border border-slate-200 p-3 dark:border-slate-700"><h3 class="text-[10px] font-black uppercase text-slate-500">Review Audit</h3><div class="mt-2 space-y-2" data-external-review-history></div></section>
+      <p class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[9px] font-bold text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400">Creating a CIVENTRAL draft never activates or publishes a warning. Required warning level and affected areas must be confirmed by the officer.</p>
+      <p class="hidden rounded-xl border px-3 py-2 text-[10px] font-bold" data-external-review-workflow-status role="status" aria-live="polite"></p>
+      <footer class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+        <button type="button" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold" data-close-external-advisory>Close</button>
+        <?php if ($earlyWarningCapabilities['canDismissExternalAdvisory']): ?><button type="button" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-black text-rose-700" data-dismiss-external-advisory hidden>Dismiss</button><?php endif; ?>
+        <?php if ($earlyWarningCapabilities['canConvertExternalAdvisoryToDraft']): ?><button type="button" class="hidden rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-black text-white dark:bg-brand-medium dark:text-slate-950" data-convert-external-advisory hidden>Create CIVENTRAL Draft</button><?php endif; ?>
+      </footer>
+    </div>
+  </section>
+</div>
 
 <div class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" data-review-warning-modal hidden>
   <section class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="reviewWarningModalTitle">
@@ -614,6 +669,14 @@ include '../../includes/sidebar.php';
     ); ?>,
     statusEndpoint: <?php echo json_encode(
         $basePath . 'api/drrm/early-warning-status.php',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
+    externalAdvisoriesEndpoint: <?php echo json_encode(
+        $basePath . 'api/drrm/external-advisories.php',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
+    externalAdvisoryReviewEndpoint: <?php echo json_encode(
+        $basePath . 'api/drrm/external-advisory-review.php',
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>,
     aiStatusEndpoint: <?php echo json_encode(

@@ -53,6 +53,9 @@ assertSecurityResult('ViewOnlyCanView', $viewOnly->canView(), true);
 assertSecurityResult('ViewOnlyCanCreate', $viewOnly->canCreateWarning(), false);
 assertSecurityResult('ViewOnlyCanEditDraft', $viewOnly->canEditDraft(), false);
 assertSecurityResult('ViewOnlyCannotSynchronizeExternalAdvisories', $viewOnly->canSynchronizeExternalAdvisories(), false);
+assertSecurityResult('ViewOnlyCanReadExternalAdvisories', $viewOnly->canReviewExternalAdvisories(), true);
+assertSecurityResult('ViewOnlyCannotDismissExternalAdvisory', $viewOnly->canDismissExternalAdvisory(), false);
+assertSecurityResult('ViewOnlyCannotConvertExternalAdvisory', $viewOnly->canConvertExternalAdvisoryToDraft(), false);
 assertSecurityResult('ViewOnlyCanActivate', $viewOnly->canActivateWarning(), false);
 assertSecurityResult('ViewOnlyCanCancel', $viewOnly->canCancelWarning(), false);
 
@@ -67,6 +70,9 @@ assertSecurityResult('SuperadminCanView', $superadmin->canView(), true);
 assertSecurityResult('SuperadminCanCreate', $superadmin->canCreateWarning(), true);
 assertSecurityResult('SuperadminCanEditDraft', $superadmin->canEditDraft(), true);
 assertSecurityResult('SuperadminCanSynchronizeExternalAdvisories', $superadmin->canSynchronizeExternalAdvisories(), true);
+assertSecurityResult('SuperadminCanReadExternalAdvisories', $superadmin->canReviewExternalAdvisories(), true);
+assertSecurityResult('SuperadminCanDismissExternalAdvisory', $superadmin->canDismissExternalAdvisory(), true);
+assertSecurityResult('SuperadminCanConvertExternalAdvisory', $superadmin->canConvertExternalAdvisoryToDraft(), true);
 assertSecurityResult('SuperadminCanActivate', $superadmin->canActivateWarning(), true);
 assertSecurityResult('SuperadminCanCancel', $superadmin->canCancelWarning(), true);
 
@@ -96,6 +102,9 @@ assertSecurityResult('ExactResourcePresent', $allPermissions->hasModuleResource(
 assertSecurityResult('ExactCreateAllowed', $allPermissions->canCreateWarning(), true);
 assertSecurityResult('CreatePermissionOwnsDraftEditing', $allPermissions->canEditDraft(), true);
 assertSecurityResult('CreatePermissionOwnsExternalSynchronization', $allPermissions->canSynchronizeExternalAdvisories(), true);
+assertSecurityResult('ViewPermissionOwnsExternalAdvisoryRead', $allPermissions->canReviewExternalAdvisories(), true);
+assertSecurityResult('CreatePermissionOwnsExternalDismissal', $allPermissions->canDismissExternalAdvisory(), true);
+assertSecurityResult('CreatePermissionOwnsExternalDraftConversion', $allPermissions->canConvertExternalAdvisoryToDraft(), true);
 assertSecurityResult('ExactActivateAllowed', $allPermissions->canActivateWarning(), true);
 assertSecurityResult('ExactCancelAllowed', $allPermissions->canCancelWarning(), true);
 

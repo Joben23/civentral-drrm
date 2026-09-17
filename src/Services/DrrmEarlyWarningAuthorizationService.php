@@ -121,6 +121,23 @@ final class DrrmEarlyWarningAuthorizationService
         return $this->canCreateWarning();
     }
 
+    /** VIEW owns the administrative list/detail projection only. */
+    public function canReviewExternalAdvisories(): bool
+    {
+        return $this->canView();
+    }
+
+    /** Terminal review writes use the least-surprising existing permission. */
+    public function canDismissExternalAdvisory(): bool
+    {
+        return $this->canCreateWarning();
+    }
+
+    public function canConvertExternalAdvisoryToDraft(): bool
+    {
+        return $this->canCreateWarning();
+    }
+
     public function canActivateWarning(): bool
     {
         return $this->allows(self::ACTION_ACTIVATE_WARNING);
@@ -159,7 +176,7 @@ final class DrrmEarlyWarningAuthorizationService
         }
     }
 
-    /** @return array{canView: bool, canCreateWarning: bool, canEditDraft: bool, canSynchronizeExternalAdvisories: bool, canActivateWarning: bool, canCancelWarning: bool} */
+    /** @return array{canView: bool, canCreateWarning: bool, canEditDraft: bool, canSynchronizeExternalAdvisories: bool, canReviewExternalAdvisories: bool, canDismissExternalAdvisory: bool, canConvertExternalAdvisoryToDraft: bool, canActivateWarning: bool, canCancelWarning: bool} */
     public function capabilities(): array
     {
         return [
@@ -167,6 +184,9 @@ final class DrrmEarlyWarningAuthorizationService
             'canCreateWarning' => $this->canCreateWarning(),
             'canEditDraft' => $this->canEditDraft(),
             'canSynchronizeExternalAdvisories' => $this->canSynchronizeExternalAdvisories(),
+            'canReviewExternalAdvisories' => $this->canReviewExternalAdvisories(),
+            'canDismissExternalAdvisory' => $this->canDismissExternalAdvisory(),
+            'canConvertExternalAdvisoryToDraft' => $this->canConvertExternalAdvisoryToDraft(),
             'canActivateWarning' => $this->canActivateWarning(),
             'canCancelWarning' => $this->canCancelWarning(),
         ];

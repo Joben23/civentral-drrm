@@ -103,6 +103,100 @@ final class DrrmEarlyWarningWriteService
         return $this->mutationResult($result, 'DRAFT');
     }
 
+    /**
+     * Create one Phase 4A draft from a locked, still-pending staged advisory.
+     * PHP validates the human-confirmed definition; the database RPC remains
+     * authoritative for source identity, payload version, and atomic linking.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function createDraftFromExternalAdvisory(
+        array $input,
+        string $actorReference
+    ): array {
+        $allowedKeys = [
+            'external_advisory_id', 'expected_payload_version',
+            'title', 'hazard_type', 'warning_level', 'source_code', 'summary',
+            'issued_at', 'valid_until', 'source_reference', 'scope_type', 'barangay_ids',
+        ];
+        if (array_diff(array_keys($input), $allowedKeys) !== []) {
+            throw new DrrmEarlyWarningValidationException(
+                'Unsupported external advisory conversion fields were supplied.'
+            );
+        }
+
+        $externalAdvisoryId = $this->uuidIdentifier(
+            $input['external_advisory_id'] ?? null,
+            'Invalid external advisory identifier.'
+        );
+        $expectedPayloadVersion = $this->expectedPayloadVersion(
+            $input['expected_payload_version'] ?? null
+        );
+        $definitionInput = array_diff_key(
+            $input,
+            array_flip(['external_advisory_id', 'expected_payload_version'])
+        );
+        $draft = $this->validateDraftInput($definitionInput);
+        $actorReference = $this->trustedActorReference($actorReference);
+
+        $result = $this->callRpc('convert_module4_external_advisory_to_draft', [
+            'p_external_advisory_id' => $externalAdvisoryId,
+            'p_expected_payload_version' => $expectedPayloadVersion,
+            'p_expected_source_id' => $draft['source']['id'],
+            'p_title' => $draft['title'],
+            'p_hazard_type' => $draft['hazard_type'],
+            'p_warning_level_id' => $draft['risk_level']['risk_level_id'],
+            'p_summary' => $draft['summary'],
+            'p_issued_at' => $draft['issued_at'],
+            'p_valid_until' => $draft['valid_until'],
+            'p_source_reference' => $draft['source_reference'],
+            'p_areas' => $draft['areas'],
+            'p_actor_reference' => $actorReference,
+        ]);
+        $outcome = (string) ($result['outcome'] ?? '');
+
+        if (in_array($outcome, [
+            'REVIEW_CONFLICT', 'PAYLOAD_VERSION_CONFLICT', 'SOURCE_CONFLICT',
+        ], true)) {
+            throw new DrrmEarlyWarningConflictException(
+                'This advisory changed or was already reviewed. Refresh and review the latest record before trying again.'
+            );
+        }
+        if ($outcome === 'NOT_FOUND') {
+            throw new DrrmEarlyWarningLifecycleException(
+                'The staged external advisory could not be found.'
+            );
+        }
+        if ($outcome !== 'DRAFT_CREATED'
+            || ($result['review_status'] ?? null) !== 'DRAFT_CREATED'
+            || ($result['external_advisory_id'] ?? null) !== $externalAdvisoryId
+            || (int) ($result['payload_version'] ?? 0) !== $expectedPayloadVersion) {
+            throw new DrrmEarlyWarningWriteException(
+                'The external advisory was not converted transactionally.'
+            );
+        }
+
+        $warning = $this->mutationResult($result, 'DRAFT');
+        if ($warning['revision'] !== 1
+            || ($result['linked_warning_id'] ?? null) !== $warning['id']) {
+            throw new DrrmEarlyWarningWriteException(
+                'The converted warning draft response was invalid.'
+            );
+        }
+
+        return [
+            'external_advisory_id' => $externalAdvisoryId,
+            'review_status' => 'DRAFT_CREATED',
+            'payload_version' => $expectedPayloadVersion,
+            'reviewed_at' => (string) ($result['reviewed_at'] ?? ''),
+            'linked_warning_id' => $warning['id'],
+            'warning' => $warning,
+            'warning_created' => true,
+            'warning_activated' => false,
+        ];
+    }
+
     /** @param array<string, mixed> $input @return array<string, mixed> */
     public function updateDraft(array $input, string $actorReference): array
     {
@@ -551,7 +645,7 @@ final class DrrmEarlyWarningWriteService
         if (!is_string($value) || !$this->isUuid($value)) {
             throw new DrrmEarlyWarningValidationException('Invalid warning identifier.');
         }
-        return $value;
+        return strtolower($value);
     }
 
     private function expectedRevision(mixed $value): int
@@ -560,6 +654,24 @@ final class DrrmEarlyWarningWriteService
             throw new DrrmEarlyWarningValidationException('A valid expected warning revision is required.');
         }
         return $value;
+    }
+
+    private function expectedPayloadVersion(mixed $value): int
+    {
+        if (!is_int($value) || $value < 1) {
+            throw new DrrmEarlyWarningValidationException(
+                'A valid expected advisory payload version is required.'
+            );
+        }
+        return $value;
+    }
+
+    private function uuidIdentifier(mixed $value, string $message): string
+    {
+        if (!is_string($value) || !$this->isUuid($value)) {
+            throw new DrrmEarlyWarningValidationException($message);
+        }
+        return strtolower($value);
     }
 
     private function recordRevision(mixed $value): int
