@@ -679,6 +679,10 @@ include '../../includes/sidebar.php';
         $basePath . 'api/drrm/external-advisory-review.php',
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>,
+    notificationReadinessEndpoint: <?php echo json_encode(
+        $basePath . 'api/drrm/early-warning-notification-readiness.php',
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>,
     aiStatusEndpoint: <?php echo json_encode(
         $basePath . 'api/drrm/ai-status.php',
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT

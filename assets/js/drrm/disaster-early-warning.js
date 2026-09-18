@@ -59,6 +59,35 @@
     }
   }
 
+  async function loadInAppReadiness() {
+    const section = document.querySelector('#deliveryChannelsTitle')?.closest('section');
+    const description = section?.querySelector('h2 + p');
+    const inAppStatus = section?.querySelector('article p');
+    if (description) {
+      description.textContent = 'The citizen in-app warning feed is pull-only. Email, SMS, and push delivery are not connected.';
+    }
+    if (!inAppStatus) return;
+    inAppStatus.textContent = 'Checking';
+    if (typeof config.notificationReadinessEndpoint !== 'string' || !config.notificationReadinessEndpoint) {
+      inAppStatus.textContent = 'Not Connected';
+      return;
+    }
+    try {
+      const response = await window.fetch(config.notificationReadinessEndpoint, {
+        method: 'GET', credentials: 'same-origin', cache: 'no-store',
+        headers: { Accept: 'application/json' }
+      });
+      const payload = await response.json();
+      const readiness = payload && payload.data;
+      const available = response.ok && payload && payload.success === true
+        && readiness && readiness.in_app_available === true
+        && readiness.delivery_type === 'AUTHENTICATED_PULL_FEED';
+      inAppStatus.textContent = available ? 'Available - Pull Feed' : 'Not Connected';
+    } catch (_) {
+      inAppStatus.textContent = 'Not Connected';
+    }
+  }
+
   function requireObject(value, message) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new Error(message);
@@ -1582,6 +1611,7 @@
     }
 
     state.initialized = true;
+    void loadInAppReadiness();
     bindWarningWorkflow();
     loadDashboard().catch(handleLoadFailure);
     loadExternalAdvisories().catch(() => {
@@ -1592,6 +1622,7 @@
   }
 
   window.CiventralEarlyWarningDashboard = Object.freeze({
+    refreshInAppReadiness: loadInAppReadiness,
     diagnostics: function () {
       return {
         initialized: state.initialized,

@@ -40,10 +40,25 @@ class FakeElement {
 const body = new FakeElement();
 const status = new FakeElement();
 const filter = new FakeElement();
+const inAppStatus = new FakeElement();
+const emailStatus = new FakeElement();
+const smsStatus = new FakeElement();
+const deliveryDescription = new FakeElement();
+emailStatus.textContent = 'Not Connected';
+smsStatus.textContent = 'Not Connected';
+const deliverySection = {
+  querySelector(selector) {
+    if (selector === 'h2 + p') return deliveryDescription;
+    if (selector === 'article p') return inAppStatus;
+    return null;
+  }
+};
+const deliveryHeading = { closest() { return deliverySection; } };
 const elements = new Map([
   ['[data-external-advisory-body]', body],
   ['[data-external-advisory-status]', status],
-  ['[data-external-advisory-filter]', filter]
+  ['[data-external-advisory-filter]', filter],
+  ['#deliveryChannelsTitle', deliveryHeading]
 ]);
 const documentListeners = new Map();
 const document = {
@@ -56,12 +71,25 @@ const document = {
 };
 
 let advisories = [];
+let readinessAvailable = false;
+let readinessUnavailable = false;
 const window = {
   CiventralEarlyWarningConfig: {
     externalAdvisoriesEndpoint: '/api/drrm/external-advisories.php',
+    notificationReadinessEndpoint: '/api/drrm/early-warning-notification-readiness.php',
     security: { csrfToken: 'isolated-test-token', capabilities: { canView: true, canReviewExternalAdvisories: true } }
   },
   async fetch(url) {
+    if (url === '/api/drrm/early-warning-notification-readiness.php') {
+      if (readinessUnavailable) throw new Error('Isolated catalog unavailable.');
+      return {
+        ok: true,
+        async json() {
+          return { success: true, data: { in_app_available: readinessAvailable,
+            delivery_type: 'AUTHENTICATED_PULL_FEED' } };
+        }
+      };
+    }
     if (typeof url === 'string' && url.startsWith('/api/drrm/external-advisories.php?status=')) {
       return {
         ok: true,
@@ -85,6 +113,17 @@ async function settle() {
 (async () => {
   documentListeners.get('DOMContentLoaded')();
   await settle();
+  assert.equal(inAppStatus.textContent, 'Not Connected');
+  readinessAvailable = true;
+  await window.CiventralEarlyWarningDashboard.refreshInAppReadiness();
+  assert.equal(inAppStatus.textContent, 'Available - Pull Feed');
+  assert.equal(emailStatus.textContent, 'Not Connected');
+  assert.equal(smsStatus.textContent, 'Not Connected');
+  assert.match(deliveryDescription.textContent, /push delivery are not connected/);
+  readinessUnavailable = true;
+  await window.CiventralEarlyWarningDashboard.refreshInAppReadiness();
+  assert.equal(inAppStatus.textContent, 'Not Connected');
+  console.log('InAppReadinessFailClosedAndPullOnly=PASS');
   assert.equal(body.children[0].children[0].textContent, 'No staged external advisories awaiting review.');
   assert.equal(status.textContent, 'No staged external advisories awaiting review.');
   console.log('ZeroAdvisoryEmptyState=PASS');
