@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+\App\Services\AdminSessionManager::start();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -30,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+require_once __DIR__ . '/_admin-session.php';
 require_once __DIR__ . '/../../config/proxy.php';
 
 function respond(array $payload, int $statusCode = 200): void {

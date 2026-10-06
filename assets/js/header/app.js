@@ -12,12 +12,12 @@ window.loadCiventralScript('assets/js/header/sidebar.js', () => {
 
     const activityEvents = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
     activityEvents.forEach(event => {
-        document.addEventListener(event, resetInactivityTimer, { passive: true });
+        document.addEventListener(event, handleAdminActivity, { passive: true });
     });
 
     // Make sure countdownInterval is accessible (declared in inactivity.js)
     if (typeof updateCountdownDisplay === 'function') {
         countdownInterval = setInterval(updateCountdownDisplay, 1000);
-        resetInactivityTimer();
+        updateCountdownDisplay();
     }
 });

@@ -286,6 +286,10 @@ function runAdminFloodCheckEndpoint(
     ?string $csrfToken = null,
     string $body = ''
 ): array {
+    if ($session !== []) {
+        $session['admin_auth_context'] = 'employee';
+        $session['LAST_ACTIVITY'] = time();
+    }
     $endpoint = $root . '/api/drrm/admin-flood-reference-check.php';
     $sessionId = 'admin-flood-' . substr(
         hash('sha256', $environment . serialize($session) . $method . $contentType . $body),

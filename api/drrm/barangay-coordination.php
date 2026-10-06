@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Config\SupabaseConfig;
+use App\Middleware\AdminSessionGuard;
 use App\Services\AuthService;
+use App\Services\AdminSessionManager;
 use App\Services\DrrmBarangayCoordinationAuthorizationException;
 use App\Services\DrrmBarangayCoordinationAuthorizationService;
 use App\Services\DrrmBarangayCoordinationCsrfException;
@@ -13,6 +15,8 @@ use App\Services\DrrmBarangayCoordinationValidationException;
 use App\Services\SupabaseRestClient;
 
 require_once __DIR__ . '/../../config/supabase.php';
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+require_once __DIR__ . '/../../src/Middleware/AdminSessionGuard.php';
 require_once __DIR__ . '/../../src/Services/AuthService.php';
 require_once __DIR__ . '/../../src/Services/DrrmDataStoreInterface.php';
 require_once __DIR__ . '/../../src/Services/SupabaseRestClient.php';
@@ -32,14 +36,9 @@ function barangayCoordinationResponse(bool $success, mixed $data = null, string 
     exit;
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+AdminSessionManager::start();
+(new AdminSessionGuard())->requireApi();
 $auth = new AuthService();
-if (!$auth->isLoggedIn()) {
-    barangayCoordinationResponse(false, null, 'Authentication required.', 401);
-}
 
 $authorization = DrrmBarangayCoordinationAuthorizationService::fromTrustedSession();
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));

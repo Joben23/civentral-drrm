@@ -1,8 +1,6 @@
 <?php
-// Prevent session lock issues during long DB queries
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+\App\Services\AdminSessionManager::start();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -48,16 +46,77 @@ if ($method !== 'POST') {
     ], 405);
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+$decodedInput = json_decode(file_get_contents('php://input'), true);
+$input = is_array($decodedInput) ? $decodedInput : $_POST;
+if (!is_array($input) || array_is_list($input)) {
+    respond([
+        'status' => 'error',
+        'code' => 'INVALID_LOGIN_REQUEST',
+        'message' => 'Invalid login request.'
+    ], 400);
+}
 
-$employeeIdOrEmail = trim($input['employeeId'] ?? $input['email'] ?? $input['username'] ?? '');
-$password = trim($input['password'] ?? '');
+$allowedFields = ['employeeId', 'email', 'username', 'password', 'recaptcha_token'];
+foreach (array_keys($input) as $field) {
+    if (!is_string($field) || !in_array($field, $allowedFields, true)) {
+        respond([
+            'status' => 'error',
+            'code' => 'INVALID_LOGIN_REQUEST',
+            'message' => 'Invalid login request.'
+        ], 400);
+    }
+}
+
+$rawEmployeeIdOrEmail = $input['employeeId'] ?? $input['email'] ?? $input['username'] ?? '';
+$employeeIdOrEmail = is_string($rawEmployeeIdOrEmail) ? trim($rawEmployeeIdOrEmail) : '';
+$password = is_string($input['password'] ?? null) ? $input['password'] : '';
+$recaptchaToken = is_string($input['recaptcha_token'] ?? null)
+    ? trim($input['recaptcha_token'])
+    : '';
 
 if (empty($employeeIdOrEmail) || empty($password)) {
     respond([
         'status' => 'error',
         'message' => 'Please provide both Employee ID / Email and Password.'
     ], 400);
+}
+
+if ($recaptchaToken === '') {
+    respond([
+        'status' => 'error',
+        'code' => 'CAPTCHA_REQUIRED',
+        'message' => 'Complete the security check.'
+    ], 400);
+}
+
+require_once __DIR__ . '/../../config/recaptcha.php';
+require_once __DIR__ . '/../../src/Services/RecaptchaVerifier.php';
+
+try {
+    $recaptchaConfig = \App\Config\RecaptchaConfig::fromEnvironment(__DIR__ . '/../../.env');
+    $verification = (new \App\Services\RecaptchaVerifier($recaptchaConfig))->verify($recaptchaToken);
+} catch (Throwable) {
+    error_log('Admin login reCAPTCHA configuration or verification initialization failed.');
+    respond([
+        'status' => 'error',
+        'code' => 'CAPTCHA_UNAVAILABLE',
+        'message' => 'Unable to verify the security check right now. Please try again.'
+    ], 503);
+}
+
+if ($verification->status === \App\Services\RecaptchaVerificationResult::UNAVAILABLE) {
+    respond([
+        'status' => 'error',
+        'code' => 'CAPTCHA_UNAVAILABLE',
+        'message' => 'Unable to verify the security check right now. Please try again.'
+    ], 503);
+}
+if (!$verification->isVerified()) {
+    respond([
+        'status' => 'error',
+        'code' => 'CAPTCHA_INVALID',
+        'message' => 'Security check failed or expired. Please try again.'
+    ], 422);
 }
 
 // System Maintenance Check
@@ -69,6 +128,7 @@ if (strtolower($employeeIdOrEmail) === 'maintenance') {
 }
 
 require_once __DIR__ . '/../../config/proxy.php';
+require_once __DIR__ . '/../../src/Services/EmployeeAuthResponseProjector.php';
 
 $apiBaseUrl = getenv('EXPO_PUBLIC_API_BASE_URL') ?: 'https://civentral.tech/api/employee';
 $remoteUrl = rtrim($apiBaseUrl, '/') . '/login.php';
@@ -78,10 +138,11 @@ $result = proxyRequest($remoteUrl, 'POST', [
     'password' => $password
 ]);
 
-if (is_array($result['body'] ?? null)
-    && ($result['body']['status'] ?? null) === 'success') {
-    $authenticatedUser = is_array($result['body']['user'] ?? null)
-        ? $result['body']['user']
+$response = \App\Services\EmployeeAuthResponseProjector::login($result);
+$upstreamBody = is_array($result['body'] ?? null) ? $result['body'] : [];
+if ($response['payload']['status'] === 'success') {
+    $authenticatedUser = is_array($upstreamBody['user'] ?? null)
+        ? $upstreamBody['user']
         : [];
 
     if (!hydrateRemoteEmployeeSession($apiBaseUrl, $authenticatedUser)) {
@@ -93,5 +154,5 @@ if (is_array($result['body'] ?? null)
     }
 }
 
-respond($result['body'], $result['code']);
+respond($response['payload'], $response['status_code']);
 ?>

@@ -23,12 +23,17 @@ Required secrets and external data configuration:
 - SUPABASE_URL
 - SUPABASE_SECRET_KEY
 - CIVENTRAL_AI_INTERNAL_KEY
+- RECAPTCHA_SITE_KEY
+- RECAPTCHA_SECRET_KEY
+- RECAPTCHA_ALLOWED_HOSTNAMES
 
 Staging settings and external service endpoints to confirm:
 
 - APP_ENV
 - APP_DEBUG
 - EXPO_PUBLIC_API_BASE_URL
+- RECAPTCHA_CONNECT_TIMEOUT_MS
+- RECAPTCHA_REQUEST_TIMEOUT_MS
 - CITIZEN_AUTH_PROFILE_URL
 
 - CITIZEN_CORS_ALLOWED_ORIGINS
@@ -65,6 +70,13 @@ by this PHP application as the server-side base URL for employee login, profile,
 users, roles, permissions, departments, audit, and login-history proxy calls.
 It therefore remains part of the PHP service configuration. It is never passed
 to the AI container.
+
+The employee/admin login requires a Google reCAPTCHA v2 checkbox. Register a
+separate staging key pair, configure the staging hostname in Google, and set
+RECAPTCHA_ALLOWED_HOSTNAMES to the exact comma-separated hostnames accepted by
+the server. RECAPTCHA_SECRET_KEY is server-only and must never be committed,
+rendered into the login page, or passed to the AI service. Compose deliberately
+fails configuration when any required reCAPTCHA setting is absent.
 
 Do not add Supabase, database, citizen, employee, PAGASA, SMTP, or other web
 credentials to the AI service. Compose explicitly gives the AI container only

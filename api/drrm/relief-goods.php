@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Config\SupabaseConfig;
+use App\Middleware\AdminSessionGuard;
 use App\Services\AuthService;
+use App\Services\AdminSessionManager;
 use App\Services\DrrmReliefGoodsAuthorizationService;
 use App\Services\DrrmReliefGoodsAuthorizationException;
 use App\Services\DrrmReliefGoodsCsrfException;
@@ -13,6 +15,8 @@ use App\Services\DrrmReliefGoodsValidationException;
 use App\Services\SupabaseRestClient;
 
 require_once __DIR__ . '/../../config/supabase.php';
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+require_once __DIR__ . '/../../src/Middleware/AdminSessionGuard.php';
 require_once __DIR__ . '/../../src/Services/AuthService.php';
 require_once __DIR__ . '/../../src/Services/DrrmDataStoreInterface.php';
 require_once __DIR__ . '/../../src/Services/SupabaseRestClient.php';
@@ -32,9 +36,9 @@ function reliefResponse(bool $success, mixed $data = null, string $message = '',
     exit;
 }
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+AdminSessionManager::start();
+(new AdminSessionGuard())->requireApi();
 $auth = new AuthService();
-if (!$auth->isLoggedIn()) reliefResponse(false, null, 'Authentication required.', 401);
 $authorization = DrrmReliefGoodsAuthorizationService::fromTrustedSession();
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 try {

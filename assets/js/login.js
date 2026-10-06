@@ -13,7 +13,24 @@ function togglePasswordVisibility() {
       }
     }
 
-      // FOR THE FUCKING MODALS 
+    function resetRecaptcha() {
+      if (typeof window.grecaptcha === 'undefined') return;
+      try {
+        window.grecaptcha.reset();
+      } catch (error) {
+        // The widget may not have rendered yet.
+      }
+    }
+
+    function handleRecaptchaExpired() {
+      showStatusAlert('error', 'Security check expired. Please complete it again.');
+    }
+
+    function handleRecaptchaError() {
+      showStatusAlert('error', 'Unable to load the security check. Please try again.');
+    }
+
+    // Shared status modal for credential and OTP feedback.
     function showStatusAlert(type, customMessage = "") {
       const modal = document.getElementById('statusModal');
       const icon = document.getElementById('modalIcon');
@@ -40,12 +57,26 @@ function togglePasswordVisibility() {
     async function handleLogin(event) {
       event.preventDefault();
       const id = document.getElementById('employeeId').value.trim();
-      const pass = document.getElementById('password').value.trim();
+      const pass = document.getElementById('password').value;
       const submitBtn = event.target.querySelector('button[type="submit"]');
-      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Sign in';
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Sign In';
 
       if (!id || !pass) {
         showStatusAlert('error', 'Please fill in both Employee ID / Email and Password.');
+        return;
+      }
+
+      if (!window.civentralRecaptchaReady || typeof window.grecaptcha === 'undefined') {
+        showStatusAlert('error', 'Sign-in security is temporarily unavailable.');
+        return;
+      }
+
+      const recaptchaResponse = window.grecaptcha.getResponse();
+      const recaptchaToken = typeof recaptchaResponse === 'string'
+        ? recaptchaResponse.trim()
+        : '';
+      if (!recaptchaToken) {
+        showStatusAlert('error', 'Complete the security check.');
         return;
       }
       
@@ -65,12 +96,17 @@ function togglePasswordVisibility() {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ employeeId: id, password: pass })
+          body: JSON.stringify({
+            employeeId: id,
+            password: pass,
+            recaptcha_token: recaptchaToken
+          })
         });
 
         const data = await response.json();
 
         if (data.status === 'otp_required') {
+          resetRecaptcha();
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnHtml;
@@ -85,12 +121,14 @@ function togglePasswordVisibility() {
             window.location.href = 'pages/dashboard.php';
           }, 1200);
         } else if (data.status === 'maintenance') {
+          resetRecaptcha();
           showStatusAlert('maintenance', data.message);
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnHtml;
           }
         } else {
+          resetRecaptcha();
           showStatusAlert('error', data.message || 'Login failed. Please check your credentials.');
           if (submitBtn) {
             submitBtn.disabled = false;
@@ -98,6 +136,7 @@ function togglePasswordVisibility() {
           }
         }
       } catch (err) {
+        resetRecaptcha();
         showStatusAlert('error', 'Login failed. Invalid credentials or network error.');
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -160,6 +199,9 @@ function togglePasswordVisibility() {
 
     // Auto-advance & paste handler for 6 OTP boxes
     document.addEventListener('DOMContentLoaded', () => {
+      if (window.civentralLoginInitialMessage) {
+        showStatusAlert('error', window.civentralLoginInitialMessage);
+      }
       const otpInputs = document.querySelectorAll('.otp-input');
       otpInputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {

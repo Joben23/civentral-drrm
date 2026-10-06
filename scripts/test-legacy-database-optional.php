@@ -210,7 +210,7 @@ $compose = file_get_contents($root . '/docker-compose.yml');
 assertLegacyDatabaseOptional(
     is_string($bootstrap)
     && str_contains($bootstrap, 'legacyDatabaseProvider')
-    && str_contains($bootstrap, '$authService->requireAuth($currentBasePath)')
+    && str_contains($bootstrap, '$adminSessionGuard->requirePage($currentBasePath)')
     && !str_contains($bootstrap, 'Database::getInstance()'),
     'BootstrapRequiresSessionWithoutEagerDatabase'
 );

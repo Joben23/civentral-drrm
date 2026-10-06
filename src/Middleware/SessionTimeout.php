@@ -1,29 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Middleware;
 
+use App\Services\AdminSessionManager;
+
+require_once __DIR__ . '/AdminSessionGuard.php';
+
+/**
+ * Backward-compatible adapter. New code should use AdminSessionGuard directly.
+ */
 class SessionTimeout
 {
-    private $timeoutDuration;
-    private $basePath;
-
-    public function __construct($timeoutDuration = 1800, $basePath = '../')
-    {
-        $this->timeoutDuration = $timeoutDuration;
-        $this->basePath = $basePath;
+    public function __construct(
+        private readonly int $timeoutDuration = AdminSessionManager::IDLE_TIMEOUT_SECONDS,
+        private readonly string $basePath = '../'
+    ) {
+        if ($this->timeoutDuration !== AdminSessionManager::IDLE_TIMEOUT_SECONDS) {
+            throw new \InvalidArgumentException('The admin idle timeout is fixed by AdminSessionManager.');
+        }
     }
 
-    public function handle()
+    public function handle(): void
     {
-        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-            session_start();
-        }
-
-        if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY']) > $this->timeoutDuration) {
-            header("Location: " . $this->basePath . "pages/logout.php");
-            exit;
-        }
-
-        $_SESSION['LAST_ACTIVITY'] = time();
+        (new AdminSessionGuard())->requirePage($this->basePath);
     }
 }

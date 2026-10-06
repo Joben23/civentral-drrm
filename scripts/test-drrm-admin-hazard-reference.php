@@ -134,6 +134,10 @@ assertAdminHazardReference(
 /** @return array{status: int, output: string} */
 function runAdminHazardEndpointScenario(string $root, string $environment, array $session): array
 {
+    if ($session !== []) {
+        $session['admin_auth_context'] = 'employee';
+        $session['LAST_ACTIVITY'] = time();
+    }
     $endpoint = $root . '/api/drrm/admin-hazard-reference.php';
     $code = 'register_shutdown_function(static function (): void {'
         . '$status = http_response_code();'

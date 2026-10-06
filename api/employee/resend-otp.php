@@ -1,8 +1,6 @@
 <?php
-// Prevent session lock issues during long DB queries
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+\App\Services\AdminSessionManager::start();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -49,11 +47,13 @@ if ($method !== 'POST') {
 }
 
 require_once __DIR__ . '/../../config/proxy.php';
+require_once __DIR__ . '/../../src/Services/EmployeeAuthResponseProjector.php';
 
 $apiBaseUrl = getenv('EXPO_PUBLIC_API_BASE_URL') ?: 'https://civentral.tech/api/employee';
 $remoteUrl = rtrim($apiBaseUrl, '/') . '/resend-otp.php';
 
 $result = proxyRequest($remoteUrl, 'POST', null);
 
-respond($result['body'], $result['code']);
+$response = \App\Services\EmployeeAuthResponseProjector::resendOtp($result);
+respond($response['payload'], $response['status_code']);
 ?>

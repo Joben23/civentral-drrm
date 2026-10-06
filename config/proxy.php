@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../src/Services/AdminSessionManager.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -35,13 +37,14 @@ function proxyRequest($url, $method = 'POST', $body = null, $sendCookie = true) 
     $response = curl_exec($ch);
     
     if ($response === false) {
-        $error = curl_error($ch);
+        $errorNumber = curl_errno($ch);
         curl_close($ch);
+        error_log('CIVENTRAL upstream request failed with cURL code ' . $errorNumber . '.');
         return [
-            'code' => 500,
+            'code' => 502,
             'body' => [
                 'status' => 'error',
-                'message' => 'Proxy request failed: ' . $error
+                'message' => 'The authentication service is temporarily unavailable.'
             ]
         ];
     }
@@ -86,9 +89,7 @@ function establishRemoteEmployeeSession(array $authenticatedUser, array $profile
         return false;
     }
 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
+    \App\Services\AdminSessionManager::start();
     if (!headers_sent()) {
         session_regenerate_id(true);
     }
@@ -103,7 +104,7 @@ function establishRemoteEmployeeSession(array $authenticatedUser, array $profile
     $_SESSION['user_granted_actions'] = [];
     $_SESSION['user_granted_resources'] = [];
     $_SESSION['user_permissions_map'] = [];
-    $_SESSION['LAST_ACTIVITY'] = time();
+    (new \App\Services\AdminSessionManager())->markAuthenticated();
 
     return true;
 }
@@ -139,6 +140,7 @@ function clearRemoteEmployeeAuthentication(): void
         'user_granted_actions',
         'user_granted_resources',
         'user_permissions_map',
+        'admin_auth_context',
         'LAST_ACTIVITY',
     ] as $key) {
         unset($_SESSION[$key]);

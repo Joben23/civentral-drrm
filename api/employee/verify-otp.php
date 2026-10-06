@@ -1,8 +1,6 @@
 <?php
-// Prevent session lock issues during long DB queries
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+\App\Services\AdminSessionManager::start();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -52,6 +50,7 @@ $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $otpCode = trim($input['otp'] ?? $input['otp_code'] ?? '');
 
 require_once __DIR__ . '/../../config/proxy.php';
+require_once __DIR__ . '/../../src/Services/EmployeeAuthResponseProjector.php';
 
 if (empty($otpCode)) {
     respond([
@@ -67,9 +66,11 @@ $result = proxyRequest($remoteUrl, 'POST', [
     'otp' => $otpCode
 ]);
 
-if (isset($result['body']['status']) && $result['body']['status'] === 'success') {
-    $authenticatedUser = is_array($result['body']['user'] ?? null)
-        ? $result['body']['user']
+$response = \App\Services\EmployeeAuthResponseProjector::verifyOtp($result);
+$upstreamBody = is_array($result['body'] ?? null) ? $result['body'] : [];
+if ($response['payload']['status'] === 'success') {
+    $authenticatedUser = is_array($upstreamBody['user'] ?? null)
+        ? $upstreamBody['user']
         : [];
 
     if (!hydrateRemoteEmployeeSession($apiBaseUrl, $authenticatedUser)) {
@@ -81,5 +82,5 @@ if (isset($result['body']['status']) && $result['body']['status'] === 'success')
     }
 }
 
-respond($result['body'], $result['code']);
+respond($response['payload'], $response['status_code']);
 ?>

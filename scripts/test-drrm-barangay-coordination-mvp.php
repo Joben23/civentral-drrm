@@ -454,6 +454,7 @@ try {
         'user_reference' => 'alice',
     ];
     $_SESSION['user_id'] = 'alice';
+    (new \App\Services\AdminSessionManager())->markAuthenticated();
     $scopedService = new DrrmBarangayCoordinationService($store, new AuthService());
     $scopedReport = $scopedService->createStatusReport([
         'barangay_id' => '22222222-2222-2222-2222-222222222222',

@@ -22,6 +22,9 @@ require_once __DIR__ . '/../src/bootstrap.php';
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
     window.civentralBasePath = '<?php echo $basePath ?? '../'; ?>';
+    window.civentralSessionExpiresAt = <?php echo json_encode(
+      $adminSessionExpiresAt !== null ? $adminSessionExpiresAt * 1000 : null
+    ); ?>;
     (function() {
       const savedTheme = localStorage.getItem('civentral_theme');
       if (savedTheme === 'dark') {
@@ -136,6 +139,15 @@ require_once __DIR__ . '/../src/bootstrap.php';
        </div>
     </div>
   </header>
+
+  <div
+    id="sessionExpiryWarning"
+    class="hidden fixed top-24 right-6 z-[110] max-w-sm rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 shadow-lg"
+    role="status"
+    aria-live="polite"
+  >
+    Your session will expire soon due to inactivity.
+  </div>
 
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-md transition-opacity opacity-0">

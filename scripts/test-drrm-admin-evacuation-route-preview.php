@@ -45,6 +45,10 @@ function runAdminRouteEndpointScenario(
     array $session,
     string $method = 'POST'
 ): array {
+    if ($session !== []) {
+        $session['admin_auth_context'] = 'employee';
+        $session['LAST_ACTIVITY'] = time();
+    }
     $endpoint = $root . '/api/drrm/admin-evacuation-route-preview.php';
     $sessionId = 'admin-route-' . substr(hash('sha256', $environment . serialize($session) . $method), 0, 20);
     $code = 'register_shutdown_function(static function (): void {'

@@ -65,7 +65,9 @@ function incidentHttpAssert(string $name, bool $condition): void
 session_id($sessionId);
 session_start();
 $_SESSION = [
+    'admin_auth_context' => 'employee',
     'user_id' => 'module3-http-test',
+    'LAST_ACTIVITY' => time(),
     'current_user_details' => ['is_superadmin' => false, 'is_global_access' => true],
     'user_permissions_map' => [],
 ];

@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use App\Config\SupabaseConfig;
-use App\Services\AuthService;
+use App\Middleware\AdminSessionGuard;
+use App\Services\AdminSessionManager;
 use App\Services\DrrmMapReadService;
 use App\Services\SupabaseRestClient;
 
@@ -16,9 +17,16 @@ if (
 }
 
 require_once __DIR__ . '/../../config/supabase.php';
+require_once __DIR__ . '/../../src/Services/AdminSessionManager.php';
+require_once __DIR__ . '/../../src/Middleware/AdminSessionGuard.php';
 require_once __DIR__ . '/../../src/Services/AuthService.php';
 require_once __DIR__ . '/../../src/Services/SupabaseRestClient.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapReadService.php';
+
+// Every endpoint in api/drrm is an employee/admin surface. Starting the
+// session here applies one cookie policy before standalone endpoints reach
+// their legacy session_start guards.
+AdminSessionManager::start();
 
 /**
  * @param callable(DrrmMapReadService): array<mixed> $loader
@@ -40,15 +48,7 @@ function drrmApiRun(callable $loader, array $allowedQueryParameters = []): never
         drrmApiRespond(false, null, 'Method not allowed.', 405);
     }
 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    $authService = new AuthService();
-
-    if (!$authService->isLoggedIn()) {
-        drrmApiRespond(false, null, 'Authentication required.', 401);
-    }
+    (new AdminSessionGuard())->requireApi();
 
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();

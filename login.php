@@ -1,3 +1,23 @@
+<?php
+require_once __DIR__ . '/config/recaptcha.php';
+
+$recaptchaReady = false;
+$recaptchaSiteKey = '';
+try {
+    $recaptchaConfig = \App\Config\RecaptchaConfig::fromEnvironment(__DIR__ . '/.env');
+    $recaptchaSiteKey = $recaptchaConfig->siteKey();
+    $recaptchaReady = true;
+} catch (Throwable) {
+    http_response_code(503);
+    error_log('Admin login reCAPTCHA configuration is unavailable.');
+}
+
+$initialLoginMessage = !$recaptchaReady
+    ? 'Sign-in security is temporarily unavailable.'
+    : ((($_GET['reason'] ?? '') === 'session_expired')
+        ? 'Your session expired due to inactivity.'
+        : '');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,6 +36,9 @@
 </style>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <?php if ($recaptchaReady): ?>
+    <script src='https://www.google.com/recaptcha/api.js' async defer></script>
+  <?php endif; ?>
 </head>
 <body class="bg-white min-h-screen font-sans antialiased selection:bg-brand-medium selection:text-white">
 
@@ -94,22 +117,28 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between pt-1">
-          <label class="flex items-center space-x-2 cursor-pointer select-none">
-            <input 
-              type="checkbox" 
-              class="w-4 h-4 text-brand-medium border-gray-300 rounded focus:ring-brand-medium accent-brand-medium"
-            />
-            <span class="text-xs text-gray-500">Keep me signed in</span>
-          </label>
+        <div class="flex items-center justify-end pt-1">
           <a href="#" class="text-xs font-semibold text-brand-medium hover:underline">Forgot password?</a>
         </div>
 
+        <?php if ($recaptchaReady): ?>
+          <div class="flex justify-center py-1">
+            <div
+              class="g-recaptcha"
+              data-sitekey="<?php echo htmlspecialchars($recaptchaSiteKey, ENT_QUOTES, 'UTF-8'); ?>"
+              data-expired-callback="handleRecaptchaExpired"
+              data-error-callback="handleRecaptchaError"
+            ></div>
+          </div>
+        <?php endif; ?>
+
         <button 
+          id="loginSubmitButton"
           type="submit" 
+          <?php echo $recaptchaReady ? '' : 'disabled aria-disabled="true"'; ?>
           class="w-full py-3 px-4 bg-brand-medium hover:bg-opacity-90 text-white font-medium rounded-lg text-sm transition shadow-sm focus:outline-none"
         >
-          Sign in
+          Sign In
         </button>
       </form>
 
@@ -194,6 +223,13 @@
     </div>
   </div>
 
+  <script>
+    window.civentralLoginInitialMessage = <?php echo json_encode(
+      $initialLoginMessage,
+      JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>;
+    window.civentralRecaptchaReady = <?php echo $recaptchaReady ? 'true' : 'false'; ?>;
+  </script>
   <script src="assets/js/login.js"></script>
 </body>
 </html>

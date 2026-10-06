@@ -152,6 +152,10 @@ assertAdminCenterReference(
 /** @return array{status: int, payload: array<string, mixed>} */
 function runAdminCenterEndpointScenario(string $root, string $environment, array $session, string $method = 'GET'): array
 {
+    if ($session !== []) {
+        $session['admin_auth_context'] = 'employee';
+        $session['LAST_ACTIVITY'] = time();
+    }
     $endpoint = $root . '/api/drrm/admin-evacuation-center-reference.php';
     $code = 'register_shutdown_function(static function (): void {'
         . '$status = http_response_code();'
