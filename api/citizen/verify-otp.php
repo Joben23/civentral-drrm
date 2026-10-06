@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../src/Services/CitizenSessionManager.php';
+App\Services\CitizenSessionManager::start();
 header('Content-Type: application/json; charset=utf-8');
 $allowedOrigins = [
     'http://localhost',
@@ -39,4 +38,8 @@ if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
     $body = file_get_contents('php://input');
 }
 $result = proxyRequest($remoteUrl, $method, $body);
+if (is_array($result['body'] ?? null)
+    && (($result['body']['status'] ?? null) === 'success' || ($result['body']['success'] ?? null) === true)) {
+    session_regenerate_id(true);
+}
 respond($result['body'], $result['code']);

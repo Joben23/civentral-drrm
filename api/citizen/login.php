@@ -1,17 +1,6 @@
 <?php
-ini_set('session.use_strict_mode', '1');
-if (session_status() === PHP_SESSION_NONE) {
-    $isHttps = isset($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off'
-        && (string) $_SERVER['HTTPS'] !== '';
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path' => '/',
-        'secure' => $isHttps,
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    session_start();
-}
+require_once __DIR__ . '/../../src/Services/CitizenSessionManager.php';
+App\Services\CitizenSessionManager::start();
 header('Content-Type: application/json; charset=utf-8');
 $allowedOrigins = [
     'http://localhost',

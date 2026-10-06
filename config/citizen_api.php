@@ -48,6 +48,11 @@ final class CitizenApiConfig
         return $this->profileUrl;
     }
 
+    public function logoutUrl(): string
+    {
+        return substr($this->profileUrl, 0, -strlen('get-profile.php')) . 'logout.php';
+    }
+
     public function isAllowedOrigin(string $origin): bool
     {
         if (in_array($origin, $this->allowedOrigins, true)) {
