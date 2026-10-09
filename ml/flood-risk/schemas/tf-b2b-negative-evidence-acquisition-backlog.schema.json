@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/tf-b2b-negative-evidence-acquisition-backlog-v1.json",
+  "title": "CIVENTRAL TF-B2B affirmative-negative evidence acquisition backlog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "phase", "status", "negative_label_rule", "prohibited_negative_bases", "candidate_sources", "summary"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "phase": {"const": "TF-B2B"},
+    "status": {"const": "ACQUISITION_REQUIRED"},
+    "negative_label_rule": {"type": "string", "minLength": 1},
+    "prohibited_negative_bases": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "candidate_sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_candidate_id", "source_organization", "source_type", "desired_geographic_coverage", "desired_temporal_coverage", "acquisition_status", "acceptable_affirmative_evidence", "required_fields", "cannot_establish_negative_alone", "notes"],
+        "properties": {
+          "source_candidate_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"},
+          "source_organization": {"type": "string", "minLength": 1},
+          "source_type": {"enum": ["OPERATIONS_MONITORING_LOG", "BARANGAY_MONITORING_REPORT", "FLOOD_MONITORING_LOG", "EVENT_MONITORING_LOG"]},
+          "desired_geographic_coverage": {"type": "string", "minLength": 1},
+          "desired_temporal_coverage": {"type": "string", "minLength": 1},
+          "acquisition_status": {"const": "NOT_ACQUIRED"},
+          "acceptable_affirmative_evidence": {"type": "string", "minLength": 1},
+          "required_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "cannot_establish_negative_alone": {"const": true},
+          "notes": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_source_count", "acquired_source_count", "verified_negative_count", "training_use_authorized"],
+      "properties": {
+        "candidate_source_count": {"type": "integer", "minimum": 1},
+        "acquired_source_count": {"const": 0},
+        "verified_negative_count": {"const": 0},
+        "training_use_authorized": {"const": false}
+      }
+    }
+  }
+}

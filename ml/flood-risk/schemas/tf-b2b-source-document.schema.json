@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/tf-b2b-source-document-v1.json",
+  "title": "CIVENTRAL TF-B2B source document and revision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_document_id", "event_id", "source_organization", "source_document_title", "source_revision", "source_public_reference", "source_publication_date", "source_time_text", "source_timezone", "source_availability", "source_acquisition_date", "source_hash", "local_file", "revision_relationship", "related_document_id", "preferred_for_event_scope", "evidence_role", "notes"],
+  "properties": {
+    "source_document_id": {"$ref": "#/$defs/id"},
+    "event_id": {"$ref": "#/$defs/id"},
+    "source_organization": {"type": "string", "minLength": 1},
+    "source_document_title": {"type": "string", "minLength": 1},
+    "source_revision": {"type": "string", "minLength": 1},
+    "source_public_reference": {"type": "string", "minLength": 1},
+    "source_publication_date": {"type": ["string", "null"], "format": "date"},
+    "source_time_text": {"type": ["string", "null"]},
+    "source_timezone": {"type": "null"},
+    "source_availability": {"enum": ["ACQUIRED", "INDEXED_ONLY", "EXTERNAL_ACCESS_REQUIRED", "NOT_ACQUIRED"]},
+    "source_acquisition_date": {"type": ["string", "null"], "format": "date-time"},
+    "source_hash": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "local_file": {"type": ["string", "null"]},
+    "revision_relationship": {"enum": ["INITIAL", "DISCOVERY_ONLY", "SUPPLEMENTS", "SUPERSEDES", "LATER_CUMULATIVE", "CONFLICTING_REVISION"]},
+    "related_document_id": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+    "preferred_for_event_scope": {"type": "boolean"},
+    "evidence_role": {"enum": ["PRIMARY_EVENT_EVIDENCE", "DISCOVERY_EVENT_EVIDENCE", "SUPPLEMENTAL_IMPACT_CONTEXT", "NON_CONFIRMING_ACQUIRED_SOURCE"]},
+    "notes": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"source_availability": {"const": "ACQUIRED"}}, "required": ["source_availability"]},
+      "then": {"properties": {"source_acquisition_date": {"type": "string", "format": "date-time"}, "source_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "local_file": {"type": "string", "minLength": 1}}}
+    },
+    {
+      "if": {"properties": {"source_availability": {"enum": ["INDEXED_ONLY", "EXTERNAL_ACCESS_REQUIRED", "NOT_ACQUIRED"]}}, "required": ["source_availability"]},
+      "then": {"properties": {"source_acquisition_date": {"type": "null"}, "source_hash": {"type": "null"}, "local_file": {"type": "null"}}}
+    }
+  ]
+}

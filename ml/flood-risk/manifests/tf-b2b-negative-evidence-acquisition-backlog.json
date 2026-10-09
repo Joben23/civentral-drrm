@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "phase": "TF-B2B",
+  "status": "ACQUISITION_REQUIRED",
+  "negative_label_rule": "Absence of an incident or report is not a negative. A future negative requires affirmative monitored evidence for a defined barangay and target window, with provenance and human and leakage review.",
+  "prohibited_negative_bases": [
+    "barangay not mentioned in an incident report",
+    "no repository record found",
+    "no public news result found",
+    "zero-filled missing observation",
+    "rainfall without an affirmative monitored flood status"
+  ],
+  "candidate_sources": [
+    {
+      "source_candidate_id": "caloocan-cdrrmo-monitoring-logs",
+      "source_organization": "Caloocan CDRRMO",
+      "source_type": "OPERATIONS_MONITORING_LOG",
+      "desired_geographic_coverage": "All supported Caloocan barangays",
+      "desired_temporal_coverage": "Event and non-event rainfall windows aligned to a future approved target horizon",
+      "acquisition_status": "NOT_ACQUIRED",
+      "acceptable_affirmative_evidence": "Timestamped monitoring entry explicitly stating no flooding for an identified barangay during documented active coverage.",
+      "required_fields": ["barangay identifier", "coverage start", "coverage end", "timezone", "monitoring status", "explicit no-flood observation", "source record identifier", "review decision"],
+      "cannot_establish_negative_alone": true,
+      "notes": "Preferred local operational evidence; retention, completeness, and semantics require agency confirmation."
+    },
+    {
+      "source_candidate_id": "barangay-drrm-monitoring-reports",
+      "source_organization": "Caloocan barangay DRRM offices",
+      "source_type": "BARANGAY_MONITORING_REPORT",
+      "desired_geographic_coverage": "Individually identified Caloocan barangays",
+      "desired_temporal_coverage": "Defined monitored weather windows",
+      "acquisition_status": "NOT_ACQUIRED",
+      "acceptable_affirmative_evidence": "Official timestamped barangay report explicitly recording monitored conditions and no flooding.",
+      "required_fields": ["barangay identifier", "report author or office", "monitoring interval", "timezone", "explicit no-flood result", "source version", "review decision"],
+      "cannot_establish_negative_alone": true,
+      "notes": "Silence or non-submission by a barangay is not evidence of no flood."
+    },
+    {
+      "source_candidate_id": "mmda-flood-monitoring",
+      "source_organization": "Metropolitan Manila Development Authority",
+      "source_type": "FLOOD_MONITORING_LOG",
+      "desired_geographic_coverage": "Caloocan monitoring locations with defensible barangay coverage",
+      "desired_temporal_coverage": "Timestamped monitored intervals overlapping relevant rainfall",
+      "acquisition_status": "NOT_ACQUIRED",
+      "acceptable_affirmative_evidence": "Official monitoring record explicitly reporting no flooding at a location whose barangay coverage is governed.",
+      "required_fields": ["monitoring location", "coverage interval", "timezone", "explicit flood status", "location-to-barangay adjudication", "source record identifier", "review decision"],
+      "cannot_establish_negative_alone": true,
+      "notes": "A point observation cannot be generalized to an entire barangay without an approved coverage rule."
+    },
+    {
+      "source_candidate_id": "ocd-ndrrmc-event-monitoring",
+      "source_organization": "OCD/NDRRMC",
+      "source_type": "EVENT_MONITORING_LOG",
+      "desired_geographic_coverage": "Explicit Caloocan barangays or governed monitored locations",
+      "desired_temporal_coverage": "Event windows with explicit coverage semantics",
+      "acquisition_status": "NOT_ACQUIRED",
+      "acceptable_affirmative_evidence": "Official record affirmatively documenting monitored no-flood status for an identified place and interval.",
+      "required_fields": ["event identifier", "barangay or governed location", "coverage interval", "timezone", "explicit no-flood result", "source revision", "review decision"],
+      "cannot_establish_negative_alone": true,
+      "notes": "Omission from a situation report does not satisfy the affirmative-negative rule."
+    }
+  ],
+  "summary": {
+    "candidate_source_count": 4,
+    "acquired_source_count": 0,
+    "verified_negative_count": 0,
+    "training_use_authorized": false
+  }
+}

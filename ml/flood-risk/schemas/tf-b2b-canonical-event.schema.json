@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/tf-b2b-canonical-event-v1.json",
+  "title": "CIVENTRAL TF-B2B canonical governed event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_parent_id", "event_name", "weather_system", "start_date", "end_date", "timezone", "source_document_ids", "preferred_source_document_id", "preferred_source_basis", "caloocan_relevance", "spatial_precision", "temporal_precision", "evidence_status", "label_status", "system_check_status", "review_status", "reviewer", "review_timestamp", "leakage_review_status", "candidate_prediction_cutoff", "candidate_target_window", "target_horizon_status", "training_eligible", "training_ineligibility_reasons", "source_revision_conflicts", "notes"],
+  "properties": {
+    "event_id": {"$ref": "#/$defs/id"},
+    "event_parent_id": {"$ref": "#/$defs/id"},
+    "event_name": {"type": "string", "minLength": 1},
+    "weather_system": {"type": "string", "minLength": 1},
+    "start_date": {"type": ["string", "null"], "format": "date"},
+    "end_date": {"type": ["string", "null"], "format": "date"},
+    "timezone": {"type": "null"},
+    "source_document_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "preferred_source_document_id": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+    "preferred_source_basis": {"type": ["string", "null"]},
+    "caloocan_relevance": {"type": "string", "minLength": 1},
+    "spatial_precision": {"enum": ["CITY", "MULTI_BARANGAY", "STREET_OR_LOCALITY"]},
+    "temporal_precision": {"enum": ["DAY_ONLY", "DATE_RANGE", "HOUR_TIMEZONE_UNKNOWN", "BOUNDED_UPPER_LIMIT_TIMEZONE_UNKNOWN", "UNKNOWN"]},
+    "evidence_status": {"enum": ["CONFIRMED_EVENT_EVIDENCE", "POSSIBLE_EVENT_EVIDENCE", "INSUFFICIENT_EVIDENCE", "REJECTED_EVIDENCE", "UNKNOWN"]},
+    "label_status": {"const": "UNKNOWN"},
+    "system_check_status": {"const": "SYSTEM_CHECKED"},
+    "review_status": {"const": "HUMAN_REVIEW_REQUIRED"},
+    "reviewer": {"type": "null"},
+    "review_timestamp": {"type": "null"},
+    "leakage_review_status": {"const": "NOT_REVIEWED"},
+    "candidate_prediction_cutoff": {"type": "null"},
+    "candidate_target_window": {"type": "null"},
+    "target_horizon_status": {"const": "NOT_APPROVED"},
+    "training_eligible": {"const": false},
+    "training_ineligibility_reasons": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["HUMAN_REVIEW_REQUIRED", "LEAKAGE_REVIEW_NOT_PASSED", "TARGET_HORIZON_NOT_APPROVED", "NO_APPROVED_PREDICTION_CUTOFF", "SOURCE_DOCUMENT_NOT_ACQUIRED", "TEMPORAL_WINDOW_UNRESOLVED", "SOURCE_TIMEZONE_UNRESOLVED", "BARANGAY_MAPPING_UNRESOLVED", "CITY_LEVEL_ONLY", "STREET_OR_LOCALITY_NOT_MAPPED", "SOURCE_REVISION_CONFLICT", "ACQUIRED_SOURCE_DOES_NOT_CONFIRM_CALOOCAN_FLOOD"]}},
+    "source_revision_conflicts": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "notes": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"}
+  }
+}

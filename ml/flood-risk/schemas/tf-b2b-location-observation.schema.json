@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/tf-b2b-location-observation-v1.json",
+  "title": "CIVENTRAL TF-B2B governed location observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["observation_id", "event_id", "episode_cluster_id", "barangay_psgc", "barangay_name", "historical_barangay_name", "reported_location_text", "location_type", "source_document_id", "source_reference", "source_revision", "corroborating_source_document_ids", "source_access_status", "observation_type", "label_status", "flood_present", "flood_absent", "flood_depth", "flood_depth_source_text", "depth_unit", "observation_date", "timestamp", "source_time_text", "timestamp_precision", "source_timezone", "system_check_status", "review_status", "reviewer", "review_timestamp", "mapping_status", "mapping_method", "mapping_confidence", "leakage_review_status", "training_eligible", "training_ineligibility_reasons", "notes"],
+  "properties": {
+    "observation_id": {"$ref": "#/$defs/id"}, "event_id": {"$ref": "#/$defs/id"}, "episode_cluster_id": {"$ref": "#/$defs/id"},
+    "barangay_psgc": {"type": ["string", "null"], "pattern": "^138010[0-9]{4}$"},
+    "barangay_name": {"type": ["string", "null"]}, "historical_barangay_name": {"type": ["string", "null"]},
+    "reported_location_text": {"type": "string", "minLength": 1},
+    "location_type": {"enum": ["CITY", "BARANGAY", "BARANGAY_LOCALITY", "STREET", "LOCALITY", "FACILITY", "BRIDGE", "UNNAMED_BARANGAY"]},
+    "source_document_id": {"$ref": "#/$defs/id"}, "source_reference": {"type": "string", "minLength": 1}, "source_revision": {"type": "string", "minLength": 1},
+    "corroborating_source_document_ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "source_access_status": {"enum": ["ACQUIRED", "INDEXED_ONLY", "EXTERNAL_ACCESS_REQUIRED", "NOT_ACQUIRED"]},
+    "observation_type": {"enum": ["CONFIRMED_FLOOD_OBSERVED", "POSSIBLE_FLOOD", "CITY_LEVEL_FLOOD_ONLY", "LOCATION_REPORTED_BUT_BARANGAY_UNRESOLVED", "INSUFFICIENT_EVIDENCE"]},
+    "label_status": {"const": "UNKNOWN"},
+    "flood_present": {"type": ["boolean", "null"]}, "flood_absent": {"type": "null"},
+    "flood_depth": {"type": ["number", "null"], "minimum": 0}, "flood_depth_source_text": {"type": ["string", "null"]},
+    "depth_unit": {"enum": ["FEET", "QUALITATIVE_GUTTER_DEPTH", null]},
+    "observation_date": {"type": ["string", "null"], "format": "date"}, "timestamp": {"type": "null"},
+    "source_time_text": {"type": ["string", "null"]},
+    "timestamp_precision": {"enum": ["DAY_ONLY", "DATE_RANGE", "HOUR_TIMEZONE_UNKNOWN", "UNKNOWN"]}, "source_timezone": {"type": "null"},
+    "system_check_status": {"const": "SYSTEM_CHECKED"}, "review_status": {"const": "HUMAN_REVIEW_REQUIRED"},
+    "reviewer": {"type": "null"}, "review_timestamp": {"type": "null"},
+    "mapping_status": {"enum": ["RESOLVED_CURRENT_PSGC", "UNRESOLVED_HISTORICAL_BOUNDARY", "UNREVIEWED_EXPLICIT_BARANGAY_NUMBER", "NO_BARANGAY_STATED", "UNNAMED_BARANGAY", "CITY_LEVEL_ONLY"]},
+    "mapping_method": {"enum": ["EXPLICIT_BARANGAY_AND_GOVERNED_PSGC_REFERENCE", "EXPLICIT_HISTORICAL_BARANGAY_NO_CURRENT_CROSSWALK", "EXPLICIT_BARANGAY_NUMBER_MAPPING_NOT_REVIEWED", "NO_AUTOMATIC_STREET_OR_LOCALITY_MAPPING", "NO_BARANGAY_MAPPING_CITY_SCOPE", "NO_MAPPING_UNNAMED_BARANGAY"]},
+    "mapping_confidence": {"enum": ["HIGH", "UNRESOLVED"]},
+    "leakage_review_status": {"const": "NOT_REVIEWED"}, "training_eligible": {"const": false},
+    "training_ineligibility_reasons": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["HUMAN_REVIEW_REQUIRED", "LEAKAGE_REVIEW_NOT_PASSED", "TARGET_HORIZON_NOT_APPROVED", "NO_APPROVED_PREDICTION_CUTOFF", "SOURCE_DOCUMENT_NOT_ACQUIRED", "TEMPORAL_WINDOW_UNRESOLVED", "SOURCE_TIMEZONE_UNRESOLVED", "BARANGAY_MAPPING_UNRESOLVED", "CITY_LEVEL_ONLY", "STREET_OR_LOCALITY_NOT_MAPPED", "SOURCE_REVISION_CONFLICT", "ACQUIRED_SOURCE_DOES_NOT_CONFIRM_CALOOCAN_FLOOD"]}},
+    "notes": {"type": "string", "minLength": 1}
+  },
+  "$defs": {"id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"}},
+  "allOf": [
+    {
+      "if": {"properties": {"mapping_status": {"const": "RESOLVED_CURRENT_PSGC"}}, "required": ["mapping_status"]},
+      "then": {"properties": {
+        "mapping_method": {"const": "EXPLICIT_BARANGAY_AND_GOVERNED_PSGC_REFERENCE"},
+        "mapping_confidence": {"const": "HIGH"},
+        "location_type": {"const": "BARANGAY"},
+        "barangay_psgc": {"type": "string", "pattern": "^138010[0-9]{4}$"},
+        "barangay_name": {"type": "string", "minLength": 1},
+        "historical_barangay_name": {"type": "string", "minLength": 1}
+      }}
+    },
+    {
+      "if": {"properties": {"mapping_status": {"const": "UNRESOLVED_HISTORICAL_BOUNDARY"}}, "required": ["mapping_status"]},
+      "then": {"properties": {
+        "mapping_method": {"const": "EXPLICIT_HISTORICAL_BARANGAY_NO_CURRENT_CROSSWALK"},
+        "mapping_confidence": {"const": "UNRESOLVED"},
+        "location_type": {"const": "BARANGAY"},
+        "barangay_psgc": {"type": "null"},
+        "barangay_name": {"type": "null"},
+        "historical_barangay_name": {"type": "string", "minLength": 1}
+      }}
+    },
+    {
+      "if": {"properties": {"mapping_status": {"const": "UNREVIEWED_EXPLICIT_BARANGAY_NUMBER"}}, "required": ["mapping_status"]},
+      "then": {"properties": {
+        "mapping_method": {"const": "EXPLICIT_BARANGAY_NUMBER_MAPPING_NOT_REVIEWED"},
+        "mapping_confidence": {"const": "UNRESOLVED"},
+        "location_type": {"enum": ["BARANGAY", "BARANGAY_LOCALITY"]},
+        "barangay_psgc": {"type": "null"},
+        "barangay_name": {"type": "null"},
+        "historical_barangay_name": {"type": "string", "minLength": 1}
+      }}
+    },
+    {
+      "if": {"properties": {"mapping_status": {"const": "NO_BARANGAY_STATED"}}, "required": ["mapping_status"]},
+      "then": {"properties": {
+        "mapping_method": {"const": "NO_AUTOMATIC_STREET_OR_LOCALITY_MAPPING"},
+        "mapping_confidence": {"const": "UNRESOLVED"},
+        "location_type": {"enum": ["STREET", "LOCALITY", "FACILITY", "BRIDGE"]},
+        "barangay_psgc": {"type": "null"},
+        "barangay_name": {"type": "null"},
+        "historical_barangay_name": {"type": "null"}
+      }}
+    },
+    {
+      "if": {"properties": {"mapping_status": {"const": "UNNAMED_BARANGAY"}}, "required": ["mapping_status"]},
+      "then": {"properties": {
+        "mapping_method": {"const": "NO_MAPPING_UNNAMED_BARANGAY"},
+        "mapping_confidence": {"const": "UNRESOLVED"},
+        "location_type": {"const": "UNNAMED_BARANGAY"},
+        "barangay_psgc": {"type": "null"},
+        "barangay_name": {"type": "null"},
+        "historical_barangay_name": {"type": "null"}
+      }}
+    },
+    {
+      "if": {"properties": {"mapping_status": {"const": "CITY_LEVEL_ONLY"}}, "required": ["mapping_status"]},
+      "then": {"properties": {
+        "mapping_method": {"const": "NO_BARANGAY_MAPPING_CITY_SCOPE"},
+        "mapping_confidence": {"const": "UNRESOLVED"},
+        "location_type": {"const": "CITY"},
+        "barangay_psgc": {"type": "null"},
+        "barangay_name": {"type": "null"},
+        "historical_barangay_name": {"type": "null"}
+      }}
+    },
+    {
+      "if": {"properties": {"observation_id": {"const": "caloocan-2019-historical-barangay-176"}}, "required": ["observation_id"]},
+      "then": {"properties": {
+        "event_id": {"const": "caloocan-flood-candidate-2019-06-24"},
+        "source_document_id": {"const": "dromic-caloocan-2019-terminal-report"},
+        "reported_location_text": {"const": "Barangay 176"},
+        "historical_barangay_name": {"const": "Barangay 176"},
+        "location_type": {"const": "BARANGAY"},
+        "mapping_status": {"const": "UNRESOLVED_HISTORICAL_BOUNDARY"},
+        "mapping_method": {"const": "EXPLICIT_HISTORICAL_BARANGAY_NO_CURRENT_CROSSWALK"},
+        "mapping_confidence": {"const": "UNRESOLVED"},
+        "barangay_psgc": {"type": "null"},
+        "barangay_name": {"type": "null"},
+        "training_eligible": {"const": false}
+      }}
+    }
+  ]
+}

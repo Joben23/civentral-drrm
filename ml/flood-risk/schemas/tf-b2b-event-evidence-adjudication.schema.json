@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civentral.invalid/schemas/tf-b2b-event-evidence-adjudication-v1.json",
+  "title": "CIVENTRAL TF-B2B governed flood-event evidence adjudication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "phase", "dataset_classification", "normalization_basis", "governance", "source_documents", "events", "observations", "unresolved_issues", "summary"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "phase": {"const": "TF-B2B"},
+    "dataset_classification": {"const": "GOVERNED_EVENT_EVIDENCE_NOT_TRAINING_DATA"},
+    "normalization_basis": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system_checked", "human_approval_claimed", "training_dataset_created", "training_matrix_created", "tensorflow_training_performed", "four_class_labels_created", "negative_labels_created", "mgb_susceptibility_used_as_target", "rainfall_regression_used_as_flood_evidence", "target_horizon_status", "training_authorization_status"],
+      "properties": {
+        "system_checked": {"const": true},
+        "human_approval_claimed": {"const": false},
+        "training_dataset_created": {"const": false},
+        "training_matrix_created": {"const": false},
+        "tensorflow_training_performed": {"const": false},
+        "four_class_labels_created": {"const": false},
+        "negative_labels_created": {"const": false},
+        "mgb_susceptibility_used_as_target": {"const": false},
+        "rainfall_regression_used_as_flood_evidence": {"const": false},
+        "target_horizon_status": {"const": "NOT_APPROVED"},
+        "training_authorization_status": {"const": "NOT_APPROVED"}
+      }
+    },
+    "source_documents": {"type": "array", "minItems": 1, "items": {"$ref": "https://civentral.invalid/schemas/tf-b2b-source-document-v1.json"}},
+    "events": {"type": "array", "minItems": 1, "items": {"$ref": "https://civentral.invalid/schemas/tf-b2b-canonical-event-v1.json"}},
+    "observations": {"type": "array", "items": {"$ref": "https://civentral.invalid/schemas/tf-b2b-location-observation-v1.json"}},
+    "unresolved_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["issue_id", "event_id", "category", "severity", "status", "description", "required_resolution", "blocking_training"],
+        "properties": {
+          "issue_id": {"$ref": "#/$defs/id"},
+          "event_id": {"$ref": "#/$defs/id"},
+          "category": {"enum": ["SOURCE_ACQUISITION", "TEMPORAL", "SPATIAL", "REVISION_CONFLICT", "HUMAN_REVIEW", "TARGET_GOVERNANCE"]},
+          "severity": {"enum": ["CRITICAL", "HIGH", "MEDIUM"]},
+          "status": {"const": "OPEN"},
+          "description": {"type": "string", "minLength": 1},
+          "required_resolution": {"type": "string", "minLength": 1},
+          "blocking_training": {"const": true}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_event_count", "normalized_event_count", "confirmed_event_evidence_count", "possible_event_evidence_count", "insufficient_event_evidence_count", "rejected_event_evidence_count", "unknown_event_evidence_count", "source_document_count", "missing_official_document_count", "location_observation_count", "unresolved_location_observation_count", "unresolved_temporal_event_count", "confirmed_flood_observation_count", "barangay_resolved_positive_observation_count", "confirmed_unresolved_positive_observation_count", "human_approved_positive_count", "training_eligible_positive_count", "verified_negative_count", "training_eligible_weather_event_count", "unresolved_event_count", "target_horizon_approved"],
+      "properties": {
+        "candidate_event_count": {"type": "integer", "minimum": 0}, "normalized_event_count": {"type": "integer", "minimum": 0},
+        "confirmed_event_evidence_count": {"type": "integer", "minimum": 0}, "possible_event_evidence_count": {"type": "integer", "minimum": 0},
+        "insufficient_event_evidence_count": {"type": "integer", "minimum": 0}, "rejected_event_evidence_count": {"type": "integer", "minimum": 0},
+        "unknown_event_evidence_count": {"type": "integer", "minimum": 0}, "source_document_count": {"type": "integer", "minimum": 0},
+        "missing_official_document_count": {"type": "integer", "minimum": 0}, "location_observation_count": {"type": "integer", "minimum": 0},
+        "unresolved_location_observation_count": {"type": "integer", "minimum": 0}, "unresolved_temporal_event_count": {"type": "integer", "minimum": 0},
+        "confirmed_flood_observation_count": {"type": "integer", "minimum": 0}, "barangay_resolved_positive_observation_count": {"type": "integer", "minimum": 0},
+        "confirmed_unresolved_positive_observation_count": {"type": "integer", "minimum": 0}, "human_approved_positive_count": {"const": 0},
+        "training_eligible_positive_count": {"const": 0}, "verified_negative_count": {"const": 0},
+        "training_eligible_weather_event_count": {"const": 0}, "unresolved_event_count": {"type": "integer", "minimum": 0},
+        "target_horizon_approved": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"}
+  }
+}
