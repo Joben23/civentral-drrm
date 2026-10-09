@@ -1,0 +1,2 @@
+# This governed artifact is verified byte-for-byte in Docker/Linux.
+ml/flood-risk/deployment/rainfall/rainfall-regression-dense-57-v0.1.1-softplus-candidate/preprocessing.json text eol=lf

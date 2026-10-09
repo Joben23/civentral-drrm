@@ -29,7 +29,7 @@ model SHA-256:
 51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865
 
 preprocessing SHA-256:
-e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4
+ff3389b5e37695ea0d43a75b8f50104be0421fd2bf5fcda012866c22a3646578
 ```
 
 Phase 3F-C provides private authenticated PHP inference. Phase 3F-D provides the trusted server-side workflow boundary, but its production provider deliberately returns `NO_APPROVED_LIVE_SOURCE`.

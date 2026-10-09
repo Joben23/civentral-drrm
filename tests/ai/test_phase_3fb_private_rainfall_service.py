@@ -16,6 +16,13 @@ SERVICE_ROOT = WORKSPACE / "service"
 if str(SERVICE_ROOT) not in sys.path:
     sys.path.insert(0, str(SERVICE_ROOT))
 
+from app.config import Settings
+from app.rainfall_runtime import (
+    EXPECTED_MODEL_SHA256 as RUNTIME_EXPECTED_MODEL_SHA256,
+    EXPECTED_PREPROCESSING_SHA256 as RUNTIME_EXPECTED_PREPROCESSING_SHA256,
+    RainfallDeploymentManifest,
+    RainfallRegressionRuntime,
+)
 from common.rainfall_features import feature_names
 
 
@@ -32,8 +39,9 @@ EXPECTED_MODEL_SHA256 = (
     "51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865"
 )
 EXPECTED_PREPROCESSING_SHA256 = (
-    "e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4"
+    "ff3389b5e37695ea0d43a75b8f50104be0421fd2bf5fcda012866c22a3646578"
 )
+EXPECTED_PREPROCESSING_BYTES = 4854
 
 
 def digest(path: Path) -> str:
@@ -42,14 +50,84 @@ def digest(path: Path) -> str:
 
 def test_deployed_bundle_matches_frozen_candidate() -> None:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    preprocessing_bytes = (BUNDLE / "preprocessing.json").read_bytes()
     assert digest(BUNDLE / "model.keras") == EXPECTED_MODEL_SHA256
     assert digest(BUNDLE / "preprocessing.json") == EXPECTED_PREPROCESSING_SHA256
+    assert b"\r\n" not in preprocessing_bytes
+    assert len(preprocessing_bytes) == EXPECTED_PREPROCESSING_BYTES
     assert manifest["model"]["sha256"] == EXPECTED_MODEL_SHA256
     assert manifest["preprocessing"]["sha256"] == EXPECTED_PREPROCESSING_SHA256
     assert manifest["model"]["byte_length"] == (BUNDLE / "model.keras").stat().st_size
     assert manifest["preprocessing"]["byte_length"] == (
         BUNDLE / "preprocessing.json"
     ).stat().st_size
+
+
+def test_preprocessing_checkout_is_forced_to_lf() -> None:
+    relative_path = (BUNDLE / "preprocessing.json").relative_to(REPO_ROOT).as_posix()
+    attribute = subprocess.run(
+        ["git", "check-attr", "eol", "--", relative_path],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    assert attribute.endswith(": eol: lf")
+
+
+def test_rainfall_generation_and_export_write_canonical_lf_json() -> None:
+    trainer = (
+        REPO_ROOT / "scripts/ai/train_rainfall_regression_baseline.py"
+    ).read_text(encoding="utf-8")
+    candidate_validator = (
+        REPO_ROOT / "scripts/ai/validate_rainfall_candidate_nonnegative.py"
+    ).read_text(encoding="utf-8")
+    assert 'newline="\\n"' in trainer
+    assert 'newline="\\n"' in candidate_validator
+    assert "write_json(softplus_preprocessing_path, preprocessing)" in (
+        candidate_validator
+    )
+    assert "shutil.copy2(PREPROCESSING" not in candidate_validator
+
+
+def test_runtime_frozen_contract_matches_deployment_manifest() -> None:
+    manifest_data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    manifest = RainfallDeploymentManifest.model_validate(manifest_data)
+    assert RUNTIME_EXPECTED_MODEL_SHA256 == manifest.model.sha256
+    assert RUNTIME_EXPECTED_PREPROCESSING_SHA256 == manifest.preprocessing.sha256
+    assert manifest.preprocessing.byte_length == EXPECTED_PREPROCESSING_BYTES
+    assert manifest.model_problem == "RAINFALL_REGRESSION"
+    assert manifest.target == "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM"
+    assert manifest.operational is False
+    assert manifest.public_use_approved is False
+    assert manifest.flood_classifier is False
+    serialized = json.dumps(manifest_data)
+    assert all(
+        level not in serialized
+        for level in ('"LOW"', '"MODERATE"', '"HIGH"', '"CRITICAL"')
+    )
+
+
+def test_approved_research_bundle_loads_without_becoming_flood_risk() -> None:
+    settings = Settings(
+        rainfall_bundle_path=BUNDLE,
+        rainfall_authorization_path=AUTHORIZATION,
+    )
+    runtime = RainfallRegressionRuntime(settings)
+    status = runtime.get_status()
+    assert status.ready is True
+    assert status.code == "RAINFALL_RESEARCH_READY"
+    assert status.model_version == (
+        "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
+    )
+    assert status.model_status == "VALIDATED_RESEARCH_CANDIDATE"
+    assert status.authorization_status == (
+        "APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY"
+    )
+    assert runtime.manifest is not None
+    assert runtime.manifest.model_problem == "RAINFALL_REGRESSION"
+    assert runtime.manifest.operational is False
+    assert runtime.manifest.flood_classifier is False
 
 
 def test_bundle_scope_is_exact_and_intentionally_visible_to_git() -> None:

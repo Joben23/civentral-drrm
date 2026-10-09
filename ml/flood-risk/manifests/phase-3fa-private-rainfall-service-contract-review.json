@@ -53,7 +53,7 @@
     "startup_checks": [
       "Expected candidate version equals rainfall-regression-dense-57-v0.1.1-softplus-candidate.",
       "Model SHA-256 equals 51c89c12ac5919599998805c11e620aa0d80eda3bd5a6be50ec1570c1fda2865.",
-      "Preprocessing SHA-256 equals e0f4234ab583cb52cd2066261d8da717d499c62b54efab423c495a3aa2e95ea4.",
+      "Preprocessing SHA-256 equals ff3389b5e37695ea0d43a75b8f50104be0421fd2bf5fcda012866c22a3646578 (canonical UTF-8/LF deployment bytes).",
       "Feature count equals 57 and exact Phase 3C feature order matches.",
       "Architecture is Dense(64, ReLU), Dense(32, ReLU), Dense(1, Softplus), parameter count 5825.",
       "Output policy equals MODEL_NONNEGATIVE_SOFTPLUS.",

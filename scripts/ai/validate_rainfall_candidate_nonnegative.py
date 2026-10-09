@@ -8,7 +8,6 @@ import json
 import math
 import os
 import random
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,6 +45,12 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def write_json(path: Path, payload: object) -> None:
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
 
 
 def metrics(actual: np.ndarray, predicted: np.ndarray, mask: np.ndarray | None = None) -> dict:
@@ -129,9 +134,9 @@ def main() -> int:
         softplus_model_path = SOFTPLUS_DIR / "model.keras"
         softplus_preprocessing_path = SOFTPLUS_DIR / "preprocessing.json"
         softplus_model.save(softplus_model_path)
-        shutil.copy2(PREPROCESSING, softplus_preprocessing_path)
+        write_json(softplus_preprocessing_path, preprocessing)
         selected_artifact = {"model_path": str(softplus_model_path.relative_to(REPO_ROOT)), "model_sha256": sha256(softplus_model_path), "model_byte_length": softplus_model_path.stat().st_size, "preprocessing_path": str(softplus_preprocessing_path.relative_to(REPO_ROOT)), "preprocessing_sha256": sha256(softplus_preprocessing_path), "candidate_version": "rainfall-regression-dense-57-v0.1.1-softplus-candidate", "active": False, "approved_for_inference": False, "output_activation": "softplus"}
-        (SOFTPLUS_DIR / "manifest.json").write_text(json.dumps({"schema_version": "1.0.0", "model_problem": "RAINFALL_REGRESSION", "candidate_status": "VALIDATED_RESEARCH_CANDIDATE", **selected_artifact, "dataset_sha256": frozen["dataset_sha256"], "feature_count": 57, "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM", "training_contract": {"optimizer": "Adam", "learning_rate": 0.001, "loss": "MSE", "batch_size": 128, "max_epochs": 150, "early_stopping_patience": 12, "shuffle": False}, "limitations": ["Research candidate only.", "Not active or approved for inference.", "Predicts rainfall quantity, not flood occurrence or probability."]}, indent=2) + "\n", encoding="utf-8")
+        write_json(SOFTPLUS_DIR / "manifest.json", {"schema_version": "1.0.0", "model_problem": "RAINFALL_REGRESSION", "candidate_status": "VALIDATED_RESEARCH_CANDIDATE", **selected_artifact, "dataset_sha256": frozen["dataset_sha256"], "feature_count": 57, "target": "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM", "training_contract": {"optimizer": "Adam", "learning_rate": 0.001, "loss": "MSE", "batch_size": 128, "max_epochs": 150, "early_stopping_patience": 12, "shuffle": False}, "limitations": ["Research candidate only.", "Not active or approved for inference.", "Predicts rainfall quantity, not flood occurrence or probability."]})
     if selected_policy == "LINEAR_ZERO_FLOOR":
         test_raw = linear_model.predict(normalized["test"], verbose=0).reshape(-1)
         test_final = np.maximum(0.0, test_raw)
@@ -148,7 +153,7 @@ def main() -> int:
         "output_policy": {"raw_prediction_mm": "TensorFlow model output", "final_prediction_mm": "max(0, raw_prediction_mm)" if selected_policy == "LINEAR_ZERO_FLOOR" else "Softplus model output", "output_policy": "ZERO_FLOOR" if selected_policy == "LINEAR_ZERO_FLOOR" else "MODEL_NONNEGATIVE_SOFTPLUS", "floor_value_mm": 0.0 if selected_policy == "LINEAR_ZERO_FLOOR" else None},
         "governance": {"candidate_status": "VALIDATED_RESEARCH_CANDIDATE", "active": False, "approved_for_inference": False, "operational_use_approved": False, "global_training_ready": False, "global_training_authorization": "NOT_APPROVED", "flood_labels_changed": False, "mgb_fusion_implemented": False, "service_activation_changed": False},
     }
-    OUTPUT.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    write_json(OUTPUT, result)
     print(json.dumps({"success": True, "selected_policy": selected_policy, "selected_model": selected_model, "validation_rmse": eligible[selected_policy]["raw"]["rmse_mm"], "test_final": selected_test["final"]}, indent=2))
     return 0
 
