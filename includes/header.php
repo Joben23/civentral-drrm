@@ -60,7 +60,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
       <!-- Inactivity Countdown -->
       <div class="hidden md:flex items-center space-x-2 text-slate-500 dark:text-slate-400 font-mono text-xs font-semibold" title="Session Timeout">
         <i class="fa-solid fa-hourglass-half text-brand-medium"></i>
-        <span id="inactivityCountdown">05:00</span>
+        <span id="inactivityCountdown">03:00</span>
       </div>
       
       <div class="hidden md:block h-6 w-px bg-slate-200 dark:bg-slate-800"></div>

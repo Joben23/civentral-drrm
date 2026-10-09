@@ -8,7 +8,7 @@ use RuntimeException;
 
 final class AdminSessionManager
 {
-    public const IDLE_TIMEOUT_SECONDS = 300;
+    public const IDLE_TIMEOUT_SECONDS = 180;
 
     public const STATUS_ACTIVE = 'ACTIVE';
     public const STATUS_EXPIRED = 'EXPIRED';

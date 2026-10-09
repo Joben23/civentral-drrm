@@ -104,31 +104,31 @@ adminSecurityTest(
         && $state['LAST_ACTIVITY'] === 1000
 );
 
-$state = employeeSessionState(701);
+$state = employeeSessionState(821);
 adminSecurityTest(
-    'Session299SecondsAcceptedAndRefreshed',
+    'Session179SecondsAcceptedAndRefreshed',
     $sessions->evaluate($state) === AdminSessionManager::STATUS_ACTIVE
         && $state['LAST_ACTIVITY'] === 1000
 );
 
-$state = employeeSessionState(700);
+$state = employeeSessionState(820);
 adminSecurityTest(
-    'SessionExactly300SecondsExpired',
+    'SessionExactly180SecondsExpired',
     $sessions->evaluate($state) === AdminSessionManager::STATUS_EXPIRED
-        && $state['LAST_ACTIVITY'] === 700
+        && $state['LAST_ACTIVITY'] === 820
 );
 
-$state = employeeSessionState(699);
+$state = employeeSessionState(819);
 adminSecurityTest(
-    'SessionOver300SecondsExpired',
+    'SessionOver180SecondsExpired',
     $sessions->evaluate($state) === AdminSessionManager::STATUS_EXPIRED
 );
 
-$state = employeeSessionState(701);
+$state = employeeSessionState(821);
 adminSecurityTest(
     'SessionStatusCheckDoesNotRefresh',
     $sessions->evaluate($state, false) === AdminSessionManager::STATUS_ACTIVE
-        && $state['LAST_ACTIVITY'] === 701
+        && $state['LAST_ACTIVITY'] === 821
 );
 
 $state = ['user_id' => 'security-test-user', 'LAST_ACTIVITY' => 1000];
@@ -137,7 +137,7 @@ adminSecurityTest(
     $sessions->evaluate($state) === AdminSessionManager::STATUS_UNAUTHENTICATED
 );
 
-adminSecurityTest('SingleAuthoritativeTimeoutConstant', AdminSessionManager::IDLE_TIMEOUT_SECONDS === 300);
+adminSecurityTest('SingleAuthoritativeTimeoutConstant', AdminSessionManager::IDLE_TIMEOUT_SECONDS === 180);
 
 // Stable protected-API failure behavior, exercised in isolated sessions because
 // the guard intentionally exits after sending its response.
@@ -146,7 +146,7 @@ $expiredApiCode = sprintf(
     . '$_SERVER["SCRIPT_NAME"]="/api/security-test.php";'
     . '$_SERVER["REQUEST_URI"]="/api/security-test.php";'
     . '\\App\\Services\\AdminSessionManager::start();'
-    . '$_SESSION=["admin_auth_context"=>"employee","user_id"=>"test","LAST_ACTIVITY"=>time()-300];'
+    . '$_SESSION=["admin_auth_context"=>"employee","user_id"=>"test","LAST_ACTIVITY"=>time()-180];'
     . 'register_shutdown_function(static function(){echo "\\n__HTTP_STATUS__=".(string)http_response_code();});'
     . '(new \\App\\Middleware\\AdminSessionGuard())->requireApi();',
     var_export($root . '/src/Services/AdminSessionManager.php', true),
@@ -181,8 +181,9 @@ $pageBootstrap = adminSecuritySource('src/bootstrap.php');
 $guardSource = adminSecuritySource('src/Middleware/AdminSessionGuard.php');
 $drrmBootstrap = adminSecuritySource('api/drrm/_bootstrap.php');
 adminSecurityTest(
-    'ProtectedPageUsesCentralGuard',
+    'ExpiredProtectedPageRedirectsToLogin',
     str_contains($pageBootstrap, '$adminSessionGuard->requirePage(')
+        && str_contains($guardSource, 'AdminSessionManager::STATUS_EXPIRED')
         && str_contains($guardSource, 'login.php' . "'" . ' . $reason')
         && str_contains($guardSource, '?reason=session_expired')
 );
@@ -265,6 +266,13 @@ adminSecurityTest(
     str_contains($inactivity, 'SESSION_WARNING_SECONDS = 60')
         && str_contains($inactivity, 'X-Civentral-Session-Expires-At')
         && str_contains($header, 'Your session will expire soon due to inactivity.')
+);
+adminSecurityTest(
+    'BrowserTimeoutUsesThreeMinuteServerDeadline',
+    str_contains($header, 'id="inactivityCountdown">03:00</span>')
+        && str_contains($header, '$adminSessionExpiresAt * 1000')
+        && str_contains($inactivity, 'Number(window.civentralSessionExpiresAt)')
+        && str_contains($inactivity, 'SESSION_WARNING_SECONDS = 60')
 );
 adminSecurityTest(
     'BrowserTimerCannotReviveExpiredSession',
