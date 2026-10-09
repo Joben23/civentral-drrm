@@ -333,12 +333,12 @@
             <p id="floodReferenceCheckStatus" class="civ-map-helper" role="status" aria-live="polite">Select a location before checking the controlled flood reference.</p>
             <div id="floodReferenceCheckResult" class="civ-route-result civ-flood-check-result" aria-live="polite" hidden></div>
 
-            <section class="civ-forecast-section" aria-labelledby="floodAiAvailabilityTitle">
+            <section class="civ-forecast-section" aria-labelledby="aiFloodPredictionTitle">
               <div class="flex items-start justify-between gap-2">
-                <h4 id="floodAiAvailabilityTitle" class="civ-forecast-section-title">AI Flood Prediction</h4>
-                <span class="civ-model-status">Not available</span>
+                <h4 id="aiFloodPredictionTitle" class="civ-forecast-section-title">AI Flood Prediction</h4>
+                <span id="floodModelStatus" class="civ-model-status">Not ready</span>
               </div>
-              <p class="civ-forecast-content mt-2">TensorFlow prediction is unavailable until a governed model and validated forecast inputs are ready.</p>
+              <p id="floodForecastContent" class="civ-forecast-content mt-2">TensorFlow runtime and model readiness have not yet been checked. Flood-risk prediction remains unavailable until a governed model, approved policy, and validated forecast inputs are ready.</p>
             </section>
 
             <p class="civ-map-helper">This checks the selected point against controlled draft GIS polygons. It is not an AI prediction, real-time flood forecast, or official emergency guidance.</p>

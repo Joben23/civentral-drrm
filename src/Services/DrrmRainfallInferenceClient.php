@@ -41,8 +41,14 @@ final class DrrmRainfallInferenceClient
         if (!is_bool($payload['success'] ?? null)
             || !is_bool($payload['ready'] ?? null)
             || ($payload['model_problem'] ?? null) !== self::MODEL_PROBLEM
+            || ($payload['task_type'] ?? null) !== self::MODEL_PROBLEM
+            || ($payload['output_type'] ?? null) !== 'RAINFALL_AMOUNT_MM'
+            || !is_bool($payload['rainfall_model_ready'] ?? null)
             || !is_string($payload['code'] ?? null)
-            || !is_string($payload['authorization_status'] ?? null)) {
+            || !is_string($payload['authorization_status'] ?? null)
+            || ($payload['research_only'] ?? null) !== true
+            || ($payload['operational'] ?? null) !== false
+            || $payload['rainfall_model_ready'] !== $payload['ready']) {
             return $this->invalidResponse($requestId, $http->latencyMs);
         }
         if ($http->statusCode === 200 && $payload['ready'] === true) {
@@ -62,9 +68,14 @@ final class DrrmRainfallInferenceClient
             'code' => $code,
             'message' => $this->messageForCode($code),
             'model_problem' => self::MODEL_PROBLEM,
+            'task_type' => self::MODEL_PROBLEM,
+            'output_type' => 'RAINFALL_AMOUNT_MM',
+            'rainfall_model_ready' => $payload['rainfall_model_ready'],
             'model_version' => $this->identifier($payload['model_version'] ?? null),
             'model_status' => $this->identifier($payload['model_status'] ?? null),
             'authorization_status' => $payload['authorization_status'],
+            'research_only' => true,
+            'operational' => false,
         ];
         $this->logOutcome($requestId, $code, $http->latencyMs);
         return $result;
@@ -102,6 +113,8 @@ final class DrrmRainfallInferenceClient
             'schema_version' => self::REQUEST_SCHEMA_VERSION,
             'request_id' => $payload['request_id'],
             'model_problem' => self::MODEL_PROBLEM,
+            'task_type' => self::MODEL_PROBLEM,
+            'output_type' => 'RAINFALL_AMOUNT_MM',
             'forecast_origin_utc' => $payload['forecast_origin_utc'],
             'forecast_horizon_hours' => 3,
             'target' => self::TARGET,
@@ -110,6 +123,9 @@ final class DrrmRainfallInferenceClient
             'output_policy' => self::OUTPUT_POLICY,
             'model_version' => self::MODEL_VERSION,
             'model_status' => 'VALIDATED_RESEARCH_CANDIDATE',
+            'research_only' => true,
+            'flood_risk_output' => false,
+            'decision_support' => true,
             'operational' => false,
         ];
         $this->logOutcome($requestId, 'RAINFALL_PREDICTION_AVAILABLE', $http->latencyMs);
@@ -208,7 +224,13 @@ final class DrrmRainfallInferenceClient
     /** @param array<string, mixed> $payload */
     private function validResponse(array $payload): bool
     {
-        $required = ['schema_version', 'request_id', 'model_problem', 'forecast_origin_utc', 'forecast_horizon_hours', 'target', 'raw_prediction_mm', 'final_prediction_mm', 'output_policy', 'model_version', 'model_status', 'operational'];
+        $required = [
+            'schema_version', 'request_id', 'model_problem', 'task_type',
+            'output_type', 'forecast_origin_utc', 'forecast_horizon_hours',
+            'target', 'raw_prediction_mm', 'final_prediction_mm', 'output_policy',
+            'model_version', 'model_status', 'research_only', 'flood_risk_output',
+            'decision_support', 'operational',
+        ];
         $providedKeys = array_keys($payload);
         sort($required);
         sort($providedKeys);
@@ -233,11 +255,16 @@ final class DrrmRainfallInferenceClient
         }
         return $payload['schema_version'] === self::REQUEST_SCHEMA_VERSION
             && $payload['model_problem'] === self::MODEL_PROBLEM
+            && $payload['task_type'] === self::MODEL_PROBLEM
+            && $payload['output_type'] === 'RAINFALL_AMOUNT_MM'
             && $payload['forecast_horizon_hours'] === 3
             && $payload['target'] === self::TARGET
             && $payload['output_policy'] === self::OUTPUT_POLICY
             && $payload['model_version'] === self::MODEL_VERSION
             && $payload['model_status'] === 'VALIDATED_RESEARCH_CANDIDATE'
+            && $payload['research_only'] === true
+            && $payload['flood_risk_output'] === false
+            && $payload['decision_support'] === true
             && $payload['operational'] === false;
     }
 

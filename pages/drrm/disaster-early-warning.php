@@ -378,8 +378,10 @@ include '../../includes/sidebar.php';
         <dl class="mt-3 grid grid-cols-2 gap-2" aria-label="AI infrastructure and prediction readiness">
           <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">AI Service</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-service-status>Checking</dd></div>
           <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">TensorFlow Runtime</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-tensorflow-status>Checking</dd></div>
-          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Model</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-model-status>Checking</dd></div>
-          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Risk Policy</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-risk-policy-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Rainfall Research Model</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-rainfall-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Flood-Risk Model</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-model-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Threshold Policy</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-risk-policy-status>Checking</dd></div>
+          <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Trusted Input Data</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-input-status>Checking</dd></div>
           <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Prediction Ready</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-prediction-ready>Checking</dd></div>
           <div class="rounded-xl border border-slate-200/80 bg-white/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/70"><dt class="text-[8px] font-black uppercase tracking-wider text-slate-400">Last Checked</dt><dd class="mt-1 text-[10px] font-black text-slate-700 dark:text-slate-200" data-ai-last-checked>Not checked</dd></div>
         </dl>
@@ -716,6 +718,12 @@ include '../../includes/sidebar.php';
   };
   const safeMessages = Object.freeze({
     READY: 'Approved AI flood-risk decision support is ready for officer review.',
+    PREDICTION_AVAILABLE: 'Approved AI flood-risk decision support is ready for officer review.',
+    TENSORFLOW_RUNTIME_AVAILABLE_BUT_MODEL_NOT_READY: 'TensorFlow is available, but no approved flood-risk model is ready.',
+    TENSORFLOW_RUNTIME_UNAVAILABLE: 'The AI service is alive, but its TensorFlow runtime is unavailable.',
+    THRESHOLD_POLICY_NOT_READY: 'The approved flood-risk classification policy is not ready.',
+    INPUT_DATA_UNAVAILABLE: 'Required trusted rainfall and forecast inputs are unavailable.',
+    AI_SERVICE_UNAVAILABLE: 'AI service is currently unavailable. Warning management remains available.',
     MODEL_NOT_AVAILABLE: 'TensorFlow model is not currently available for inference.',
     MODEL_INVALID: 'The configured TensorFlow model is not valid for inference.',
     MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED: 'The available TensorFlow model is not operationally validated.',
@@ -779,7 +787,12 @@ include '../../includes/sidebar.php';
     if (!data || typeof data !== 'object' || Array.isArray(data)
       || typeof data.runtime_reachable !== 'boolean'
       || typeof data.service_health !== 'string'
-      || !(typeof data.tensorflow_installed === 'boolean' || data.tensorflow_installed === null)
+      || !(typeof data.tensorflow_runtime_ready === 'boolean' || data.tensorflow_runtime_ready === null)
+      || typeof data.rainfall_model_ready !== 'boolean'
+      || data.rainfall_research_only !== true
+      || typeof data.flood_risk_model_ready !== 'boolean'
+      || typeof data.threshold_policy_ready !== 'boolean'
+      || typeof data.input_data_ready !== 'boolean'
       || typeof data.model_status !== 'string'
       || typeof data.risk_policy_status !== 'string'
       || typeof data.prediction_ready !== 'boolean'
@@ -789,7 +802,11 @@ include '../../includes/sidebar.php';
     return Object.freeze({
       runtimeReachable: data.runtime_reachable,
       serviceHealth: data.service_health,
-      tensorflowInstalled: data.tensorflow_installed,
+      tensorflowRuntimeReady: data.tensorflow_runtime_ready,
+      rainfallModelReady: data.rainfall_model_ready,
+      floodRiskModelReady: data.flood_risk_model_ready,
+      thresholdPolicyReady: data.threshold_policy_ready,
+      inputDataReady: data.input_data_ready,
       modelStatus: data.model_status,
       riskPolicyStatus: data.risk_policy_status,
       predictionReady: data.prediction_ready,
@@ -802,10 +819,12 @@ include '../../includes/sidebar.php';
     setText('[data-ai-service-status]', serviceHealthy ? 'Connected / Healthy' : 'Unavailable');
     setText(
       '[data-ai-tensorflow-status]',
-      status.tensorflowInstalled === true ? 'Available' : (status.tensorflowInstalled === false ? 'Not Installed' : 'Unknown')
+      status.tensorflowRuntimeReady === true ? 'Available' : (status.tensorflowRuntimeReady === false ? 'Unavailable' : 'Unknown')
     );
-    setText('[data-ai-model-status]', modelLabel(status.modelStatus));
-    setText('[data-ai-risk-policy-status]', riskPolicyLabel(status.riskPolicyStatus));
+    setText('[data-ai-rainfall-status]', status.rainfallModelReady ? 'Available — Research Only' : 'Unavailable');
+    setText('[data-ai-model-status]', status.floodRiskModelReady ? 'Approved / Ready' : modelLabel(status.modelStatus));
+    setText('[data-ai-risk-policy-status]', status.thresholdPolicyReady ? 'Ready' : riskPolicyLabel(status.riskPolicyStatus));
+    setText('[data-ai-input-status]', status.inputDataReady ? 'Ready' : 'Unavailable');
     setText('[data-ai-prediction-ready]', status.predictionReady ? 'Yes' : 'No');
     setText('[data-ai-last-checked]', checkedTime());
     setText('[data-ai-status-message]', safeMessages[status.code] || safeMessages.AI_SERVICE_ERROR);
@@ -821,8 +840,10 @@ include '../../includes/sidebar.php';
   function renderUnavailable(code) {
     setText('[data-ai-service-status]', 'Unavailable');
     setText('[data-ai-tensorflow-status]', 'Unknown');
+    setText('[data-ai-rainfall-status]', 'Unavailable');
     setText('[data-ai-model-status]', 'Unknown');
     setText('[data-ai-risk-policy-status]', 'Unknown');
+    setText('[data-ai-input-status]', 'Unavailable');
     setText('[data-ai-prediction-ready]', 'No');
     setText('[data-ai-last-checked]', checkedTime());
     setText('[data-ai-status-message]', safeMessages[code] || safeMessages.AI_SERVICE_ERROR);

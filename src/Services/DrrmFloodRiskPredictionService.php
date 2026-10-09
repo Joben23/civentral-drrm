@@ -25,6 +25,29 @@ final class DrrmFloodRiskPredictionService
             ?? __DIR__ . '/../../data/import/caloocan-barangays-current-unaffected.geojson';
     }
 
+    /** @return array<string, mixed> */
+    public function readiness(): array
+    {
+        try {
+            $this->loadValidatedBarangays();
+            $locationStatus = 'VALIDATED_CURRENT_CALOOCAN_BARANGAYS';
+        } catch (RuntimeException) {
+            $locationStatus = 'UNAVAILABLE';
+        }
+
+        return [
+            'input_data_ready' => false,
+            'input_data_status' => 'UNAVAILABLE',
+            'location_status' => $locationStatus,
+            'weather_input_status' => 'UNAVAILABLE',
+            'mgb_feature_status' => $locationStatus === 'UNAVAILABLE'
+                ? 'NOT_RESOLVED'
+                : 'PENDING_EXACT_LOCATION_RESOLUTION',
+            'code' => 'INPUT_DATA_UNAVAILABLE',
+            'message' => 'Verified forecast and antecedent rainfall inputs are currently unavailable.',
+        ];
+    }
+
     /** @param array<string, mixed> $request @return array<string, mixed> */
     public function requestPrediction(array $request): array
     {

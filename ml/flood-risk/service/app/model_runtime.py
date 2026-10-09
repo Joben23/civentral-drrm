@@ -18,6 +18,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validato
 from .config import Settings
 from .preprocessing import (
     ApprovedStandardScaler,
+    EXPECTED_FEATURE_ORDER,
     FeatureContractError,
     FeatureVector,
     EXPECTED_FEATURE_SCHEMA_VERSION,
@@ -30,22 +31,35 @@ from .schemas import ModelState
 class ModelArtifactManifest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    manifest_schema_version: Literal["1.0"]
+    manifest_schema_version: Literal["1.1"]
+    model_id: str = Field(
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+    )
     model_version: str = Field(min_length=1, max_length=128)
+    task_type: Literal["FLOOD_RISK_CLASSIFIER"]
     model_status: Literal[
         "DEVELOPMENT_NOT_OPERATIONALLY_VALIDATED", "OPERATIONALLY_VALIDATED"
     ]
-    feature_schema_version: Literal["1.0.0"]
+    input_schema_version: Literal["1.0.0"]
+    feature_order: tuple[str, ...]
+    training_dataset_version: str = Field(min_length=1, max_length=128)
     training_dataset_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
-    trained_at: AwareDatetime
+    label_protocol_version: str = Field(min_length=1, max_length=128)
+    created_at: AwareDatetime
+    forecast_horizon_hours: Literal[24]
+    calibration_status: Literal[
+        "NOT_VALIDATED", "RESEARCH_VALIDATED", "OPERATIONALLY_VALIDATED"
+    ]
     tensorflow_version: str = Field(pattern=r"^[0-9]+\.[0-9]+(?:\.[0-9]+)?$")
     python_version: str = Field(pattern=r"^[0-9]+\.[0-9]+(?:\.[0-9]+)?$")
     artifact_filename: str = Field(
         pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*\.keras$"
     )
     artifact_format: Literal["KERAS_V3"]
-    artifact_checksum: str = Field(pattern=r"^[a-f0-9]{64}$")
-    approved_for_inference: bool
+    artifact_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    approved_for_operational_use: bool
     threshold_policy_version: str | None = Field(default=None, min_length=1, max_length=128)
     input_shape: Literal[10]
     output_semantics: Literal["FLOOD_PROBABILITY"]
@@ -59,10 +73,14 @@ class ModelArtifactManifest(BaseModel):
     @model_validator(mode="after")
     def validate_consistency(self) -> "ModelArtifactManifest":
         operational = self.model_status == "OPERATIONALLY_VALIDATED"
-        if operational != self.approved_for_inference:
+        if operational != self.approved_for_operational_use:
             raise ValueError("model status and approval flag are inconsistent")
-        if self.approved_for_inference and self.threshold_policy_version is None:
+        if self.feature_order != EXPECTED_FEATURE_ORDER:
+            raise ValueError("model feature order is incompatible")
+        if self.approved_for_operational_use and self.threshold_policy_version is None:
             raise ValueError("an approved model requires a threshold policy version")
+        if operational != (self.calibration_status == "OPERATIONALLY_VALIDATED"):
+            raise ValueError("operational approval requires operational calibration")
         preprocessing = (
             self.preprocessing_artifact_format,
             self.preprocessing_artifact_filename,
@@ -163,7 +181,7 @@ class TensorFlowModelRuntime:
                 )
                 return
 
-            if not manifest.approved_for_inference:
+            if not manifest.approved_for_operational_use:
                 self._set_status(
                     ModelState.MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED,
                     "A model artifact exists but is not operationally validated.",
@@ -239,9 +257,9 @@ class TensorFlowModelRuntime:
     ) -> None:
         if model_path.name != manifest.artifact_filename:
             raise ValueError("model filename does not match manifest")
-        if manifest.feature_schema_version != EXPECTED_FEATURE_SCHEMA_VERSION:
+        if manifest.input_schema_version != EXPECTED_FEATURE_SCHEMA_VERSION:
             raise ValueError("feature schema version is incompatible")
-        if self._sha256(model_path) != manifest.artifact_checksum:
+        if self._sha256(model_path) != manifest.artifact_sha256:
             raise ValueError("model checksum does not match manifest")
         running_python = platform.python_version()
         if self._major_minor(running_python) != self._major_minor(manifest.python_version):
@@ -322,7 +340,9 @@ class TensorFlowModelRuntime:
             message=message,
             model_version=manifest.model_version if manifest else None,
             model_declared_status=manifest.model_status if manifest else None,
-            approved_for_inference=bool(manifest and manifest.approved_for_inference),
+            approved_for_inference=bool(
+                manifest and manifest.approved_for_operational_use
+            ),
             threshold_policy_version=(manifest.threshold_policy_version if manifest else None),
             tensorflow_installed=self.tensorflow_is_installed(),
             tensorflow_version=tensorflow_version,

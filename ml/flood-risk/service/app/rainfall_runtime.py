@@ -23,7 +23,7 @@ from common.rainfall_features import (
     validate_history,
 )
 
-from .config import FLOOD_RISK_ROOT, Settings
+from .config import FLOOD_RISK_ROOT, RAINFALL_DEPLOYMENT_ROOT, Settings
 
 
 EXPECTED_MODEL_VERSION = (
@@ -179,7 +179,7 @@ class RainfallRegressionRuntime:
                 authorization = self._load_authorization()
                 authorization_status = authorization.status
                 bundle = self._resolve_under_root(
-                    self._settings.rainfall_bundle_path, FLOOD_RISK_ROOT
+                    self._settings.rainfall_bundle_path, RAINFALL_DEPLOYMENT_ROOT
                 )
                 manifest_path = bundle / "deployment-manifest.json"
                 if not bundle.is_dir() or not manifest_path.is_file():
@@ -305,7 +305,11 @@ class RainfallRegressionRuntime:
     def _load_model(self, path: Path) -> Any:
         try:
             tensorflow = importlib.import_module("tensorflow")
-            model = tensorflow.keras.models.load_model(path, compile=False)
+            model = tensorflow.keras.models.load_model(
+                path,
+                compile=False,
+                safe_mode=True,
+            )
         except Exception as exc:
             raise RainfallRuntimeError(
                 "MODEL_LOAD_FAILED", "Approved rainfall model could not be loaded."

@@ -140,12 +140,17 @@ requests are not affected.
 
 ## Expected AI state
 
-- GET /health returns HTTP 200 and is the container healthcheck.
-- GET /ready may return HTTP 503 with MODEL_NOT_AVAILABLE while the governed
-  TensorFlow model and compatible risk policy do not exist.
+- GET /health returns HTTP 200 and is the process-only container healthcheck.
+- Authenticated GET /ready returns HTTP 503 with MODEL_NOT_AVAILABLE while the
+  governed TensorFlow flood-risk model and compatible risk policy do not exist.
+- Authenticated GET /rainfall/ready can report the separate research-only
+  rainfall regression candidate as ready without making flood prediction ready.
 
-The expected /ready response does not block Compose startup. Prediction
-features remain unavailable until approved artifacts and policies are supplied.
+The process-only healthcheck does not imply model readiness and does not block
+Compose startup on the intentionally absent flood classifier. The AI service is
+attached only to the internal `ai-internal` Compose network; `civentral-web`
+bridges that network and the external Dokploy network. Do not attach a domain
+or publish host port 8098.
 
 ## Post-deployment smoke tests
 

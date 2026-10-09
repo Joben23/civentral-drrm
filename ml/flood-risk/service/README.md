@@ -8,7 +8,8 @@ integration, public inference, or database persistence.
 Current truthful behavior:
 
 - `GET /health` returns 200 when the API process works.
-- `GET /ready` returns 503 because no approved model/policy exists.
+- authenticated `GET /ready` returns 503 because no approved flood-risk
+  model/policy exists. It is distinct from process health.
 - authenticated `GET /v1/model/status` reports `MODEL_NOT_AVAILABLE`.
 - authenticated `POST /v1/predictions/flood-risk` returns 503 and no
   probability, outcome, or risk level.
@@ -22,12 +23,9 @@ Current truthful behavior:
 
 Use **64-bit CPython 3.12** in a project virtual environment. TensorFlow 2.21.0
 publishes native Windows CPU wheels for Python 3.10 through 3.13; Python 3.12 is
-the selected common runtime for this service. Native Windows GPU TensorFlow is
-not required. Production should use a private Linux container/VPS network.
-
-At this audit, the workstation had only Microsoft Store command aliases named
-`python` and `python3`; there was no installed interpreter, `py` launcher,
-`pip`, or `uv`. Do not treat those aliases as a Python installation.
+the selected common runtime for this service. The container pins the maintained
+`python:3.12.15-slim-bookworm` image. Native Windows GPU TensorFlow is not
+required. Production uses the private `ai-internal` Compose network.
 
 ## Windows/XAMPP setup
 
@@ -88,9 +86,9 @@ install service dependencies into global/system Python.
 Settings use `CIVENTRAL_AI_` environment variables. The service requires no
 PHP session, Supabase, PAGASA, database, citizen, or employee credentials.
 Protected endpoints use `X-CIVENTRAL-AI-Key` with constant-time comparison.
-`/health` and global `/ready` are unauthenticated private probes with
-sanitized state. Rainfall readiness is authenticated because it discloses a
-specific research candidate.
+`/health` is the only unauthenticated probe and reports only process/runtime
+availability. Flood and rainfall readiness endpoints are authenticated and
+task-specific.
 
 The API fails closed if authentication is required but no key is configured.
 It adds no CORS middleware, rejects undeclared request fields, limits request
@@ -124,7 +122,9 @@ checksummed in the approved bundle, match the feature order and training
 dataset hash, and is only applied as a transform. A model may instead contain
 its trained preprocessing layers.
 
-The rainfall runtime is separate from that lifecycle. It can load only the
+Both Keras loaders use `safe_mode=True`; model selection is immutable after
+settings construction, and requests cannot supply paths, files, URLs, or
+commands. The rainfall runtime is separate from the flood lifecycle. It can load only the
 intentionally versioned Softplus candidate in `../deployment/rainfall/`, after
 validating its dedicated project-research authorization, manifest, SHA-256
 checksums, exact 57-feature order, train-fitted scaler, and architecture. Its
@@ -157,10 +157,12 @@ Tests use request-only fixtures and absent-model state. They do not create a
 trained TensorFlow artifact, fitted scaler, threshold policy, or mocked system
 prediction.
 
-## Future PHP integration
+## PHP integration
 
-Phase 7E may implement a server-side client against these fail-closed
-contracts. It must treat HTTP 503 as "prediction unavailable." No browser or
-citizen app should call this service. The service has no early-warning write
-capability; every later warning remains subject to DRRM officer review and
-explicit authorized activation.
+The server-side PHP client maps process health, TensorFlow runtime, rainfall
+research readiness, flood-model readiness, policy readiness, and trusted input
+readiness separately. Browser code calls only authenticated same-origin PHP
+endpoints; it never receives the internal AI key or the private service URL.
+HTTP 503 is treated as prediction unavailable and never converted to LOW. The
+service has no early-warning write capability; warnings still require explicit
+authorized officer action.

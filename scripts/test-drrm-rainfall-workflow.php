@@ -97,6 +97,8 @@ $predictionBody = fn (): string => json_encode([
     'schema_version' => '1.0',
     'request_id' => $requestId,
     'model_problem' => 'RAINFALL_REGRESSION',
+    'task_type' => 'RAINFALL_REGRESSION',
+    'output_type' => 'RAINFALL_AMOUNT_MM',
     'forecast_origin_utc' => '2024-01-02T00:00:00Z',
     'forecast_horizon_hours' => 3,
     'target' => 'NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM',
@@ -105,6 +107,9 @@ $predictionBody = fn (): string => json_encode([
     'output_policy' => 'MODEL_NONNEGATIVE_SOFTPLUS',
     'model_version' => DrrmRainfallInferenceClient::MODEL_VERSION,
     'model_status' => 'VALIDATED_RESEARCH_CANDIDATE',
+    'research_only' => true,
+    'flood_risk_output' => false,
+    'decision_support' => true,
     'operational' => false,
 ], JSON_THROW_ON_ERROR);
 $makeService = static function (array $provider, ?Closure $handler = null) use ($config): array {

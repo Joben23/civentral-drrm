@@ -73,9 +73,14 @@ $readyTransport = new RainfallTestTransport(static fn (): DrrmAiHttpResponse => 
         'code' => 'RAINFALL_RESEARCH_READY',
         'message' => 'ready',
         'model_problem' => 'RAINFALL_REGRESSION',
+        'task_type' => 'RAINFALL_REGRESSION',
+        'output_type' => 'RAINFALL_AMOUNT_MM',
+        'rainfall_model_ready' => true,
         'model_version' => DrrmRainfallInferenceClient::MODEL_VERSION,
         'model_status' => 'VALIDATED_RESEARCH_CANDIDATE',
         'authorization_status' => 'APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY',
+        'research_only' => true,
+        'operational' => false,
     ], JSON_THROW_ON_ERROR),
     1.2
 ));
@@ -91,6 +96,8 @@ $predictionTransport = new RainfallTestTransport(static fn (): DrrmAiHttpRespons
         'schema_version' => '1.0',
         'request_id' => 'php-rainfall-contract-test',
         'model_problem' => 'RAINFALL_REGRESSION',
+        'task_type' => 'RAINFALL_REGRESSION',
+        'output_type' => 'RAINFALL_AMOUNT_MM',
         'forecast_origin_utc' => '2024-01-02T00:00:00Z',
         'forecast_horizon_hours' => 3,
         'target' => 'NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM',
@@ -99,6 +106,9 @@ $predictionTransport = new RainfallTestTransport(static fn (): DrrmAiHttpRespons
         'output_policy' => 'MODEL_NONNEGATIVE_SOFTPLUS',
         'model_version' => DrrmRainfallInferenceClient::MODEL_VERSION,
         'model_status' => 'VALIDATED_RESEARCH_CANDIDATE',
+        'research_only' => true,
+        'flood_risk_output' => false,
+        'decision_support' => true,
         'operational' => false,
     ], JSON_THROW_ON_ERROR),
     2.4
@@ -340,9 +350,14 @@ $readyFalseSuccess = new RainfallTestTransport(static fn (): DrrmAiHttpResponse 
     'code' => 'RAINFALL_RESEARCH_READY',
     'message' => 'ready',
     'model_problem' => 'RAINFALL_REGRESSION',
+    'task_type' => 'RAINFALL_REGRESSION',
+    'output_type' => 'RAINFALL_AMOUNT_MM',
+    'rainfall_model_ready' => true,
     'model_version' => DrrmRainfallInferenceClient::MODEL_VERSION,
     'model_status' => 'VALIDATED_RESEARCH_CANDIDATE',
     'authorization_status' => 'APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY',
+    'research_only' => true,
+    'operational' => false,
 ], JSON_THROW_ON_ERROR), 1.0));
 $assert('ReadyFalseSuccessRejected', ((new DrrmRainfallInferenceClient($config, $readyFalseSuccess))->ready()['code'] ?? null) === 'AI_SERVICE_INVALID_RESPONSE');
 
@@ -364,9 +379,14 @@ $readyValid = new RainfallTestTransport(static fn (): DrrmAiHttpResponse => new 
     'code' => 'RAINFALL_RESEARCH_READY',
     'message' => 'ready',
     'model_problem' => 'RAINFALL_REGRESSION',
+    'task_type' => 'RAINFALL_REGRESSION',
+    'output_type' => 'RAINFALL_AMOUNT_MM',
+    'rainfall_model_ready' => true,
     'model_version' => DrrmRainfallInferenceClient::MODEL_VERSION,
     'model_status' => 'VALIDATED_RESEARCH_CANDIDATE',
     'authorization_status' => 'APPROVED_FOR_PRIVATE_PROJECT_RESEARCH_ONLY',
+    'research_only' => true,
+    'operational' => false,
 ], JSON_THROW_ON_ERROR), 1.0));
 $assert('ValidReadyResponseAccepted', ((new DrrmRainfallInferenceClient($config, $readyValid))->ready()['available'] ?? null) === true);
 

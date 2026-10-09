@@ -13,6 +13,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
 FLOOD_RISK_ROOT = SERVICE_ROOT.parent
 REPOSITORY_ROOT = FLOOD_RISK_ROOT.parents[1]
+RAINFALL_DEPLOYMENT_ROOT = FLOOD_RISK_ROOT / "deployment" / "rainfall"
 
 
 class Settings(BaseSettings):
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
         case_sensitive=False,
+        frozen=True,
     )
 
     host: str = "127.0.0.1"
@@ -38,11 +40,8 @@ class Settings(BaseSettings):
     model_path: Path | None = None
     model_manifest_path: Path | None = None
     risk_policy_path: Path | None = None
-    rainfall_bundle_path: Path = (
-        FLOOD_RISK_ROOT
-        / "deployment"
-        / "rainfall"
-        / "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
+    rainfall_bundle_path: Path = RAINFALL_DEPLOYMENT_ROOT / (
+        "rainfall-regression-dense-57-v0.1.1-softplus-candidate"
     )
     rainfall_authorization_path: Path = (
         FLOOD_RISK_ROOT

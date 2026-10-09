@@ -105,6 +105,17 @@ function hasAiOutput(array $value): bool
     return false;
 }
 
+/** @return list<array<string, mixed>> Contract-only provenance fixture. */
+function aiProvenanceFixture(): array
+{
+    return [
+        ['role' => 'WEATHER_FORECAST', 'source_id' => 'test.weather', 'source_version' => 'fixture-v1', 'reference_time' => '2026-08-23T18:00:00+08:00'],
+        ['role' => 'RAINFALL_OBSERVATION', 'source_id' => 'test.rainfall', 'source_version' => 'fixture-v1', 'reference_time' => '2026-08-23T18:00:00+08:00'],
+        ['role' => 'FLOOD_SUSCEPTIBILITY', 'source_id' => 'test.mgb', 'source_version' => 'fixture-v1', 'reference_time' => null],
+        ['role' => 'BARANGAY_REFERENCE', 'source_id' => 'test.barangays', 'source_version' => 'fixture-v1', 'reference_time' => null],
+    ];
+}
+
 /** @return array<string, mixed> Contract-only test fixture; never operational data. */
 function aiPredictionContractFixture(): array
 {
@@ -126,6 +137,7 @@ function aiPredictionContractFixture(): array
         'source_context' => [
             'weather_issued_at' => '2026-08-23T18:00:00+08:00',
             'feature_schema_version' => '1.0.0',
+            'data_provenance' => aiProvenanceFixture(),
         ],
     ];
 }
@@ -200,11 +212,10 @@ try {
     $healthPayload = [
         'success' => true,
         'service_status' => 'HEALTHY',
+        'service_alive' => true,
         'service_version' => '1.0.0',
         'python_version' => '3.12.0',
-        'tensorflow_installed' => false,
-        'model_status' => 'MODEL_NOT_AVAILABLE',
-        'risk_policy_status' => 'NOT_CONFIGURED',
+        'tensorflow_runtime_available' => true,
         'checked_at' => '2026-08-24T00:00:00Z',
         'unexpected_private_detail' => 'must-not-pass-through',
     ];
@@ -221,6 +232,15 @@ try {
             'ready' => false,
             'code' => 'MODEL_NOT_AVAILABLE',
             'message' => 'Upstream diagnostic not passed through.',
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
+            'flood_risk_model_ready' => false,
+            'threshold_policy_ready' => false,
+            'model_inference_ready' => false,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
+            'prediction_ready' => false,
             'model_status' => 'MODEL_NOT_AVAILABLE',
             'risk_policy_status' => 'NOT_CONFIGURED',
         ], JSON_THROW_ON_ERROR), 1.5));
@@ -232,13 +252,21 @@ try {
     $modelTransport = new TestAiTransport(static fn (): DrrmAiHttpResponse =>
         new DrrmAiHttpResponse(200, json_encode([
             'success' => true,
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
             'model_status' => 'MODEL_NOT_AVAILABLE',
             'model_available' => false,
+            'flood_risk_model_ready' => false,
+            'threshold_policy_ready' => false,
+            'model_inference_ready' => false,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
             'approved_for_inference' => false,
             'model_version' => null,
-            'feature_schema_version' => '1.0.0',
+            'model_declared_status' => null,
+            'input_schema_version' => '1.0.0',
             'threshold_policy_version' => null,
-            'tensorflow_installed' => false,
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
             'private_artifact_path' => 'must-not-pass-through',
         ], JSON_THROW_ON_ERROR), 1.75));
     $modelClient = new DrrmFloodRiskAiClient($config, $modelTransport);
@@ -268,6 +296,15 @@ try {
             'ready' => false,
             'code' => 'MODEL_NOT_AVAILABLE',
             'message' => 'No approved model.',
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
+            'flood_risk_model_ready' => false,
+            'threshold_policy_ready' => false,
+            'model_inference_ready' => false,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
+            'prediction_ready' => false,
             'model_status' => 'MODEL_NOT_AVAILABLE',
             'risk_policy_status' => 'NOT_CONFIGURED',
         ], JSON_THROW_ON_ERROR), 1.0),
@@ -288,6 +325,114 @@ try {
     assertAiIntegration('StatusPreservesRuntimeHealth', $authenticationStatus['service_health'] ?? null, 'HEALTHY');
     assertAiIntegration('StatusSurfacesAuthenticationFailure', $authenticationStatus['code'] ?? null, 'AI_AUTHENTICATION_FAILED');
     assertAiIntegration('AuthenticationFailureNotReady', $authenticationStatus['prediction_ready'] ?? null, false);
+
+    $unavailableStatus = (new DrrmAiStatusService(
+        new DrrmFloodRiskAiClient($config, $unreachableTransport)
+    ))->status();
+    assertAiIntegration('AggregateServiceUnavailableMapped', $unavailableStatus['code'] ?? null, 'AI_SERVICE_UNAVAILABLE');
+
+    $missingModelResponses = [
+        new DrrmAiHttpResponse(200, json_encode($healthPayload, JSON_THROW_ON_ERROR), 1.0),
+        new DrrmAiHttpResponse(503, json_encode([
+            'success' => false,
+            'ready' => false,
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
+            'code' => 'MODEL_NOT_AVAILABLE',
+            'message' => 'No approved model.',
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
+            'flood_risk_model_ready' => false,
+            'threshold_policy_ready' => false,
+            'model_inference_ready' => false,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
+            'prediction_ready' => false,
+            'model_status' => 'MODEL_NOT_AVAILABLE',
+            'risk_policy_status' => 'NOT_CONFIGURED',
+        ], JSON_THROW_ON_ERROR), 1.0),
+        new DrrmAiHttpResponse(200, json_encode([
+            'success' => true,
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
+            'model_status' => 'MODEL_NOT_AVAILABLE',
+            'model_available' => false,
+            'flood_risk_model_ready' => false,
+            'threshold_policy_ready' => false,
+            'model_inference_ready' => false,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
+            'approved_for_inference' => false,
+            'model_version' => null,
+            'model_declared_status' => null,
+            'input_schema_version' => '1.0.0',
+            'threshold_policy_version' => null,
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
+        ], JSON_THROW_ON_ERROR), 1.0),
+    ];
+    $missingModelTransport = new TestAiTransport(
+        static function () use (&$missingModelResponses): DrrmAiHttpResponse {
+            return array_shift($missingModelResponses);
+        }
+    );
+    $missingModelStatus = (new DrrmAiStatusService(
+        new DrrmFloodRiskAiClient($config, $missingModelTransport)
+    ))->status();
+    assertAiIntegration(
+        'RuntimeAvailableButFloodModelNotReadyMapped',
+        $missingModelStatus['code'] ?? null,
+        'TENSORFLOW_RUNTIME_AVAILABLE_BUT_MODEL_NOT_READY'
+    );
+
+    $inputUnavailableResponses = [
+        new DrrmAiHttpResponse(200, json_encode($healthPayload, JSON_THROW_ON_ERROR), 1.0),
+        new DrrmAiHttpResponse(200, json_encode([
+            'success' => true,
+            'ready' => true,
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
+            'code' => 'READY',
+            'message' => 'Model inference ready.',
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
+            'flood_risk_model_ready' => true,
+            'threshold_policy_ready' => true,
+            'model_inference_ready' => true,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
+            'prediction_ready' => false,
+            'model_status' => 'MODEL_READY',
+            'risk_policy_status' => 'READY',
+        ], JSON_THROW_ON_ERROR), 1.0),
+        new DrrmAiHttpResponse(200, json_encode([
+            'success' => true,
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
+            'model_status' => 'MODEL_READY',
+            'model_available' => true,
+            'flood_risk_model_ready' => true,
+            'threshold_policy_ready' => true,
+            'model_inference_ready' => true,
+            'trusted_inputs_ready' => null,
+            'input_readiness_scope' => 'PER_REQUEST',
+            'approved_for_inference' => true,
+            'model_version' => 'future-approved-model',
+            'model_declared_status' => 'OPERATIONALLY_VALIDATED',
+            'input_schema_version' => '1.0.0',
+            'threshold_policy_version' => 'future-approved-policy',
+            'tensorflow_runtime_available' => true,
+            'tensorflow_runtime_ready' => true,
+        ], JSON_THROW_ON_ERROR), 1.0),
+    ];
+    $inputUnavailableTransport = new TestAiTransport(
+        static function () use (&$inputUnavailableResponses): DrrmAiHttpResponse {
+            return array_shift($inputUnavailableResponses);
+        }
+    );
+    $inputUnavailableStatus = (new DrrmAiStatusService(
+        new DrrmFloodRiskAiClient($config, $inputUnavailableTransport),
+        null,
+        new DrrmFloodRiskPredictionService()
+    ))->status();
+    assertAiIntegration('InputDataUnavailableMapped', $inputUnavailableStatus['code'] ?? null, 'INPUT_DATA_UNAVAILABLE');
+    assertAiIntegration('InputUnavailablePredictionNotReady', $inputUnavailableStatus['prediction_ready'] ?? null, false);
 
     $invalidJsonTransport = new TestAiTransport(static fn (): DrrmAiHttpResponse =>
         new DrrmAiHttpResponse(200, '{invalid-json', 1.0));
@@ -313,6 +458,7 @@ try {
             'weather_issued_at' => '2026-08-23T18:00:00+08:00',
             'valid_from' => '2026-08-24T00:00:00+08:00',
             'valid_until' => '2026-08-25T00:00:00+08:00',
+            'data_provenance' => aiProvenanceFixture(),
         ],
         [
             'barangay_id' => '1380100001',
@@ -332,6 +478,7 @@ try {
             'weather_issued_at' => '2026-08-23T18:00:00+08:00',
             'valid_from' => '2026-08-24T00:00:00+08:00',
             'valid_until' => '2026-08-25T00:00:00+08:00',
+            'data_provenance' => aiProvenanceFixture(),
         ],
         [
             'barangay_id' => '1380100001',

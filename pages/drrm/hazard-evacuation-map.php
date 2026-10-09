@@ -7,6 +7,8 @@ require_once __DIR__ . '/../../config/app_environment.php';
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapAuthorizationService.php';
 require_once __DIR__ . '/../../src/Services/DrrmMapCsrfService.php';
+require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningAuthorizationService.php';
+require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningCsrfService.php';
 
 $draftBarangayPreviewEnabled = AppEnvironment::allowsLocalDevelopmentRequest(
     __DIR__ . '/../../.env',
@@ -29,6 +31,13 @@ $stagingAdminRoutePreviewCsrfToken = $stagingAdminRoutePreviewEnabled
     : null;
 $stagingAdminFloodReferenceCheckCsrfToken = $stagingAdminFloodReferenceCheckEnabled
     ? (new \App\Services\DrrmMapCsrfService())->token()
+    : null;
+$aiAuthorization = \App\Services\DrrmEarlyWarningAuthorizationService::fromTrustedSession(
+    $headerUser ?? null
+);
+$aiDecisionSupportAuthorized = $aiAuthorization->canView();
+$aiDecisionSupportCsrfToken = $aiDecisionSupportAuthorized
+    ? (new \App\Services\DrrmEarlyWarningCsrfService())->token()
     : null;
 $hazardMapCssRelativePath = 'assets/css/hazard-evacuation-map.css';
 $operationalMapDataRelativePath = 'assets/js/drrm/operational-map-data.js';
@@ -284,6 +293,21 @@ include '../../includes/sidebar.php';
           JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
       ); ?>
     }),
+    aiIntegration: Object.freeze({
+      authorized: <?php echo $aiDecisionSupportAuthorized ? 'true' : 'false'; ?>,
+      statusEndpoint: <?php echo json_encode(
+          $aiDecisionSupportAuthorized ? $basePath . 'api/drrm/ai-status.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      predictionEndpoint: <?php echo json_encode(
+          $aiDecisionSupportAuthorized ? $basePath . 'api/drrm/flood-risk-prediction.php' : null,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>,
+      csrfToken: <?php echo json_encode(
+          $aiDecisionSupportCsrfToken,
+          JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+      ); ?>
+    }),
     cityBoundary: Object.freeze({
       endpoint: <?php echo json_encode(
           $basePath . 'data/import/caloocan-city-boundary.geojson',
@@ -310,12 +334,18 @@ include '../../includes/sidebar.php';
     predictionFetchCount: 0,
     predictionAttempted: false,
     predictionResultCode: 'NOT_REQUESTED',
+    predictionReady: false,
     barangaysByName: new Map(),
     selectedBarangayId: null
   };
 
   const safeMessages = Object.freeze({
     INPUT_DATA_UNAVAILABLE: 'AI prediction is currently unavailable because verified rainfall inputs are not available.',
+    PREDICTION_AVAILABLE: 'Approved flood-risk decision support is ready for officer review.',
+    TENSORFLOW_RUNTIME_AVAILABLE_BUT_MODEL_NOT_READY: 'TensorFlow is available, but no approved flood-risk model is ready.',
+    TENSORFLOW_RUNTIME_UNAVAILABLE: 'The AI service is alive, but its TensorFlow runtime is unavailable.',
+    THRESHOLD_POLICY_NOT_READY: 'The approved flood-risk classification policy is not ready.',
+    AI_SERVICE_UNAVAILABLE: 'AI service is currently unavailable.',
     MODEL_NOT_AVAILABLE: 'TensorFlow model is not currently available for inference.',
     MODEL_INVALID: 'The configured TensorFlow model is not valid for inference.',
     RISK_POLICY_NOT_CONFIGURED: 'The CIVENTRAL risk policy is not configured for AI decision support.',
@@ -372,8 +402,10 @@ include '../../includes/sidebar.php';
     grid.append(
       createStatusCell('AI Service', 'floodAiServiceStatus'),
       createStatusCell('TensorFlow Runtime', 'floodTensorFlowStatus'),
-      createStatusCell('Model', 'floodAiModelStatus'),
-      createStatusCell('Risk Policy', 'floodAiRiskPolicyStatus'),
+      createStatusCell('Rainfall Research Model', 'rainfallResearchModelStatus'),
+      createStatusCell('Flood-Risk Model', 'floodAiModelStatus'),
+      createStatusCell('Threshold Policy', 'floodAiRiskPolicyStatus'),
+      createStatusCell('Trusted Input Data', 'floodAiInputDataStatus'),
       createStatusCell('Prediction Ready', 'floodAiReadinessStatus'),
       createStatusCell('Last Checked', 'floodAiLastChecked')
     );
@@ -469,7 +501,12 @@ include '../../includes/sidebar.php';
     if (!data || typeof data !== 'object' || Array.isArray(data)
       || typeof data.runtime_reachable !== 'boolean'
       || typeof data.service_health !== 'string'
-      || !(typeof data.tensorflow_installed === 'boolean' || data.tensorflow_installed === null)
+      || !(typeof data.tensorflow_runtime_ready === 'boolean' || data.tensorflow_runtime_ready === null)
+      || typeof data.rainfall_model_ready !== 'boolean'
+      || data.rainfall_research_only !== true
+      || typeof data.flood_risk_model_ready !== 'boolean'
+      || typeof data.threshold_policy_ready !== 'boolean'
+      || typeof data.input_data_ready !== 'boolean'
       || typeof data.model_status !== 'string'
       || typeof data.risk_policy_status !== 'string'
       || typeof data.prediction_ready !== 'boolean'
@@ -479,7 +516,11 @@ include '../../includes/sidebar.php';
     return Object.freeze({
       runtimeReachable: data.runtime_reachable,
       serviceHealth: data.service_health,
-      tensorflowInstalled: data.tensorflow_installed,
+      tensorflowRuntimeReady: data.tensorflow_runtime_ready,
+      rainfallModelReady: data.rainfall_model_ready,
+      floodRiskModelReady: data.flood_risk_model_ready,
+      thresholdPolicyReady: data.threshold_policy_ready,
+      inputDataReady: data.input_data_ready,
       modelStatus: data.model_status,
       riskPolicyStatus: data.risk_policy_status,
       predictionReady: data.prediction_ready,
@@ -493,10 +534,12 @@ include '../../includes/sidebar.php';
     setText('floodAiServiceStatus', serviceHealthy ? 'Connected / Healthy' : 'Unavailable');
     setText(
       'floodTensorFlowStatus',
-      status.tensorflowInstalled === true ? 'Available' : (status.tensorflowInstalled === false ? 'Not Installed' : 'Unknown')
+      status.tensorflowRuntimeReady === true ? 'Available' : (status.tensorflowRuntimeReady === false ? 'Unavailable' : 'Unknown')
     );
-    setText('floodAiModelStatus', labelForModel(status.modelStatus));
-    setText('floodAiRiskPolicyStatus', labelForRiskPolicy(status.riskPolicyStatus));
+    setText('rainfallResearchModelStatus', status.rainfallModelReady ? 'Available — Research Only' : 'Unavailable');
+    setText('floodAiModelStatus', status.floodRiskModelReady ? 'Approved / Ready' : labelForModel(status.modelStatus));
+    setText('floodAiRiskPolicyStatus', status.thresholdPolicyReady ? 'Ready' : labelForRiskPolicy(status.riskPolicyStatus));
+    setText('floodAiInputDataStatus', status.inputDataReady ? 'Ready' : 'Unavailable');
     setText('floodAiReadinessStatus', status.predictionReady ? 'Yes' : 'No');
     setText('floodAiLastChecked', checkedTime());
     if (badge) {
@@ -504,18 +547,25 @@ include '../../includes/sidebar.php';
       badge.dataset.tone = status.predictionReady ? 'positive' : 'neutral';
     }
     state.statusCode = status.code;
+    state.predictionReady = status.predictionReady;
+    if (!status.predictionReady && !state.predictionAttempted) {
+      setResult(statusMessage(status.code), 'notice');
+    }
   }
 
   function renderStatusUnavailable(code, authorized) {
     const badge = document.getElementById('floodModelStatus');
     setText('floodAiServiceStatus', authorized ? 'Unavailable' : 'Access Restricted');
     setText('floodTensorFlowStatus', 'Unknown');
+    setText('rainfallResearchModelStatus', 'Unavailable');
     setText('floodAiModelStatus', 'Unknown');
     setText('floodAiRiskPolicyStatus', 'Unknown');
+    setText('floodAiInputDataStatus', 'Unavailable');
     setText('floodAiReadinessStatus', 'No');
     setText('floodAiLastChecked', checkedTime());
     if (badge) badge.textContent = authorized ? 'Unavailable' : 'Restricted';
     state.statusCode = code;
+    state.predictionReady = false;
     if (!state.predictionAttempted) {
       setResult(
         authorized ? statusMessage(code) : 'AI decision support requires Disaster Early Warning VIEW permission.',
@@ -628,9 +678,11 @@ include '../../includes/sidebar.php';
     updatePredictionButton();
     if (!state.predictionAttempted) {
       setResult(
-        state.selectedBarangayId
+        state.selectedBarangayId && state.predictionReady
           ? 'Selected location has a validated barangay. Run the AI risk check to verify current availability.'
-          : 'Select an exact location with a validated barangay before requesting AI decision support.',
+          : (state.selectedBarangayId
+            ? statusMessage(state.statusCode)
+            : 'Select an exact location with a validated barangay before requesting AI decision support.'),
         'neutral'
       );
     }
@@ -639,7 +691,8 @@ include '../../includes/sidebar.php';
   function updatePredictionButton() {
     const button = document.getElementById('runFloodAiPredictionButton');
     if (!button) return;
-    button.disabled = aiConfig.authorized !== true || state.predictionPending || !state.selectedBarangayId;
+    button.disabled = aiConfig.authorized !== true || !state.predictionReady
+      || state.predictionPending || !state.selectedBarangayId;
   }
 
   function requestId() {
@@ -650,7 +703,8 @@ include '../../includes/sidebar.php';
   }
 
   async function requestPrediction() {
-    if (state.predictionPending || aiConfig.authorized !== true || !state.selectedBarangayId) return false;
+    if (state.predictionPending || aiConfig.authorized !== true
+      || !state.predictionReady || !state.selectedBarangayId) return false;
     if (typeof aiConfig.predictionEndpoint !== 'string' || aiConfig.predictionEndpoint === ''
       || typeof aiConfig.csrfToken !== 'string' || aiConfig.csrfToken === '') {
       state.predictionAttempted = true;
@@ -716,10 +770,6 @@ include '../../includes/sidebar.php';
   }
 
   function initialize() {
-    if (runtimeConfig.adminFloodReferenceCheck
-      && runtimeConfig.adminFloodReferenceCheck.enabled === true) {
-      return;
-    }
     if (state.initialized || !enhancePredictionSection()) return;
     state.initialized = true;
     const refresh = document.getElementById('refreshFloodAiStatusButton');

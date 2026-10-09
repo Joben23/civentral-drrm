@@ -30,6 +30,9 @@ def test_rainfall_ready_is_separate_and_research_only(client, auth_headers) -> N
     assert response.status_code == 200
     body = response.json()
     assert body["ready"] is True
+    assert body["rainfall_model_ready"] is True
+    assert body["task_type"] == "RAINFALL_REGRESSION"
+    assert body["output_type"] == "RAINFALL_AMOUNT_MM"
     assert body["code"] == "RAINFALL_RESEARCH_READY"
     assert body["research_only"] is True
     assert body["operational"] is False
@@ -38,8 +41,8 @@ def test_rainfall_ready_is_separate_and_research_only(client, auth_headers) -> N
     )
 
 
-def test_global_ready_remains_flood_model_unavailable(client) -> None:
-    response = client.get("/ready")
+def test_global_ready_remains_flood_model_unavailable(client, auth_headers) -> None:
+    response = client.get("/ready", headers=auth_headers)
     assert response.status_code == 503
     assert response.json()["code"] == "MODEL_NOT_AVAILABLE"
 
@@ -69,6 +72,11 @@ def test_valid_request_returns_only_rainfall(
     assert response.status_code == 200
     body = response.json()
     assert body["model_problem"] == "RAINFALL_REGRESSION"
+    assert body["task_type"] == "RAINFALL_REGRESSION"
+    assert body["output_type"] == "RAINFALL_AMOUNT_MM"
+    assert body["research_only"] is True
+    assert body["flood_risk_output"] is False
+    assert body["decision_support"] is True
     assert body["target"] == "NEXT_3_HOUR_ACCUMULATED_RAINFALL_MM"
     assert body["forecast_horizon_hours"] == 3
     assert body["output_policy"] == "MODEL_NONNEGATIVE_SOFTPLUS"
@@ -77,6 +85,13 @@ def test_valid_request_returns_only_rainfall(
     assert body["raw_prediction_mm"] >= 0
     assert body["final_prediction_mm"] == body["raw_prediction_mm"]
     assert FORBIDDEN_OUTPUTS.isdisjoint(body)
+
+
+def test_rainfall_loader_uses_keras_safe_mode() -> None:
+    import inspect
+
+    source = inspect.getsource(RainfallRegressionRuntime._load_model)
+    assert "safe_mode=True" in source
 
 
 def test_exactly_48_observations_required(

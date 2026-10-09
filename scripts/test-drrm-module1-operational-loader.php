@@ -27,6 +27,9 @@ $adminBarangayService = file_get_contents($root . '/src/Services/DrrmAdminBarang
 $mapAuthorization = file_get_contents($root . '/src/Services/DrrmMapAuthorizationService.php');
 $citizenReadService = file_get_contents($root . '/src/Services/DrrmCitizenHazardMapReadService.php');
 
+// Keep source-shape assertions portable across Git LF/CRLF worktrees.
+$map = is_string($map) ? str_replace(["\r\n", "\r"], "\n", $map) : $map;
+
 foreach ([$page, $map, $adapter, $mgbReference, $phivolcsReference, $markup, $css, $readService,
     $adminCenterEndpoint, $adminCenterService, $adminBarangayEndpoint, $adminBarangayService,
     $mapAuthorization, $citizenReadService] as $source) {

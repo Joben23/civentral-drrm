@@ -77,6 +77,7 @@ final class FastApiFloodRiskPredictor implements FloodRiskPredictorInterface
     {
         $weatherKeys = [
             'forecast_rainfall_24h_mm', 'weather_issued_at', 'valid_from', 'valid_until',
+            'data_provenance',
         ];
         if (array_key_exists('request_id', $weather)) {
             $weatherKeys[] = 'request_id';
@@ -138,6 +139,11 @@ final class FastApiFloodRiskPredictor implements FloodRiskPredictorInterface
             || $issuedAt > $validFrom) {
             throw new JsonException('Invalid inference validity window.');
         }
+        $dataProvenance = $this->validatedDataProvenance(
+            $weather['data_provenance'] ?? null,
+            $issuedAt,
+            $validFrom
+        );
 
         $requestId = $weather['request_id'] ?? ('php-' . bin2hex(random_bytes(16)));
         if (!is_string($requestId)
@@ -164,8 +170,68 @@ final class FastApiFloodRiskPredictor implements FloodRiskPredictorInterface
             'source_context' => [
                 'weather_issued_at' => $weather['weather_issued_at'],
                 'feature_schema_version' => DrrmFloodRiskAiClient::FEATURE_SCHEMA_VERSION,
+                'data_provenance' => $dataProvenance,
             ],
         ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function validatedDataProvenance(
+        mixed $items,
+        DateTimeImmutable $weatherIssuedAt,
+        DateTimeImmutable $validFrom
+    ): array {
+        if (!is_array($items) || !array_is_list($items) || count($items) !== 4) {
+            throw new JsonException('Complete input provenance is required.');
+        }
+        $expectedRoles = [
+            'WEATHER_FORECAST',
+            'RAINFALL_OBSERVATION',
+            'FLOOD_SUSCEPTIBILITY',
+            'BARANGAY_REFERENCE',
+        ];
+        $seenRoles = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                throw new JsonException('Invalid input provenance.');
+            }
+            $keys = array_keys($item);
+            sort($keys);
+            if ($keys !== ['reference_time', 'role', 'source_id', 'source_version']) {
+                throw new JsonException('Invalid input provenance fields.');
+            }
+            $role = $item['role'] ?? null;
+            if (!is_string($role) || !in_array($role, $expectedRoles, true)
+                || isset($seenRoles[$role])) {
+                throw new JsonException('Invalid input provenance role.');
+            }
+            foreach (['source_id', 'source_version'] as $field) {
+                if (!is_string($item[$field] ?? null)
+                    || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/', $item[$field]) !== 1) {
+                    throw new JsonException('Invalid input provenance identifier.');
+                }
+            }
+            $referenceTime = null;
+            if ($item['reference_time'] !== null) {
+                if (!is_string($item['reference_time'])) {
+                    throw new JsonException('Invalid input provenance timestamp.');
+                }
+                $referenceTime = new DateTimeImmutable($item['reference_time']);
+                if ($referenceTime > $validFrom) {
+                    throw new JsonException('Input provenance postdates the prediction window.');
+                }
+            }
+            if ($role === 'WEATHER_FORECAST'
+                && ($referenceTime === null
+                    || $referenceTime->getTimestamp() !== $weatherIssuedAt->getTimestamp())) {
+                throw new JsonException('Weather provenance is inconsistent.');
+            }
+            $seenRoles[$role] = true;
+        }
+        if (array_diff($expectedRoles, array_keys($seenRoles)) !== []) {
+            throw new JsonException('Input provenance is incomplete.');
+        }
+        return array_values($items);
     }
 
     private function assertSharedFeatureContract(): void

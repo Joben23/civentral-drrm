@@ -12,9 +12,80 @@ from datetime import datetime, timezone
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+
+
+class BoundedRequestBodyMiddleware:
+    """Reject oversized bodies even when Content-Length is absent or false."""
+
+    def __init__(self, app: ASGIApp, *, max_request_bytes: int) -> None:
+        self._app = app
+        self._max_request_bytes = max_request_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        content_length = self._content_length(scope)
+        if content_length is None or content_length <= self._max_request_bytes:
+            messages, too_large = await self._read_bounded(receive)
+        else:
+            messages, too_large = [], True
+
+        if too_large:
+            response = JSONResponse(
+                status_code=413,
+                content={
+                    "success": False,
+                    "code": "REQUEST_TOO_LARGE",
+                    "message": "Request body exceeds the internal service limit.",
+                },
+            )
+            await response(scope, receive, send)
+            return
+
+        message_index = 0
+
+        async def replay_receive() -> Message:
+            nonlocal message_index
+            if message_index < len(messages):
+                message = messages[message_index]
+                message_index += 1
+                return message
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        await self._app(scope, replay_receive, send)
+
+    def _content_length(self, scope: Scope) -> int | None:
+        for name, value in scope.get("headers", ()):
+            if name.lower() != b"content-length":
+                continue
+            try:
+                parsed = int(value.decode("ascii"))
+            except (UnicodeDecodeError, ValueError):
+                return self._max_request_bytes + 1
+            return parsed if parsed >= 0 else self._max_request_bytes + 1
+        return None
+
+    async def _read_bounded(self, receive: Receive) -> tuple[list[Message], bool]:
+        messages: list[Message] = []
+        received = 0
+        while True:
+            message = await receive()
+            messages.append(message)
+            if message["type"] == "http.disconnect":
+                return messages, False
+            if message["type"] != "http.request":
+                continue
+            received += len(message.get("body", b""))
+            if received > self._max_request_bytes:
+                return [], True
+            if not message.get("more_body", False):
+                return messages, False
 
 
 def configure_logging(level: str) -> None:

@@ -1,9 +1,13 @@
-FROM python:3.12-slim
+FROM python:3.12.15-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
+    HOME=/tmp \
+    KERAS_HOME=/tmp/.keras \
+    TMPDIR=/tmp \
+    TF_CPP_MIN_LOG_LEVEL=2 \
     CIVENTRAL_AI_HOST=0.0.0.0 \
     CIVENTRAL_AI_PORT=8098 \
     CIVENTRAL_AI_ALLOW_PUBLIC_BIND=true \
@@ -13,7 +17,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system civentral \
-    && useradd --system --gid civentral --create-home civentral
+    && useradd --system --gid civentral --no-create-home civentral
 
 WORKDIR /opt/civentral/ml/flood-risk/service
 

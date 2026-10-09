@@ -42,21 +42,21 @@ function assertAiUi(string $name, bool $condition): void
 $browserUi = $module1Page . "\n" . $module4Page;
 $applicationUi = $browserUi . "\n" . $module1Markup . "\n" . $module1Script . "\n" . $module4Script;
 
-assertAiUi('Module1DoesNotConfigureAiStatusEndpoint', !str_contains($module1Page, 'api/drrm/ai-status.php'));
-assertAiUi('Module1DoesNotConfigureAiPredictionEndpoint', !str_contains($module1Page, 'api/drrm/flood-risk-prediction.php'));
+assertAiUi('Module1UsesPhpStatusEndpoint', str_contains($module1Page, 'api/drrm/ai-status.php'));
+assertAiUi('Module1UsesPhpPredictionEndpoint', str_contains($module1Page, 'api/drrm/flood-risk-prediction.php'));
 assertAiUi('Module4UsesPhpStatusEndpoint', str_contains($module4Page, "api/drrm/ai-status.php"));
 assertAiUi('NoPrivateFastApiPortInBrowserUi', !str_contains($browserUi, '127.0.0.1:8098'));
 assertAiUi('NoInternalKeyNameInBrowserUi', !str_contains($browserUi, 'CIVENTRAL_AI_INTERNAL_KEY'));
 assertAiUi(
     'Module1ShowsStaticAiUnavailableBoundary',
     str_contains($module1Markup, 'AI Flood Prediction')
-    && str_contains($module1Markup, 'Not available')
-    && str_contains($module1Markup, 'until a governed model and validated forecast inputs are ready')
-    && !str_contains($module1Markup, 'runFloodAiPredictionButton')
+    && str_contains($module1Markup, 'Not ready')
+    && str_contains($module1Markup, 'until a governed model, approved policy, and validated forecast inputs are ready')
 );
 assertAiUi('Module4StatusFieldsPresent', array_reduce([
-    'data-ai-service-status', 'data-ai-tensorflow-status', 'data-ai-model-status',
-    'data-ai-risk-policy-status', 'data-ai-prediction-ready', 'data-ai-last-checked',
+    'data-ai-service-status', 'data-ai-tensorflow-status', 'data-ai-rainfall-status',
+    'data-ai-model-status', 'data-ai-risk-policy-status', 'data-ai-input-status',
+    'data-ai-prediction-ready', 'data-ai-last-checked',
 ], static fn (bool $present, string $hook): bool => $present && str_contains($module4Page, $hook), true));
 assertAiUi('Module1GisCheckUsesPost', str_contains($module1Script, "method: 'POST'"));
 assertAiUi('Module1GisCheckUsesSameOrigin', str_contains($module1Script, "credentials: 'same-origin'"));
@@ -76,8 +76,14 @@ assertAiUi('InputUnavailableMessageIsSafe', str_contains(
 ));
 assertAiUi('ModelUnavailableMessageIsSafe', str_contains(
     $applicationUi,
-    'TensorFlow prediction is unavailable until a governed model'
+    'no approved flood-risk model is ready'
 ));
+assertAiUi('Module1PredictionRequiresAggregateReadiness',
+    str_contains($module1Page, '|| !state.predictionReady')
+    && str_contains($module1Page, 'state.predictionReady = status.predictionReady'));
+assertAiUi('RainfallIsResearchOnlyInBothModules',
+    str_contains($module1Page, 'Available — Research Only')
+    && str_contains($module4Page, 'Available — Research Only'));
 assertAiUi('MgbAndAiRemainSeparate',
     str_contains($module1Markup, 'controlled draft GIS polygons')
     && str_contains($module1Markup, 'It is not an AI prediction, real-time flood forecast, or official emergency guidance.'));

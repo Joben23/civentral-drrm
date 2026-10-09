@@ -74,6 +74,32 @@ def valid_request() -> dict[str, Any]:
         "source_context": {
             "weather_issued_at": "2026-01-09T18:00:00+08:00",
             "feature_schema_version": "1.0.0",
+            "data_provenance": [
+                {
+                    "role": "WEATHER_FORECAST",
+                    "source_id": "test.weather",
+                    "source_version": "fixture-v1",
+                    "reference_time": "2026-01-09T18:00:00+08:00",
+                },
+                {
+                    "role": "RAINFALL_OBSERVATION",
+                    "source_id": "test.rainfall",
+                    "source_version": "fixture-v1",
+                    "reference_time": "2026-01-09T18:00:00+08:00",
+                },
+                {
+                    "role": "FLOOD_SUSCEPTIBILITY",
+                    "source_id": "test.mgb",
+                    "source_version": "fixture-v1",
+                    "reference_time": None,
+                },
+                {
+                    "role": "BARANGAY_REFERENCE",
+                    "source_id": "test.barangays",
+                    "source_version": "fixture-v1",
+                    "reference_time": None,
+                },
+            ],
         },
     }
 

@@ -181,9 +181,8 @@ final class DrrmFloodRiskAiClient
         if ($http->statusCode !== 200
             || ($payload['success'] ?? null) !== true
             || ($payload['service_status'] ?? null) !== 'HEALTHY'
-            || !is_bool($payload['tensorflow_installed'] ?? null)
-            || !$this->validModelState($payload['model_status'] ?? null)
-            || !$this->validRiskPolicyState($payload['risk_policy_status'] ?? null)) {
+            || ($payload['service_alive'] ?? null) !== true
+            || !is_bool($payload['tensorflow_runtime_available'] ?? null)) {
             return $this->invalidResponse($requestId, $http->latencyMs);
         }
 
@@ -193,9 +192,8 @@ final class DrrmFloodRiskAiClient
             'message' => 'Private AI service runtime is healthy.',
             'runtime_reachable' => true,
             'service_healthy' => true,
-            'tensorflow_installed' => $payload['tensorflow_installed'],
-            'model_status' => $payload['model_status'],
-            'risk_policy_status' => $payload['risk_policy_status'],
+            'tensorflow_runtime_available' => $payload['tensorflow_runtime_available'],
+            'tensorflow_installed' => $payload['tensorflow_runtime_available'],
         ];
         $this->logOutcome($requestId, 'HEALTHY', $http->latencyMs);
         return $result;
@@ -205,7 +203,7 @@ final class DrrmFloodRiskAiClient
     public function ready(): array
     {
         $requestId = $this->requestId();
-        $response = $this->send('GET', '/ready', null, false, $requestId);
+        $response = $this->send('GET', '/ready', null, true, $requestId);
         if (!array_is_list($response)) {
             return $response;
         }
@@ -215,6 +213,13 @@ final class DrrmFloodRiskAiClient
             && ($payload['success'] ?? null) === true
             && ($payload['ready'] ?? null) === true
             && ($payload['code'] ?? null) === 'READY'
+            && ($payload['task_type'] ?? null) === 'FLOOD_RISK_CLASSIFIER'
+            && ($payload['tensorflow_runtime_available'] ?? null) === true
+            && ($payload['tensorflow_runtime_ready'] ?? null) === true
+            && ($payload['flood_risk_model_ready'] ?? null) === true
+            && ($payload['threshold_policy_ready'] ?? null) === true
+            && ($payload['model_inference_ready'] ?? null) === true
+            && ($payload['prediction_ready'] ?? null) === false
             && $this->validModelState($payload['model_status'] ?? null)
             && $this->validRiskPolicyState($payload['risk_policy_status'] ?? null)) {
             $result = [
@@ -222,6 +227,12 @@ final class DrrmFloodRiskAiClient
                 'ready' => true,
                 'code' => 'READY',
                 'message' => 'Approved flood-risk inference is available.',
+                'tensorflow_runtime_available' => true,
+                'tensorflow_runtime_ready' => true,
+                'flood_risk_model_ready' => true,
+                'threshold_policy_ready' => true,
+                'model_inference_ready' => true,
+                'prediction_ready' => false,
                 'model_status' => $payload['model_status'],
                 'risk_policy_status' => $payload['risk_policy_status'],
             ];
@@ -233,6 +244,14 @@ final class DrrmFloodRiskAiClient
             && ($payload['success'] ?? null) === false
             && ($payload['ready'] ?? null) === false
             && is_string($payload['code'] ?? null)
+            && ($payload['task_type'] ?? null) === 'FLOOD_RISK_CLASSIFIER'
+            && is_bool($payload['tensorflow_runtime_available'] ?? null)
+            && is_bool($payload['tensorflow_runtime_ready'] ?? null)
+            && $payload['tensorflow_runtime_available'] === $payload['tensorflow_runtime_ready']
+            && is_bool($payload['flood_risk_model_ready'] ?? null)
+            && is_bool($payload['threshold_policy_ready'] ?? null)
+            && ($payload['model_inference_ready'] ?? null) === false
+            && ($payload['prediction_ready'] ?? null) === false
             && $this->validModelState($payload['model_status'] ?? null)
             && $this->validRiskPolicyState($payload['risk_policy_status'] ?? null)) {
             $code = $this->normalizeUpstreamCode($payload['code']);
@@ -241,6 +260,12 @@ final class DrrmFloodRiskAiClient
                 'ready' => false,
                 'code' => $code,
                 'message' => $this->messageForCode($code),
+                'tensorflow_runtime_available' => $payload['tensorflow_runtime_available'],
+                'tensorflow_runtime_ready' => $payload['tensorflow_runtime_ready'],
+                'flood_risk_model_ready' => $payload['flood_risk_model_ready'],
+                'threshold_policy_ready' => $payload['threshold_policy_ready'],
+                'model_inference_ready' => false,
+                'prediction_ready' => false,
                 'model_status' => $payload['model_status'],
                 'risk_policy_status' => $payload['risk_policy_status'],
             ];
@@ -265,10 +290,19 @@ final class DrrmFloodRiskAiClient
         [$http, $payload] = $response;
         if ($http->statusCode !== 200
             || ($payload['success'] ?? null) !== true
+            || ($payload['task_type'] ?? null) !== 'FLOOD_RISK_CLASSIFIER'
             || !is_bool($payload['model_available'] ?? null)
+            || !is_bool($payload['flood_risk_model_ready'] ?? null)
+            || !is_bool($payload['threshold_policy_ready'] ?? null)
+            || !is_bool($payload['model_inference_ready'] ?? null)
+            || !array_key_exists('trusted_inputs_ready', $payload)
+            || $payload['trusted_inputs_ready'] !== null
+            || ($payload['input_readiness_scope'] ?? null) !== 'PER_REQUEST'
             || !is_bool($payload['approved_for_inference'] ?? null)
-            || !is_bool($payload['tensorflow_installed'] ?? null)
-            || ($payload['feature_schema_version'] ?? null) !== self::FEATURE_SCHEMA_VERSION
+            || !is_bool($payload['tensorflow_runtime_available'] ?? null)
+            || !is_bool($payload['tensorflow_runtime_ready'] ?? null)
+            || $payload['tensorflow_runtime_available'] !== $payload['tensorflow_runtime_ready']
+            || ($payload['input_schema_version'] ?? null) !== self::FEATURE_SCHEMA_VERSION
             || !$this->validModelState($payload['model_status'] ?? null)) {
             return $this->httpFailure($http, $payload, $requestId);
         }
@@ -288,10 +322,16 @@ final class DrrmFloodRiskAiClient
             'code' => $code,
             'message' => $this->messageForCode($code),
             'model_status' => $code,
+            'flood_risk_model_ready' => $payload['flood_risk_model_ready'],
+            'threshold_policy_ready' => $payload['threshold_policy_ready'],
+            'model_inference_ready' => $payload['model_inference_ready'],
             'approved_for_inference' => $payload['approved_for_inference'],
-            'tensorflow_installed' => $payload['tensorflow_installed'],
+            'tensorflow_runtime_available' => $payload['tensorflow_runtime_available'],
+            'tensorflow_runtime_ready' => $payload['tensorflow_runtime_ready'],
+            'tensorflow_installed' => $payload['tensorflow_runtime_available'],
             'model_version' => $modelVersion,
             'threshold_policy_version' => $policyVersion,
+            'input_schema_version' => self::FEATURE_SCHEMA_VERSION,
             'feature_schema_version' => self::FEATURE_SCHEMA_VERSION,
         ];
         $this->logOutcome($requestId, $code, $http->latencyMs);
@@ -331,8 +371,9 @@ final class DrrmFloodRiskAiClient
             && is_string($payload['code'] ?? null)) {
             $code = $this->normalizeUpstreamCode($payload['code']);
             if (in_array($code, [
-                'MODEL_NOT_AVAILABLE', 'MODEL_INVALID', 'RISK_POLICY_NOT_CONFIGURED',
-                'AI_SERVICE_NOT_CONFIGURED',
+                'MODEL_NOT_AVAILABLE', 'MODEL_INVALID',
+                'MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED',
+                'RISK_POLICY_NOT_CONFIGURED', 'AI_SERVICE_NOT_CONFIGURED',
             ], true)) {
                 $result = [
                     'available' => false,
@@ -423,9 +464,10 @@ final class DrrmFloodRiskAiClient
     private function normalizePredictionSuccess(array $payload): ?array
     {
         $requiredStrings = [
-            'schema_version', 'request_id', 'prediction_type', 'model_version',
-            'model_status', 'predicted_outcome', 'threshold_policy_version',
-            'civentral_risk_level', 'predicted_at', 'valid_from', 'valid_until',
+            'schema_version', 'request_id', 'task_type', 'prediction_type',
+            'model_version', 'model_status', 'input_schema_version', 'barangay_id',
+            'predicted_outcome', 'threshold_policy_version', 'civentral_risk_level',
+            'predicted_at', 'valid_from', 'valid_until',
         ];
         foreach ($requiredStrings as $field) {
             if (!is_string($payload[$field] ?? null) || trim($payload[$field]) === '') {
@@ -436,10 +478,15 @@ final class DrrmFloodRiskAiClient
         if ((!is_int($probability) && !is_float($probability))
             || !is_finite((float) $probability) || $probability < 0 || $probability > 1
             || $payload['schema_version'] !== self::REQUEST_SCHEMA_VERSION
+            || $payload['task_type'] !== 'FLOOD_RISK_CLASSIFIER'
             || $payload['prediction_type'] !== self::PREDICTION_TYPE
             || $payload['model_status'] !== 'MODEL_READY'
+            || $payload['input_schema_version'] !== self::FEATURE_SCHEMA_VERSION
+            || preg_match('/^\d{10}$/', $payload['barangay_id']) !== 1
             || !in_array($payload['predicted_outcome'], ['FLOOD', 'NO_FLOOD'], true)
             || !in_array($payload['civentral_risk_level'], ['LOW', 'MODERATE', 'HIGH', 'CRITICAL'], true)
+            || ($payload['decision_support'] ?? null) !== true
+            || !$this->validDataProvenance($payload['data_provenance'] ?? null)
             || !is_array($payload['limitations'] ?? null)
             || !array_is_list($payload['limitations'])) {
             return null;
@@ -456,9 +503,12 @@ final class DrrmFloodRiskAiClient
             'message' => 'TensorFlow flood-risk decision support is available for officer review.',
             'schema_version' => self::REQUEST_SCHEMA_VERSION,
             'request_id' => $payload['request_id'],
+            'task_type' => 'FLOOD_RISK_CLASSIFIER',
             'prediction_type' => self::PREDICTION_TYPE,
             'model_version' => $payload['model_version'],
             'model_status' => 'MODEL_READY',
+            'input_schema_version' => self::FEATURE_SCHEMA_VERSION,
+            'barangay_id' => $payload['barangay_id'],
             'probability' => (float) $probability,
             'predicted_outcome' => $payload['predicted_outcome'],
             'threshold_policy_version' => $payload['threshold_policy_version'],
@@ -466,7 +516,9 @@ final class DrrmFloodRiskAiClient
             'predicted_at' => $payload['predicted_at'],
             'valid_from' => $payload['valid_from'],
             'valid_until' => $payload['valid_until'],
+            'data_provenance' => array_values($payload['data_provenance']),
             'limitations' => array_values($payload['limitations']),
+            'decision_support' => true,
         ];
     }
 
@@ -498,10 +550,11 @@ final class DrrmFloodRiskAiClient
                 'month_sin', 'month_cos',
             ]
             || !is_array($source) || array_keys($source) !== [
-                'weather_issued_at', 'feature_schema_version',
+                'weather_issued_at', 'feature_schema_version', 'data_provenance',
             ]
             || $source['feature_schema_version'] !== self::FEATURE_SCHEMA_VERSION
-            || !is_string($source['weather_issued_at'])) {
+            || !is_string($source['weather_issued_at'])
+            || !$this->validDataProvenance($source['data_provenance'] ?? null)) {
             return false;
         }
 
@@ -546,6 +599,46 @@ final class DrrmFloodRiskAiClient
             && $issuedAt <= $validFrom;
     }
 
+    private function validDataProvenance(mixed $items): bool
+    {
+        if (!is_array($items) || !array_is_list($items) || count($items) !== 4) {
+            return false;
+        }
+        $expectedRoles = [
+            'WEATHER_FORECAST', 'RAINFALL_OBSERVATION',
+            'FLOOD_SUSCEPTIBILITY', 'BARANGAY_REFERENCE',
+        ];
+        $roles = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                return false;
+            }
+            $keys = array_keys($item);
+            sort($keys);
+            if ($keys !== ['reference_time', 'role', 'source_id', 'source_version']) {
+                return false;
+            }
+            $role = $item['role'] ?? null;
+            if (!is_string($role) || !in_array($role, $expectedRoles, true)
+                || isset($roles[$role])) {
+                return false;
+            }
+            foreach (['source_id', 'source_version'] as $field) {
+                if (!is_string($item[$field] ?? null)
+                    || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/', $item[$field]) !== 1) {
+                    return false;
+                }
+            }
+            if (($item['reference_time'] ?? null) !== null
+                && (!is_string($item['reference_time'])
+                    || preg_match('/^\d{4}-\d{2}-\d{2}T/', $item['reference_time']) !== 1)) {
+                return false;
+            }
+            $roles[$role] = true;
+        }
+        return array_diff($expectedRoles, array_keys($roles)) === [];
+    }
+
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     private function httpFailure(
         DrrmAiHttpResponse $http,
@@ -565,6 +658,7 @@ final class DrrmFloodRiskAiClient
         }
         if (!in_array($code, [
             'AI_SERVICE_NOT_CONFIGURED', 'MODEL_NOT_AVAILABLE', 'MODEL_INVALID',
+            'MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED',
             'RISK_POLICY_NOT_CONFIGURED', 'AI_REQUEST_INVALID',
             'AI_AUTHENTICATION_FAILED', 'AI_SERVICE_ERROR',
         ], true)) {
@@ -605,6 +699,7 @@ final class DrrmFloodRiskAiClient
         return match ($code) {
             'MODEL_NOT_AVAILABLE' => 'MODEL_NOT_AVAILABLE',
             'MODEL_INVALID' => 'MODEL_INVALID',
+            'MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED' => 'MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED',
             'RISK_POLICY_NOT_READY', 'RISK_POLICY_NOT_CONFIGURED' => 'RISK_POLICY_NOT_CONFIGURED',
             'INTERNAL_AUTH_NOT_CONFIGURED' => 'AI_SERVICE_NOT_CONFIGURED',
             'INVALID_REQUEST' => 'AI_REQUEST_INVALID',
@@ -617,6 +712,7 @@ final class DrrmFloodRiskAiClient
         return match ($code) {
             'MODEL_NOT_AVAILABLE' => 'TensorFlow flood-risk prediction is currently unavailable.',
             'MODEL_INVALID' => 'The configured TensorFlow flood-risk model is invalid.',
+            'MODEL_AVAILABLE_NOT_OPERATIONALLY_VALIDATED' => 'The flood-risk model is not approved for operational use.',
             'RISK_POLICY_NOT_CONFIGURED' => 'The CIVENTRAL AI risk policy is not configured.',
             'AI_SERVICE_NOT_CONFIGURED' => 'The private AI service is not configured.',
             'AI_SERVICE_UNREACHABLE' => 'The private AI service is currently unreachable.',

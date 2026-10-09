@@ -7,6 +7,8 @@ require_once __DIR__ . '/../../config/ai.php';
 require_once __DIR__ . '/../../src/Services/AuthService.php';
 require_once __DIR__ . '/../../src/Services/DrrmEarlyWarningAuthorizationService.php';
 require_once __DIR__ . '/../../src/Services/DrrmFloodRiskAiClient.php';
+require_once __DIR__ . '/../../src/Services/DrrmRainfallInferenceClient.php';
+require_once __DIR__ . '/../../src/Services/DrrmFloodRiskPredictionService.php';
 require_once __DIR__ . '/../../src/Services/DrrmAiStatusService.php';
 
 use App\Config\AiServiceConfig;
@@ -14,6 +16,8 @@ use App\Services\AuthService;
 use App\Services\DrrmAiStatusService;
 use App\Services\DrrmEarlyWarningAuthorizationService;
 use App\Services\DrrmFloodRiskAiClient;
+use App\Services\DrrmFloodRiskPredictionService;
+use App\Services\DrrmRainfallInferenceClient;
 
 ini_set('display_errors', '0');
 drrmApiSendHeaders();
@@ -49,14 +53,27 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 
 try {
     $config = AiServiceConfig::fromEnvironment(__DIR__ . '/../../.env');
-    $status = (new DrrmAiStatusService(new DrrmFloodRiskAiClient($config)))->status();
+    $status = (new DrrmAiStatusService(
+        new DrrmFloodRiskAiClient($config),
+        new DrrmRainfallInferenceClient($config),
+        new DrrmFloodRiskPredictionService()
+    ))->status();
 } catch (Throwable $exception) {
     $status = [
         'runtime_reachable' => false,
         'service_health' => 'UNKNOWN',
+        'tensorflow_runtime_available' => null,
+        'tensorflow_runtime_ready' => null,
         'tensorflow_installed' => null,
+        'rainfall_model_ready' => false,
+        'rainfall_model_status' => 'UNKNOWN',
+        'rainfall_research_only' => true,
+        'flood_risk_model_ready' => false,
         'model_status' => 'UNKNOWN',
+        'threshold_policy_ready' => false,
         'risk_policy_status' => 'UNKNOWN',
+        'input_data_ready' => false,
+        'input_data_status' => 'UNKNOWN',
         'prediction_ready' => false,
         'code' => 'AI_SERVICE_NOT_CONFIGURED',
         'message' => 'The private AI service is not configured for server-side access.',

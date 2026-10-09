@@ -13,7 +13,11 @@ from starlette.concurrency import run_in_threadpool
 from . import __version__
 from .config import Settings
 from .errors import ApiError
-from .logging_config import SanitizedRequestLoggingMiddleware, configure_logging
+from .logging_config import (
+    BoundedRequestBodyMiddleware,
+    SanitizedRequestLoggingMiddleware,
+    configure_logging,
+)
 from .model_runtime import TensorFlowModelRuntime
 from .preprocessing import FeatureContractError, FeaturePreprocessor
 from .rainfall_runtime import RainfallRegressionRuntime, RainfallRuntimeError
@@ -53,6 +57,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url="/docs" if runtime_settings.enable_docs else None,
         redoc_url=None,
         openapi_url="/openapi.json" if runtime_settings.enable_docs else None,
+    )
+    app.add_middleware(
+        BoundedRequestBodyMiddleware,
+        max_request_bytes=runtime_settings.max_request_bytes,
     )
     app.add_middleware(
         SanitizedRequestLoggingMiddleware,
@@ -127,13 +135,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
         model_status = model_runtime.get_status(initialize=False)
-        policy_status = risk_policy.get_status(initialize=False)
         return HealthResponse(
             service_version=__version__,
             python_version=platform.python_version(),
-            tensorflow_installed=model_status.tensorflow_installed,
-            model_status=model_status.state,
-            risk_policy_status=policy_status.state.value,
+            tensorflow_runtime_available=model_status.tensorflow_installed,
             checked_at=datetime.now(timezone.utc),
         )
 
@@ -142,48 +147,52 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response_model=ReadinessResponse,
         responses={503: {"model": ReadinessResponse}},
     )
-    async def ready() -> ReadinessResponse | JSONResponse:
+    async def ready(
+        _auth: None = Depends(authenticator),
+    ) -> ReadinessResponse | JSONResponse:
         model_status = await run_in_threadpool(model_runtime.get_status)
         policy_status = await run_in_threadpool(risk_policy.get_status)
+        tensorflow_available = model_status.tensorflow_installed
+        flood_model_ready = model_status.state is ModelState.MODEL_READY
+        manifest = model_runtime.manifest
+        policy_ready = (
+            flood_model_ready
+            and policy_status.state is RiskPolicyState.READY
+            and manifest is not None
+            and risk_policy.supports(
+                manifest.model_version, manifest.threshold_policy_version
+            )
+        )
 
-        if model_status.state is not ModelState.MODEL_READY:
+        if not flood_model_ready:
             payload = ReadinessResponse(
                 success=False,
                 ready=False,
                 code=model_status.state.value,
                 message=model_status.message,
+                tensorflow_runtime_available=tensorflow_available,
+                tensorflow_runtime_ready=tensorflow_available,
+                flood_risk_model_ready=False,
+                threshold_policy_ready=policy_ready,
+                model_inference_ready=False,
+                prediction_ready=False,
                 model_status=model_status.state,
                 risk_policy_status=policy_status.state.value,
             )
             return JSONResponse(status_code=503, content=jsonable_encoder(payload))
 
-        if (
-            runtime_settings.require_internal_auth
-            and not runtime_settings.internal_auth_configured
-        ):
-            payload = ReadinessResponse(
-                success=False,
-                ready=False,
-                code="INTERNAL_AUTH_NOT_CONFIGURED",
-                message="Internal service authentication is not configured.",
-                model_status=model_status.state,
-                risk_policy_status=policy_status.state.value,
-            )
-            return JSONResponse(status_code=503, content=jsonable_encoder(payload))
-
-        manifest = model_runtime.manifest
-        if (
-            policy_status.state is not RiskPolicyState.READY
-            or manifest is None
-            or not risk_policy.supports(
-                manifest.model_version, manifest.threshold_policy_version
-            )
-        ):
+        if not policy_ready:
             payload = ReadinessResponse(
                 success=False,
                 ready=False,
                 code="RISK_POLICY_NOT_READY",
                 message="No compatible approved CIVENTRAL risk policy is available.",
+                tensorflow_runtime_available=tensorflow_available,
+                tensorflow_runtime_ready=tensorflow_available,
+                flood_risk_model_ready=True,
+                threshold_policy_ready=False,
+                model_inference_ready=False,
+                prediction_ready=False,
                 model_status=model_status.state,
                 risk_policy_status=policy_status.state.value,
             )
@@ -194,6 +203,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ready=True,
             code="READY",
             message="Approved flood-risk inference is available.",
+            tensorflow_runtime_available=tensorflow_available,
+            tensorflow_runtime_ready=tensorflow_available,
+            flood_risk_model_ready=True,
+            threshold_policy_ready=True,
+            model_inference_ready=True,
+            prediction_ready=False,
             model_status=model_status.state,
             risk_policy_status=policy_status.state.value,
         )
@@ -213,6 +228,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             code=status.code,
             message=status.message,
             model_problem="RAINFALL_REGRESSION",
+            rainfall_model_ready=status.ready,
             model_version=status.model_version,
             model_status=status.model_status,
             authorization_status=status.authorization_status,
@@ -226,15 +242,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _auth: None = Depends(authenticator),
     ) -> ModelStatusResponse:
         status = await run_in_threadpool(model_runtime.get_status)
+        policy_status = await run_in_threadpool(risk_policy.get_status)
+        model_ready = status.state is ModelState.MODEL_READY
+        manifest = model_runtime.manifest
+        policy_ready = (
+            model_ready
+            and policy_status.state is RiskPolicyState.READY
+            and manifest is not None
+            and risk_policy.supports(
+                manifest.model_version, manifest.threshold_policy_version
+            )
+        )
         return ModelStatusResponse(
             model_status=status.state,
             model_available=status.model_available,
+            flood_risk_model_ready=model_ready,
+            threshold_policy_ready=policy_ready,
+            model_inference_ready=model_ready and policy_ready,
+            trusted_inputs_ready=None,
             approved_for_inference=status.approved_for_inference,
             model_version=status.model_version,
             model_declared_status=status.model_declared_status,
-            feature_schema_version=preprocessor.feature_schema_version,
+            input_schema_version=preprocessor.feature_schema_version,
             threshold_policy_version=status.threshold_policy_version,
-            tensorflow_installed=status.tensorflow_installed,
+            tensorflow_runtime_available=status.tensorflow_installed,
+            tensorflow_runtime_ready=status.tensorflow_installed,
             tensorflow_version=status.tensorflow_version,
             python_version=platform.python_version(),
             message=status.message,
@@ -296,6 +328,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             request_id=request_data.request_id,
             model_version=manifest.model_version,
             model_status=ModelState.MODEL_READY,
+            input_schema_version=request_data.source_context.feature_schema_version,
+            barangay_id=request_data.location.barangay_id,
             probability=probability,
             predicted_outcome=decision.predicted_outcome,
             threshold_policy_version=decision.policy_version,
@@ -303,6 +337,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             predicted_at=datetime.now(timezone.utc),
             valid_from=request_data.valid_from,
             valid_until=request_data.valid_until,
+            data_provenance=request_data.source_context.data_provenance,
             limitations=list(limitations),
         )
 

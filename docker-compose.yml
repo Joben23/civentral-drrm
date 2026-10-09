@@ -50,6 +50,7 @@ services:
 
     networks:
       - dokploy-network
+      - ai-internal
 
 
   flood-risk-ai:
@@ -57,6 +58,18 @@ services:
       context: .
       dockerfile: ml/flood-risk/service/Dockerfile
     restart: unless-stopped
+    init: true
+    read_only: true
+    pids_limit: 256
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=256m,mode=1777
 
     expose:
       - 8098
@@ -91,9 +104,11 @@ services:
       retries: 5
 
     networks:
-      - dokploy-network
+      - ai-internal
 
 
 networks:
   dokploy-network:
     external: true
+  ai-internal:
+    internal: true
